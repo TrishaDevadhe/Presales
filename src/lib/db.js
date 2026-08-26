@@ -6,12 +6,12 @@ let initPromise = null;
 let isInitializing = false;
 
 if (!global._postgresPool) {
+  const connectionString = process.env.DATABASE_URL || 'postgres://postgres:postgres@127.0.0.1:5432/presales_db';
+  const isSupabase = connectionString.includes('supabase.co') || connectionString.includes('supabase.net');
+  
   global._postgresPool = new Pool({
-    host: '127.0.0.1',
-    port: 5432,
-    user: 'postgres',
-    password: 'postgres',
-    database: 'presales_db',
+    connectionString,
+    ssl: isSupabase ? { rejectUnauthorized: false } : false
   });
 }
 pool = global._postgresPool;

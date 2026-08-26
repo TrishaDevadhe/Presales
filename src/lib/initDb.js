@@ -162,8 +162,8 @@ export async function initDb() {
   // 2. Insert standard dropdown options
   const defaultOptions = [
     // opportunity_type
-    { category: 'opportunity_type', name: 'new business', order: 1, color: '#3b82f6' },
-    { category: 'opportunity_type', name: 'renewal', order: 2, color: '#10b981' },
+    { category: 'opportunity_type', name: 'Renewal', order: 1, color: '#3b82f6' },
+    { category: 'opportunity_type', name: 'New Business', order: 2, color: '#10b981' },
 
     // source
     { category: 'source', name: 'Inbound Inquiry', order: 1, color: '#10b981' },
@@ -173,10 +173,10 @@ export async function initDb() {
     { category: 'source', name: 'Referral', order: 5, color: '#f59e0b' },
 
     // deal_stage
-    { category: 'deal_stage', name: 'Proposal', order: 1, color: '#3b82f6' },
+    { category: 'deal_stage', name: 'Proposal', order: 1, color: '#f59e0b' },
     { category: 'deal_stage', name: 'Qualification', order: 2, color: '#6b7280' },
-    { category: 'deal_stage', name: 'Discovery', order: 3, color: '#a855f7' },
-    { category: 'deal_stage', name: 'Internal Review', order: 4, color: '#f59e0b' },
+    { category: 'deal_stage', name: 'Discovery', order: 3, color: '#3b82f6' },
+    { category: 'deal_stage', name: 'Internal Review', order: 4, color: '#8b5cf6' },
     { category: 'deal_stage', name: 'Submitted to Client', order: 5, color: '#06b6d4' },
     { category: 'deal_stage', name: 'Won', order: 6, color: '#10b981' },
     { category: 'deal_stage', name: 'Lost', order: 7, color: '#ef4444' },
@@ -203,9 +203,9 @@ export async function initDb() {
 
     // deliverable_type
     { category: 'deliverable_type', name: 'RFP', order: 1, color: '#ef4444' },
-    { category: 'deliverable_type', name: 'Proposal', order: 2, color: '#3b82f6' },
-    { category: 'deliverable_type', name: 'presentation deck', order: 3, color: '#f59e0b' },
-    { category: 'deliverable_type', name: 'brochure', order: 4, color: '#10b981' },
+    { category: 'deliverable_type', name: 'Proposal', order: 2, color: '#f97316' },
+    { category: 'deliverable_type', name: 'presentation deck', order: 3, color: '#22c55e' },
+    { category: 'deliverable_type', name: 'brochure', order: 4, color: '#2563eb' },
 
     // estimation_confidence
     { category: 'estimation_confidence', name: 'High', order: 1, color: '#22c55e' },
@@ -285,6 +285,14 @@ export async function initDb() {
     { category: 'department', name: 'Product Management', order: 4, color: '#ec4899' }
   ];
 
+  // Clean up obsolete options for customized categories
+  try {
+    await query('DELETE FROM task_templates');
+    await query("DELETE FROM dropdown_options WHERE category IN ('opportunity_type', 'deliverable_type', 'deal_stage')");
+  } catch (err) {
+    console.log('Skipping startup option cleanup (active records present):', err.message);
+  }
+
   for (const opt of defaultOptions) {
     await query(
       `INSERT INTO dropdown_options (category, option_name, sort_order, color)
@@ -292,64 +300,6 @@ export async function initDb() {
        ON CONFLICT (category, option_name) DO UPDATE SET color = EXCLUDED.color, sort_order = EXCLUDED.sort_order;`,
       [opt.category, opt.name, opt.order, opt.color]
     );
-  }
-
-  // MIGRATION OF EXISTING RECORDS TO NEW PICKLIST OPTIONS:
-  try {
-    // A. Migrate opportunities to new opportunity_types
-    await query(`
-      UPDATE opportunities 
-      SET opportunity_type_id = (SELECT id FROM dropdown_options WHERE category = 'opportunity_type' AND option_name = 'new business' LIMIT 1)
-      WHERE opportunity_type_id IN (
-        SELECT id FROM dropdown_options 
-        WHERE category = 'opportunity_type' 
-          AND option_name NOT IN ('new business', 'renewal')
-      )
-    `);
-    
-    // B. Migrate opportunities to new deal_stage (Proposal)
-    await query(`
-      UPDATE opportunities 
-      SET deal_stage_id = (SELECT id FROM dropdown_options WHERE category = 'deal_stage' AND option_name = 'Proposal' LIMIT 1)
-      WHERE deal_stage_id IN (
-        SELECT id FROM dropdown_options 
-        WHERE category = 'deal_stage' 
-          AND option_name NOT IN ('Proposal', 'Qualification', 'Discovery', 'Internal Review', 'Submitted to Client', 'Won', 'Lost')
-      )
-    `);
-
-    // C. Migrate work_items to new deliverable_types
-    const delivMapping = {
-      'PDF Proposal Document': 'Proposal',
-      'Word RFP Response': 'RFP',
-      'PowerPoint Pitch Deck': 'presentation deck',
-      'Interactive Demo Link': 'brochure',
-      'Excel Pricing Model': 'Proposal',
-      'Technical Architecture Diagram': 'Proposal'
-    };
-    for (const [oldName, newName] of Object.entries(delivMapping)) {
-      await query(`
-        UPDATE work_items 
-        SET deliverable_type_id = (SELECT id FROM dropdown_options WHERE category = 'deliverable_type' AND option_name = $1 LIMIT 1)
-        WHERE deliverable_type_id = (SELECT id FROM dropdown_options WHERE category = 'deliverable_type' AND option_name = $2 LIMIT 1)
-      `, [newName, oldName]);
-    }
-
-    // D. Delete the old, unused dropdown_options
-    await query(`
-      DELETE FROM dropdown_options 
-      WHERE category = 'opportunity_type' AND option_name NOT IN ('new business', 'renewal')
-    `);
-    await query(`
-      DELETE FROM dropdown_options 
-      WHERE category = 'deal_stage' AND option_name NOT IN ('Proposal', 'Qualification', 'Discovery', 'Internal Review', 'Submitted to Client', 'Won', 'Lost')
-    `);
-    await query(`
-      DELETE FROM dropdown_options 
-      WHERE category = 'deliverable_type' AND option_name NOT IN ('RFP', 'Proposal', 'presentation deck', 'brochure')
-    `);
-  } catch (migErr) {
-    console.log('Migration info (non-critical):', migErr.message);
   }
 
   // 3. Insert default automation settings if empty
@@ -391,13 +341,13 @@ export async function initDb() {
   // 5. Insert default task templates if empty
   const templateCount = await query('SELECT COUNT(*) FROM task_templates');
   if (parseInt(templateCount.rows[0].count, 10) === 0) {
-    // new business templates
-    const rfpType = await query("SELECT id FROM dropdown_options WHERE category = 'opportunity_type' AND option_name = 'new business'");
-    const rfpId = rfpType.rows[0]?.id;
+    // Renewal templates
+    const renewalType = await query("SELECT id FROM dropdown_options WHERE category = 'opportunity_type' AND option_name = 'Renewal'");
+    const renewalId = renewalType.rows[0]?.id;
 
-    // renewal templates
-    const proactiveType = await query("SELECT id FROM dropdown_options WHERE category = 'opportunity_type' AND option_name = 'renewal'");
-    const proactiveId = proactiveType.rows[0]?.id;
+    // New Business templates
+    const newBusinessType = await query("SELECT id FROM dropdown_options WHERE category = 'opportunity_type' AND option_name = 'New Business'");
+    const newBusinessId = newBusinessType.rows[0]?.id;
 
     const pmRole = await query("SELECT id FROM dropdown_options WHERE category = 'role' AND option_name = 'Presales Owner'");
     const pmRoleId = pmRole.rows[0]?.id;
@@ -405,24 +355,23 @@ export async function initDb() {
     const tmRole = await query("SELECT id FROM dropdown_options WHERE category = 'role' AND option_name = 'Team Member'");
     const tmRoleId = tmRole.rows[0]?.id;
 
-    if (rfpId) {
+    if (renewalId) {
       await query(`
         INSERT INTO task_templates (opportunity_type_id, task_name, default_estimated_hours, default_role_id, sequence) VALUES
-        (${rfpId}, 'Requirement Scoping & Alignment', 8, ${pmRoleId}, 1),
-        (${rfpId}, 'Architecture & Design Specification', 24, ${tmRoleId}, 2),
-        (${rfpId}, 'Pricing & Effort Estimation Excel', 12, ${tmRoleId}, 3),
-        (${rfpId}, 'First Draft Proposal Review', 6, ${pmRoleId}, 4),
-        (${rfpId}, 'Executive Presentation Preparation', 10, ${pmRoleId}, 5);
+        (${renewalId}, 'Renewal Scope & Fit Assessment', 4, ${pmRoleId}, 1),
+        (${renewalId}, 'Commercial & Pricing Template Update', 6, ${tmRoleId}, 2),
+        (${renewalId}, 'Renewal Proposal Document Review', 4, ${pmRoleId}, 3);
       `);
     }
 
-    if (proactiveId) {
+    if (newBusinessId) {
       await query(`
         INSERT INTO task_templates (opportunity_type_id, task_name, default_estimated_hours, default_role_id, sequence) VALUES
-        (${proactiveId}, 'Client Value Proposition Definition', 4, ${pmRoleId}, 1),
-        (${proactiveId}, 'Demo / Solution Mockup Creation', 16, ${tmRoleId}, 2),
-        (${proactiveId}, 'Commercial Structure & Proposal Drafting', 8, ${pmRoleId}, 3),
-        (${proactiveId}, 'Final Pitch Review', 4, ${pmRoleId}, 4);
+        (${newBusinessId}, 'Requirements Gathering & Scoping', 8, ${pmRoleId}, 1),
+        (${newBusinessId}, 'Technical Architecture & Solution Design', 24, ${tmRoleId}, 2),
+        (${newBusinessId}, 'Commercial Pricing Model Development', 12, ${tmRoleId}, 3),
+        (${newBusinessId}, 'Proposal Writing & Content Assembly', 16, ${tmRoleId}, 4),
+        (${newBusinessId}, 'Pitch Deck & Client Presentation Prep', 8, ${pmRoleId}, 5);
       `);
     }
   }

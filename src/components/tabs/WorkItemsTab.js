@@ -556,15 +556,15 @@ export default function WorkItemsTab() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Estimation Confidence</label>
+                  <label className="form-label">Status <span className="required">*</span></label>
                   <select
-                    name="estimation_confidence_id"
+                    name="status_id"
                     className="form-control form-select"
-                    value={formData.estimation_confidence_id}
+                    value={formData.status_id}
                     onChange={handleInputChange}
+                    required
                   >
-                    <option value="">Select Confidence</option>
-                    {getOptions('estimation_confidence').map(opt => (
+                    {getOptions('task_status').map(opt => (
                       <option key={opt.id} value={opt.id}>{opt.option_name}</option>
                     ))}
                   </select>
@@ -614,20 +614,7 @@ export default function WorkItemsTab() {
                   </div>
                 )}
 
-                <div className="form-group">
-                  <label className="form-label">Status <span className="required">*</span></label>
-                  <select
-                    name="status_id"
-                    className="form-control form-select"
-                    value={formData.status_id}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    {getOptions('task_status').map(opt => (
-                      <option key={opt.id} value={opt.id}>{opt.option_name}</option>
-                    ))}
-                  </select>
-                </div>
+
 
                 {/* Conditional Blocker Reason field */}
                 {getOptions('task_status').find(o => o.id === parseInt(formData.status_id, 10))?.option_name === 'Blocked' && (

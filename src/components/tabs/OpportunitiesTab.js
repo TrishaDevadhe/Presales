@@ -67,10 +67,10 @@ export default function OpportunitiesTab() {
       opportunity_type_id: getOptions('opportunity_type')[0]?.id || '',
       primary_sales_owner: allUsers[2] || allUsers[0] || '', // Sales owner
       secondary_sales_owners: '',
-      source_id: getOptions('source')[0]?.id || '',
-      deal_stage_id: getOptions('deal_stage')[0]?.id || '',
+      source_id: '',
+      deal_stage_id: getOptions('deal_stage').find(o => o.option_name === 'Proposal')?.id || getOptions('deal_stage')[0]?.id || '',
       priority_id: getOptions('priority').find(o => o.option_name === 'Medium')?.id || '',
-      estimated_deal_value: 50000,
+      estimated_deal_value: 0,
       contract_tenure: 12,
       win_probability: 50,
       complexity_id: getOptions('complexity')[1]?.id || '', // Medium
@@ -418,6 +418,8 @@ export default function OpportunitiesTab() {
                   />
                 </div>
 
+
+
                 <div className="form-group">
                   <label className="form-label">Priority</label>
                   <select
@@ -431,6 +433,8 @@ export default function OpportunitiesTab() {
                     ))}
                   </select>
                 </div>
+
+
 
                 <div className="form-group">
                   <label className="form-label">Contract Tenure (Months)</label>
