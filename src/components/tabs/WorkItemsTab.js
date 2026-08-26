@@ -511,9 +511,11 @@ export default function WorkItemsTab() {
                     onChange={handleInputChange}
                   >
                     <option value="">None</option>
-                    {getOptions('deliverable_type').map(opt => (
-                      <option key={opt.id} value={opt.id}>{opt.option_name}</option>
-                    ))}
+                    {getOptions('deliverable_type')
+                      .filter(opt => ['rfp', 'proposal', 'presentation deck', 'brochure'].includes(opt.option_name.toLowerCase()))
+                      .map(opt => (
+                        <option key={opt.id} value={opt.id}>{opt.option_name}</option>
+                      ))}
                   </select>
                 </div>
 

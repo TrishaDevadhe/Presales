@@ -245,7 +245,7 @@ async function run() {
     },
     {
       name: 'task_templates',
-      columns: ['id', 'opportunity_type_id', 'task_name', 'default_estimated_hours', 'default_role_id', 'sequence']
+      columns: ['id', 'deliverable_type_id', 'task_name', 'default_estimated_hours', 'default_role_id', 'sequence']
     },
     {
       name: 'work_items',

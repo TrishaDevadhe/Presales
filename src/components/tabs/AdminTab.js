@@ -22,12 +22,12 @@ export default function AdminTab() {
 
   // -- Task Templates State --
   const [templates, setTemplates] = useState([]);
-  const [selectedOppType, setSelectedOppType] = useState('');
+  const [selectedDeliverableType, setSelectedDeliverableType] = useState('');
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [isTemplateEdit, setIsTemplateEdit] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [templateForm, setTemplateForm] = useState({
-    opportunity_type_id: '',
+    deliverable_type_id: '',
     task_name: '',
     default_estimated_hours: 4,
     default_role_id: '',
@@ -88,11 +88,18 @@ export default function AdminTab() {
     fetchAutomationSettings();
   }, []);
 
-  // Set default opp type selection once options are loaded
+  const allowedDeliverableNames = ['rfp', 'proposal', 'presentation deck', 'brochure'];
+
+  const getDeliverableOptions = () => {
+    const opts = getOptions('deliverable_type');
+    return opts.filter(o => allowedDeliverableNames.includes(o.option_name.toLowerCase()));
+  };
+
+  // Set default deliverable type selection once options are loaded
   useEffect(() => {
-    const oppTypeOpts = getOptions('opportunity_type');
-    if (oppTypeOpts.length > 0 && !selectedOppType) {
-      setSelectedOppType(oppTypeOpts[0].id.toString());
+    const delivOpts = getDeliverableOptions();
+    if (delivOpts.length > 0 && !selectedDeliverableType) {
+      setSelectedDeliverableType(delivOpts[0].id.toString());
     }
   }, [dropdownOptions]);
 
@@ -150,12 +157,13 @@ export default function AdminTab() {
   const openTemplateCreate = () => {
     setIsTemplateEdit(false);
     setSelectedTemplate(null);
+    const delivOpts = getDeliverableOptions();
     setTemplateForm({
-      opportunity_type_id: selectedOppType || getOptions('opportunity_type')[0]?.id || '',
+      deliverable_type_id: selectedDeliverableType || delivOpts[0]?.id || '',
       task_name: '',
       default_estimated_hours: 8,
       default_role_id: getOptions('role')[0]?.id || '',
-      sequence_order: templates.filter(t => t.opportunity_type_id === parseInt(selectedOppType, 10)).length + 1
+      sequence_order: templates.filter(t => t.deliverable_type_id === parseInt(selectedDeliverableType, 10)).length + 1
     });
     setIsTemplateModalOpen(true);
   };
@@ -164,11 +172,11 @@ export default function AdminTab() {
     setIsTemplateEdit(true);
     setSelectedTemplate(tpl);
     setTemplateForm({
-      opportunity_type_id: tpl.opportunity_type_id,
+      deliverable_type_id: tpl.deliverable_type_id,
       task_name: tpl.task_name,
       default_estimated_hours: parseFloat(tpl.default_estimated_hours) || 4,
       default_role_id: tpl.default_role_id || '',
-      sequence_order: tpl.sequence_order || 1
+      sequence_order: tpl.sequence || tpl.sequence_order || 1
     });
     setIsTemplateModalOpen(true);
   };
@@ -235,11 +243,17 @@ export default function AdminTab() {
 
   // Filter dropdowns by selected category (including inactive for admin edit)
   const currentCategoryOptions = dropdownOptions
-    .filter(o => o.category === selectedCategory)
+    .filter(o => {
+      if (o.category !== selectedCategory) return false;
+      if (selectedCategory === 'deliverable_type') {
+        return allowedDeliverableNames.includes(o.option_name.toLowerCase());
+      }
+      return true;
+    })
     .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || a.option_name.localeCompare(b.option_name));
 
-  // Filter templates by selected opportunity type
-  const filteredTemplates = templates.filter(t => t.opportunity_type_id === parseInt(selectedOppType, 10));
+  // Filter templates by selected deliverable type
+  const filteredTemplates = templates.filter(t => t.deliverable_type_id === parseInt(selectedDeliverableType, 10));
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -361,26 +375,26 @@ export default function AdminTab() {
       {activeSubTab === 'templates' && (
         <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
           
-          {/* Opp type selector list */}
+          {/* Deliverable type selector list */}
           <div className="glass-panel" style={{ width: '280px', padding: '1rem' }}>
-            <h4 style={{ color: '#fff', fontSize: '1rem', marginBottom: '0.75rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--glass-border)' }}>Opportunity Types</h4>
+            <h4 style={{ color: '#fff', fontSize: '1rem', marginBottom: '0.75rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--glass-border)' }}>Deliverable Types</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-              {getOptions('opportunity_type').map((opt) => (
+              {getDeliverableOptions().map((opt) => (
                 <button
                   key={opt.id}
-                  onClick={() => setSelectedOppType(opt.id.toString())}
+                  onClick={() => setSelectedDeliverableType(opt.id.toString())}
                   style={{
                     display: 'block',
                     width: '100%',
                     textAlign: 'left',
                     padding: '0.6rem 0.8rem',
-                    background: selectedOppType === opt.id.toString() ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
-                    border: selectedOppType === opt.id.toString() ? '1px solid rgba(99, 102, 241, 0.25)' : '1px solid transparent',
-                    color: selectedOppType === opt.id.toString() ? '#fff' : 'var(--text-secondary)',
+                    background: selectedDeliverableType === opt.id.toString() ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
+                    border: selectedDeliverableType === opt.id.toString() ? '1px solid rgba(99, 102, 241, 0.25)' : '1px solid transparent',
+                    color: selectedDeliverableType === opt.id.toString() ? '#fff' : 'var(--text-secondary)',
                     borderRadius: 'var(--radius-md)',
                     cursor: 'pointer',
                     fontSize: '0.85rem',
-                    fontWeight: selectedOppType === opt.id.toString() ? 600 : 500
+                    fontWeight: selectedDeliverableType === opt.id.toString() ? 600 : 500
                   }}
                 >
                   {opt.option_name}
@@ -395,7 +409,7 @@ export default function AdminTab() {
               <h3 style={{ color: '#fff', fontSize: '1.25rem' }}>
                 Auto-initialized Scope Tasks
               </h3>
-              <button className="btn btn-primary" style={{ padding: '0.45rem 1rem', fontSize: '0.85rem' }} onClick={openTemplateCreate} disabled={!selectedOppType}>
+              <button className="btn btn-primary" style={{ padding: '0.45rem 1rem', fontSize: '0.85rem' }} onClick={openTemplateCreate} disabled={!selectedDeliverableType}>
                 + Add Task Template
               </button>
             </div>
@@ -414,7 +428,7 @@ export default function AdminTab() {
                 <tbody>
                   {filteredTemplates.map((tpl) => (
                     <tr key={tpl.id}>
-                      <td style={{ fontWeight: 600 }}>#{tpl.sequence_order}</td>
+                      <td style={{ fontWeight: 600 }}>#{tpl.sequence || tpl.sequence_order || 1}</td>
                       <td><strong style={{ color: '#fff' }}>{tpl.task_name}</strong></td>
                       <td>{tpl.default_estimated_hours} hrs</td>
                       <td>
@@ -436,7 +450,7 @@ export default function AdminTab() {
                   ))}
                   {filteredTemplates.length === 0 && (
                     <tr>
-                      <td colSpan="5" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No tasks defined in template for this type. Creation defaults to empty.</td>
+                      <td colSpan="5" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No tasks defined in template for this deliverable type.</td>
                     </tr>
                   )}
                 </tbody>
@@ -617,11 +631,25 @@ export default function AdminTab() {
             <form onSubmit={handleTemplateSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               
               <div className="form-group">
+                <label className="form-label">Target Deliverable Type <span className="required">*</span></label>
+                <select
+                  className="form-control form-select"
+                  value={templateForm.deliverable_type_id}
+                  onChange={(e) => setTemplateForm(prev => ({ ...prev, deliverable_type_id: e.target.value }))}
+                  required
+                >
+                  {getDeliverableOptions().map(opt => (
+                    <option key={opt.id} value={opt.id}>{opt.option_name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
                 <label className="form-label">Task Scope Name <span className="required">*</span></label>
                 <input
                   type="text"
                   className="form-control"
-                  placeholder="e.g. Technical Proposal Writing"
+                  placeholder="e.g. RFP Scope Review"
                   value={templateForm.task_name}
                   onChange={(e) => setTemplateForm(prev => ({ ...prev, task_name: e.target.value }))}
                   required

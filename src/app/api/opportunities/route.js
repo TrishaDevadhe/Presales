@@ -110,8 +110,7 @@ export async function POST(request) {
 
     // AUTOMATION: Generate tasks from template
     const templates = await query(
-      'SELECT * FROM task_templates WHERE opportunity_type_id = $1 ORDER BY sequence ASC',
-      [opportunity_type_id]
+      'SELECT * FROM task_templates ORDER BY sequence ASC'
     );
 
     if (templates.rows.length > 0) {
@@ -170,14 +169,15 @@ export async function POST(request) {
 
         await query(
           `INSERT INTO work_items (
-            opportunity_id, work_category_id, title, description, assigned_to,
+            opportunity_id, work_category_id, deliverable_type_id, title, description, assigned_to,
             priority_id, start_date, due_date, estimated_hours, status_id
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
           [
             opportunity.id,
             workCategoryId || null,
+            t.deliverable_type_id || null,
             t.task_name,
-            `Auto-generated task from template for complexity: ${multiplier}x`,
+            `Auto-generated task from deliverable template for complexity: ${multiplier}x`,
             assignedUser,
             priority_id || null,
             received_date,

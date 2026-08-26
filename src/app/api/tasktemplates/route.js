@@ -6,24 +6,24 @@ export const dynamic = 'force-dynamic';
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const opportunityTypeId = searchParams.get('opportunity_type_id');
+    const deliverableTypeId = searchParams.get('deliverable_type_id');
 
     let sql = `
       SELECT t.*, 
-             o.option_name AS opportunity_type_name, 
+             d.option_name AS deliverable_type_name, 
              r.option_name AS default_role_name 
       FROM task_templates t
-      JOIN dropdown_options o ON t.opportunity_type_id = o.id
+      JOIN dropdown_options d ON t.deliverable_type_id = d.id
       LEFT JOIN dropdown_options r ON t.default_role_id = r.id
     `;
     const params = [];
 
-    if (opportunityTypeId) {
-      sql += ' WHERE t.opportunity_type_id = $1';
-      params.push(opportunityTypeId);
+    if (deliverableTypeId) {
+      sql += ' WHERE t.deliverable_type_id = $1';
+      params.push(deliverableTypeId);
     }
 
-    sql += ' ORDER BY o.option_name ASC, t.sequence ASC';
+    sql += ' ORDER BY d.option_name ASC, t.sequence ASC';
 
     const result = await query(sql, params);
     return NextResponse.json(result.rows);
@@ -35,22 +35,24 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { opportunity_type_id, task_name, default_estimated_hours, default_role_id, sequence } = body;
+    const { deliverable_type_id, task_name, default_estimated_hours, default_role_id, sequence, sequence_order } = body;
 
-    if (!opportunity_type_id || !task_name) {
-      return NextResponse.json({ error: 'Opportunity Type and Task Name are required' }, { status: 400 });
+    const finalSequence = sequence || sequence_order;
+
+    if (!deliverable_type_id || !task_name) {
+      return NextResponse.json({ error: 'Deliverable Type and Task Name are required' }, { status: 400 });
     }
 
     const result = await query(
-      `INSERT INTO task_templates (opportunity_type_id, task_name, default_estimated_hours, default_role_id, sequence)
+      `INSERT INTO task_templates (deliverable_type_id, task_name, default_estimated_hours, default_role_id, sequence)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
       [
-        opportunity_type_id,
+        deliverable_type_id,
         task_name,
         parseFloat(default_estimated_hours) || 0.0,
         default_role_id || null,
-        parseInt(sequence, 10) || 0
+        parseInt(finalSequence, 10) || 0
       ]
     );
 

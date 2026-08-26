@@ -1,4 +1,4 @@
-import { query } from './db';
+import { query } from './db.js';
 
 export async function initDb() {
   console.log('Initializing database schema...');
@@ -138,12 +138,23 @@ export async function initDb() {
   await query(`
     CREATE TABLE IF NOT EXISTS task_templates (
       id SERIAL PRIMARY KEY,
-      opportunity_type_id INTEGER NOT NULL REFERENCES dropdown_options(id) ON DELETE CASCADE,
+      deliverable_type_id INTEGER NOT NULL REFERENCES dropdown_options(id) ON DELETE CASCADE,
       task_name VARCHAR(255) NOT NULL,
       default_estimated_hours NUMERIC(6,2),
       default_role_id INTEGER REFERENCES dropdown_options(id) ON DELETE SET NULL,
       sequence INTEGER DEFAULT 0
     );
+
+    -- Migration check if table was created with opportunity_type_id previously
+    DO $$ 
+    BEGIN 
+      IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'task_templates' AND column_name = 'opportunity_type_id'
+      ) THEN 
+        ALTER TABLE task_templates RENAME COLUMN opportunity_type_id TO deliverable_type_id;
+      END IF;
+    END $$;
   `);
 
   await query(`
@@ -287,8 +298,8 @@ export async function initDb() {
 
   // Clean up obsolete options for customized categories
   try {
-    await query('DELETE FROM task_templates');
-    await query("DELETE FROM dropdown_options WHERE category IN ('opportunity_type', 'deliverable_type', 'deal_stage')");
+    await query("DELETE FROM task_templates WHERE deliverable_type_id NOT IN (SELECT id FROM dropdown_options WHERE category = 'deliverable_type' AND LOWER(option_name) IN ('rfp', 'proposal', 'presentation deck', 'brochure'))");
+    await query("DELETE FROM dropdown_options WHERE category = 'deliverable_type' AND LOWER(option_name) NOT IN ('rfp', 'proposal', 'presentation deck', 'brochure') AND id NOT IN (SELECT deliverable_type_id FROM work_items WHERE deliverable_type_id IS NOT NULL)");
   } catch (err) {
     console.log('Skipping startup option cleanup (active records present):', err.message);
   }
@@ -338,40 +349,69 @@ export async function initDb() {
     );
   }
 
-  // 5. Insert default task templates if empty
-  const templateCount = await query('SELECT COUNT(*) FROM task_templates');
-  if (parseInt(templateCount.rows[0].count, 10) === 0) {
-    // Renewal templates
-    const renewalType = await query("SELECT id FROM dropdown_options WHERE category = 'opportunity_type' AND option_name = 'Renewal'");
-    const renewalId = renewalType.rows[0]?.id;
+  // 5. Insert default task templates for deliverable types if missing
+  const pmRole = await query("SELECT id FROM dropdown_options WHERE category = 'role' AND option_name = 'Presales Owner'");
+  const pmRoleId = pmRole.rows[0]?.id;
 
-    // New Business templates
-    const newBusinessType = await query("SELECT id FROM dropdown_options WHERE category = 'opportunity_type' AND option_name = 'New Business'");
-    const newBusinessId = newBusinessType.rows[0]?.id;
+  const tmRole = await query("SELECT id FROM dropdown_options WHERE category = 'role' AND option_name = 'Team Member'");
+  const tmRoleId = tmRole.rows[0]?.id;
 
-    const pmRole = await query("SELECT id FROM dropdown_options WHERE category = 'role' AND option_name = 'Presales Owner'");
-    const pmRoleId = pmRole.rows[0]?.id;
-
-    const tmRole = await query("SELECT id FROM dropdown_options WHERE category = 'role' AND option_name = 'Team Member'");
-    const tmRoleId = tmRole.rows[0]?.id;
-
-    if (renewalId) {
+  // RFP
+  const rfpType = await query("SELECT id FROM dropdown_options WHERE category = 'deliverable_type' AND option_name = 'RFP'");
+  const rfpId = rfpType.rows[0]?.id;
+  if (rfpId) {
+    const countRes = await query('SELECT COUNT(*) FROM task_templates WHERE deliverable_type_id = $1', [rfpId]);
+    if (parseInt(countRes.rows[0].count, 10) === 0) {
       await query(`
-        INSERT INTO task_templates (opportunity_type_id, task_name, default_estimated_hours, default_role_id, sequence) VALUES
-        (${renewalId}, 'Renewal Scope & Fit Assessment', 4, ${pmRoleId}, 1),
-        (${renewalId}, 'Commercial & Pricing Template Update', 6, ${tmRoleId}, 2),
-        (${renewalId}, 'Renewal Proposal Document Review', 4, ${pmRoleId}, 3);
+        INSERT INTO task_templates (deliverable_type_id, task_name, default_estimated_hours, default_role_id, sequence) VALUES
+        (${rfpId}, 'RFP Scope & Compliance Matrix Review', 6, ${pmRoleId}, 1),
+        (${rfpId}, 'Technical Scoping & Architecture Design', 16, ${tmRoleId}, 2),
+        (${rfpId}, 'RFP Response Drafting & Content Assembly', 12, ${tmRoleId}, 3);
       `);
     }
+  }
 
-    if (newBusinessId) {
+  // Proposal
+  const proposalType = await query("SELECT id FROM dropdown_options WHERE category = 'deliverable_type' AND option_name = 'Proposal'");
+  const proposalId = proposalType.rows[0]?.id;
+  if (proposalId) {
+    const countRes = await query('SELECT COUNT(*) FROM task_templates WHERE deliverable_type_id = $1', [proposalId]);
+    if (parseInt(countRes.rows[0].count, 10) === 0) {
       await query(`
-        INSERT INTO task_templates (opportunity_type_id, task_name, default_estimated_hours, default_role_id, sequence) VALUES
-        (${newBusinessId}, 'Requirements Gathering & Scoping', 8, ${pmRoleId}, 1),
-        (${newBusinessId}, 'Technical Architecture & Solution Design', 24, ${tmRoleId}, 2),
-        (${newBusinessId}, 'Commercial Pricing Model Development', 12, ${tmRoleId}, 3),
-        (${newBusinessId}, 'Proposal Writing & Content Assembly', 16, ${tmRoleId}, 4),
-        (${newBusinessId}, 'Pitch Deck & Client Presentation Prep', 8, ${pmRoleId}, 5);
+        INSERT INTO task_templates (deliverable_type_id, task_name, default_estimated_hours, default_role_id, sequence) VALUES
+        (${proposalId}, 'Requirements Scoping & Executive Summary', 8, ${pmRoleId}, 1),
+        (${proposalId}, 'Commercial & Pricing Model Development', 10, ${tmRoleId}, 2),
+        (${proposalId}, 'Proposal Document Review & Final Polish', 6, ${pmRoleId}, 3);
+      `);
+    }
+  }
+
+  // presentation deck
+  const deckType = await query("SELECT id FROM dropdown_options WHERE category = 'deliverable_type' AND option_name = 'presentation deck'");
+  const deckId = deckType.rows[0]?.id;
+  if (deckId) {
+    const countRes = await query('SELECT COUNT(*) FROM task_templates WHERE deliverable_type_id = $1', [deckId]);
+    if (parseInt(countRes.rows[0].count, 10) === 0) {
+      await query(`
+        INSERT INTO task_templates (deliverable_type_id, task_name, default_estimated_hours, default_role_id, sequence) VALUES
+        (${deckId}, 'Presentation Structure & Storyboarding', 4, ${pmRoleId}, 1),
+        (${deckId}, 'Slide Deck Content & Visual Design', 8, ${tmRoleId}, 2),
+        (${deckId}, 'Dry Run & Client Pitch Preparation', 4, ${pmRoleId}, 3);
+      `);
+    }
+  }
+
+  // brochure
+  const brochureType = await query("SELECT id FROM dropdown_options WHERE category = 'deliverable_type' AND option_name = 'brochure'");
+  const brochureId = brochureType.rows[0]?.id;
+  if (brochureId) {
+    const countRes = await query('SELECT COUNT(*) FROM task_templates WHERE deliverable_type_id = $1', [brochureId]);
+    if (parseInt(countRes.rows[0].count, 10) === 0) {
+      await query(`
+        INSERT INTO task_templates (deliverable_type_id, task_name, default_estimated_hours, default_role_id, sequence) VALUES
+        (${brochureId}, 'Value Proposition & Content Outline', 4, ${pmRoleId}, 1),
+        (${brochureId}, 'Graphic Design & Layout Assembly', 6, ${tmRoleId}, 2),
+        (${brochureId}, 'Collateral Review & Export', 2, ${pmRoleId}, 3);
       `);
     }
   }

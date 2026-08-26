@@ -1,5 +1,5 @@
 import { Pool } from 'pg';
-import { initDb } from './initDb';
+import { initDb } from './initDb.js';
 
 let pool;
 let initPromise = null;
