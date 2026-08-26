@@ -419,36 +419,6 @@ export default function OpportunitiesTab() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Source</label>
-                  <select
-                    name="source_id"
-                    className="form-control form-select"
-                    value={formData.source_id}
-                    onChange={handleInputChange}
-                  >
-                    <option value="">Select Source</option>
-                    {getOptions('source').map(opt => (
-                      <option key={opt.id} value={opt.id}>{opt.option_name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Deal Stage</label>
-                  <select
-                    name="deal_stage_id"
-                    className="form-control form-select"
-                    value={formData.deal_stage_id}
-                    onChange={handleInputChange}
-                  >
-                    <option value="">Select Stage</option>
-                    {getOptions('deal_stage').map(opt => (
-                      <option key={opt.id} value={opt.id}>{opt.option_name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-group">
                   <label className="form-label">Priority</label>
                   <select
                     name="priority_id"
@@ -460,18 +430,6 @@ export default function OpportunitiesTab() {
                       <option key={opt.id} value={opt.id}>{opt.option_name}</option>
                     ))}
                   </select>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Estimated Deal Value (TCV)</label>
-                  <input
-                    type="number"
-                    name="estimated_deal_value"
-                    className="form-control"
-                    min="0"
-                    value={formData.estimated_deal_value}
-                    onChange={handleInputChange}
-                  />
                 </div>
 
                 <div className="form-group">
