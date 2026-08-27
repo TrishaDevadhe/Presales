@@ -448,20 +448,6 @@ export default function OpportunitiesTab() {
                 <div className="form-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.25rem' }}>
                   
                   <div className="form-group">
-                    <label className="form-label">Deal Stage</label>
-                    <select
-                      name="deal_stage_id"
-                      className="form-control form-select"
-                      value={formData.deal_stage_id}
-                      onChange={handleInputChange}
-                    >
-                      {getOptions('deal_stage').map(opt => (
-                        <option key={opt.id} value={opt.id}>{opt.option_name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="form-group">
                     <label className="form-label">Priority</label>
                     <select
                       name="priority_id"
@@ -473,19 +459,6 @@ export default function OpportunitiesTab() {
                         <option key={opt.id} value={opt.id}>{opt.option_name}</option>
                       ))}
                     </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Estimated Deal Value ($)</label>
-                    <input
-                      type="number"
-                      name="estimated_deal_value"
-                      className="form-control"
-                      value={formData.estimated_deal_value}
-                      onChange={handleInputChange}
-                      min="0"
-                      step="1000"
-                    />
                   </div>
 
                   <div className="form-group">

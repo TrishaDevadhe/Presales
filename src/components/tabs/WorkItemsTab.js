@@ -532,39 +532,6 @@ export default function WorkItemsTab() {
                   />
                 </div>
 
-                <div className="form-group">
-                  <label className="form-label">Status <span className="required">*</span></label>
-                  <select
-                    name="status_id"
-                    className="form-control form-select"
-                    value={formData.status_id}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    {getOptions('task_status').map(opt => (
-                      <option key={opt.id} value={opt.id}>{opt.option_name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {getOptions('task_status').find(o => o.id === parseInt(formData.status_id, 10))?.option_name === 'Blocked' && (
-                  <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                    <label className="form-label" style={{ color: 'var(--color-danger-text)' }}>
-                      Blocker Reason <span className="required">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      name="blocker_reason"
-                      className="form-control"
-                      style={{ borderColor: 'var(--color-danger)' }}
-                      placeholder="What is blocking this task? (required)"
-                      value={formData.blocker_reason}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                )}
-
               </div>
 
               <div className="form-group">
