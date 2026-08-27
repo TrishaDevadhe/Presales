@@ -19,7 +19,7 @@ import AdminTab from '@/components/tabs/AdminTab';
 export default function Home() {
   const { currentUser, userRole, handleUserChange, loading, allUsers } = useApp();
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [theme, setTheme] = useState('warm-minimal'); // Default to Warm Minimal "The Ledger"
+  const [theme, setTheme] = useState('glass-light'); 
 
   useEffect(() => {
     if (theme === 'dark') {
@@ -30,7 +30,7 @@ export default function Home() {
   }, [theme]);
 
   const toggleTheme = () => {
-    setTheme((prev) => (prev === 'warm-minimal' ? 'dark' : 'warm-minimal'));
+    setTheme((prev) => (prev === 'glass-light' ? 'dark' : 'glass-light'));
   };
 
   const renderActiveTab = () => {
@@ -52,14 +52,14 @@ export default function Home() {
       case 'admin':
         if (userRole !== 'Admin') {
           return (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '50vh', gap: '1rem' }}>
+            <div className="paper-panel" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '50vh', gap: '1rem', padding: '3rem' }}>
               <div style={{ fontSize: '3rem' }}>🔒</div>
-              <h3 style={{ color: 'var(--text-primary)', fontSize: '1.5rem' }}>Access Denied</h3>
-              <p style={{ color: 'var(--text-secondary)', maxWidth: '400px', textAlign: 'center' }}>
-                You are currently impersonating the role <strong>&quot;{userRole}&quot;</strong>. Only users with the <strong>Admin</strong> role can access the Configuration panel.
+              <h3 style={{ color: 'var(--text-primary)', fontSize: '1.5rem', fontFamily: 'var(--font-title)' }}>Access Restricted</h3>
+              <p style={{ color: 'var(--text-secondary)', maxWidth: '440px', textAlign: 'center', fontSize: '0.95rem' }}>
+                You are currently impersonating <strong>&quot;{userRole}&quot;</strong>. Switch to the <strong>Admin</strong> identity to access configuration console modules.
               </p>
-              <button className="btn btn-primary" onClick={() => handleUserChange('admin')}>
-                Switch to Admin Role
+              <button className="btn btn-pill-cobalt" onClick={() => handleUserChange('admin')}>
+                ⚡ Switch to Admin Role
               </button>
             </div>
           );
@@ -83,8 +83,8 @@ export default function Home() {
         gap: '1.25rem'
       }}>
         <LoaderSpinner size={56} color="var(--accent-primary)" />
-        <div style={{ fontFamily: 'var(--font-title)', fontWeight: 600, fontSize: '1.05rem', color: 'var(--text-secondary)' }}>
-          NetSales System initializing...
+        <div style={{ fontFamily: 'var(--font-title)', fontWeight: 700, fontSize: '1.1rem', color: 'var(--accent-primary)', letterSpacing: '0.04em' }}>
+          ISOMETRIC TECH ENGINE INITIALIZING...
         </div>
       </div>
     );
@@ -96,37 +96,37 @@ export default function Home() {
       {/* Sidebar Navigation */}
       <aside className="sidebar">
         
-        {/* Logo Brand */}
+        {/* Logo Brand Panel */}
         <div style={{
           padding: '1.75rem 1.5rem 1.25rem',
-          borderBottom: '1px solid var(--glass-border)',
+          borderBottom: '1px solid var(--border-subtle)',
           display: 'flex',
           alignItems: 'center',
-          gap: '0.75rem'
+          gap: '0.85rem'
         }}>
           <div style={{
-            width: '34px',
-            height: '34px',
-            borderRadius: '8px',
-            background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))',
+            width: '38px',
+            height: '38px',
+            borderRadius: '10px',
+            background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 60%, #06B6D4 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontWeight: 'bold',
+            fontWeight: '900',
             color: '#fff',
-            fontSize: '1.2rem',
+            fontSize: '1.3rem',
             fontFamily: 'var(--font-title)',
-            boxShadow: 'var(--shadow-sm)'
+            boxShadow: '0 8px 16px rgba(30, 58, 138, 0.3), inset 0 1px 1px rgba(255,255,255,0.6)'
           }}>
             N
           </div>
           <div>
-            <h1 style={{ fontSize: '1.25rem', color: 'var(--text-primary)', fontWeight: 700, fontFamily: 'var(--font-title)' }}>NetSales</h1>
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Presales Engine</span>
+            <h1 style={{ fontSize: '1.3rem', color: 'var(--text-primary)', fontWeight: 800, fontFamily: 'var(--font-title)', letterSpacing: '-0.02em' }}>NetSales</h1>
+            <span style={{ fontSize: '0.7rem', color: 'var(--accent-primary)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 800 }}>ISOMETRIC TECH</span>
           </div>
         </div>
 
-        {/* Navigation list */}
+        {/* Navigation Menu */}
         <ul className="nav-menu">
           <li>
             <button
@@ -134,7 +134,7 @@ export default function Home() {
               className={`nav-item-link ${activeTab === 'dashboard' ? 'active' : ''}`}
               style={{ width: '100%', background: 'transparent', textAlign: 'left', cursor: 'pointer' }}
             >
-              <span>📊</span> Dashboard Home
+              <span>📐</span> Dashboard Stage
             </button>
           </li>
           <li>
@@ -152,7 +152,7 @@ export default function Home() {
               className={`nav-item-link ${activeTab === 'workitems' ? 'active' : ''}`}
               style={{ width: '100%', background: 'transparent', textAlign: 'left', cursor: 'pointer' }}
             >
-              <span>⚡</span> Work Items (Tasks)
+              <span>⚡</span> Work Items
             </button>
           </li>
           <li>
@@ -170,7 +170,7 @@ export default function Home() {
               className={`nav-item-link ${activeTab === 'versions' ? 'active' : ''}`}
               style={{ width: '100%', background: 'transparent', textAlign: 'left', cursor: 'pointer' }}
             >
-              <span>🔄</span> Proposal Revisions
+              <span>🔄</span> Revision Logs
             </button>
           </li>
           <li>
@@ -200,22 +200,22 @@ export default function Home() {
                 background: 'transparent',
                 textAlign: 'left',
                 cursor: 'pointer',
-                opacity: userRole !== 'Admin' ? 0.6 : 1
+                opacity: userRole !== 'Admin' ? 0.65 : 1
               }}
             >
-              <span>⚙️</span> Admin Panel {userRole !== 'Admin' && '🔒'}
+              <span>⚙️</span> Admin Console {userRole !== 'Admin' && '🔒'}
             </button>
           </li>
         </ul>
 
-        {/* Theme Switcher & Identity Footer */}
+        {/* Theme Switcher & User Footer */}
         <div style={{
           padding: '1.25rem',
-          borderTop: '1px solid var(--glass-border)',
-          background: 'var(--bg-tertiary)',
+          borderTop: '1px solid var(--border-subtle)',
+          background: 'rgba(226, 232, 240, 0.3)',
           display: 'flex',
           flexDirection: 'column',
-          gap: '0.75rem'
+          gap: '0.85rem'
         }}>
           {/* Theme Toggle Button */}
           <button
@@ -225,24 +225,24 @@ export default function Home() {
               fontSize: '0.8rem',
               width: '100%',
               justifyContent: 'space-between',
-              padding: '0.45rem 0.75rem',
-              borderRadius: 'var(--radius-md)'
+              padding: '0.5rem 0.85rem',
+              borderRadius: 'var(--radius-pill)'
             }}
           >
-            <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)' }}>THEME MODE</span>
-            <span style={{ fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              {theme === 'warm-minimal' ? '📜 The Ledger' : '🌙 Obsidian Dark'}
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)' }}>THEME PERSPECTIVE</span>
+            <span style={{ fontWeight: 800, color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              {theme === 'glass-light' ? '💎 Glass Tech' : '🌙 Obsidian Dark'}
             </span>
           </button>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Active Identity</span>
+            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Active User</span>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: userRole === 'Admin' ? 'var(--color-danger)' : 'var(--color-success)' }}></span>
-                <span style={{ fontSize: '0.88rem', color: 'var(--text-primary)', fontWeight: 600 }}>@{currentUser}</span>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: userRole === 'Admin' ? 'var(--color-danger)' : 'var(--color-success)', boxShadow: '0 0 6px currentColor' }}></span>
+                <span style={{ fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: 700 }}>@{currentUser}</span>
               </div>
-              <span className="badge badge-info" style={{ fontSize: '0.7rem' }}>
+              <span className="badge badge-info" style={{ fontSize: '0.72rem' }}>
                 {userRole}
               </span>
             </div>
@@ -250,14 +250,14 @@ export default function Home() {
         </div>
       </aside>
 
-      {/* Main Workspace content */}
+      {/* Main Workspace Workspace */}
       <main className="main-content">
         
         {/* Header navigation bar */}
         <header className="app-header">
           <div className="header-title-section">
             <h2 className="header-title">
-              {activeTab === 'dashboard' && 'Dashboard Analytics'}
+              {activeTab === 'dashboard' && 'Isometric Solution Stage'}
               {activeTab === 'opportunities' && 'Opportunities Pipeline'}
               {activeTab === 'workitems' && 'Work Items & Task Boards'}
               {activeTab === 'efforts' && 'Workload Effort Logging'}
@@ -267,7 +267,7 @@ export default function Home() {
               {activeTab === 'admin' && 'Configuration Console'}
             </h2>
             <p className="header-subtitle">
-              {activeTab === 'dashboard' && 'Enterprise-wide summaries, workload capacities, and revision alarms.'}
+              {activeTab === 'dashboard' && 'Modular AI prototype engine, isometric workload capacities, and revision alarms.'}
               {activeTab === 'opportunities' && 'Track deals, assign presales support, and auto-initialize workflows.'}
               {activeTab === 'workitems' && 'Assign scope items, set estimates, and resolve roadblocks.'}
               {activeTab === 'efforts' && 'Submit hours against tasks and analyze project burn rate variance.'}
@@ -278,15 +278,17 @@ export default function Home() {
             </p>
           </div>
 
-          {/* User selector in header */}
+          {/* User Impersonation selector */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Impersonate User:</span>
+            <span style={{ fontSize: '0.85rem', color: '#0369A1', fontWeight: 700 }}>Active Role:</span>
             <select
               className="form-control form-select"
               style={{
-                padding: '0.45rem 1.8rem 0.45rem 0.75rem',
+                padding: '0.45rem 1.8rem 0.45rem 0.85rem',
                 fontSize: '0.85rem',
-                width: '180px'
+                width: '180px',
+                borderRadius: 'var(--radius-pill)',
+                fontWeight: 600
               }}
               value={currentUser}
               onChange={(e) => handleUserChange(e.target.value)}

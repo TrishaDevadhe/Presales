@@ -214,7 +214,7 @@ export default function OpportunitiesTab() {
         {loading ? (
           <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>Loading opportunities...</p>
         ) : opportunities.length === 0 ? (
-          <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>No opportunities found. Click "+ Add Opportunity" to create one.</p>
+          <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>No opportunities found. Click &quot;+ Add Opportunity&quot; to create one.</p>
         ) : (
           <div className="table-container">
             <table className="custom-table">

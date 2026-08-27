@@ -33,8 +33,8 @@ export default function DashboardTab() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
-        Loading dashboard metrics...
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+        Initializing Isometric Stage Metrics...
       </div>
     );
   }
@@ -43,7 +43,7 @@ export default function DashboardTab() {
     return (
       <div className="alert-banner alert-banner-danger" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '1.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, fontSize: '1.1rem' }}>
-          ⚠️ Database Connection Alert
+          ⚠️ System Connection Alert
         </div>
         <p style={{ fontSize: '0.92rem' }}>{error}</p>
         <button className="btn btn-secondary" style={{ alignSelf: 'flex-start' }} onClick={fetchDashboardData}>
@@ -64,8 +64,9 @@ export default function DashboardTab() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       
-      {/* Top Level Metrics Cards — Fold signature */}
+      {/* Top Level Metrics Cards — Floating Glass Panel */}
       <div className="dashboard-grid">
+        
         <div className="paper-panel metrics-card">
           <div className="metric-icon-wrapper">💼</div>
           <div className="metric-info">
@@ -75,7 +76,7 @@ export default function DashboardTab() {
         </div>
 
         <div className="paper-panel metrics-card">
-          <div className="metric-icon-wrapper" style={{ background: 'var(--color-info-bg)', color: 'var(--color-info-text)' }}>📈</div>
+          <div className="metric-icon-wrapper" style={{ background: 'rgba(37, 99, 235, 0.15)', color: 'var(--accent-secondary)' }}>📈</div>
           <div className="metric-info">
             <span className="metric-label">Total Opportunities</span>
             <span className="metric-value">{summary.total_opportunities || 0}</span>
@@ -83,12 +84,13 @@ export default function DashboardTab() {
         </div>
 
         <div className="paper-panel metrics-card">
-          <div className="metric-icon-wrapper" style={{ background: 'var(--color-warning-bg)', color: 'var(--color-warning-text)' }}>⚡</div>
+          <div className="metric-icon-wrapper" style={{ background: 'rgba(245, 158, 11, 0.15)', color: 'var(--color-warning-text)' }}>⚡</div>
           <div className="metric-info">
             <span className="metric-label">Active Work Items</span>
             <span className="metric-value">{summary.active_tasks || 0}</span>
           </div>
         </div>
+
       </div>
 
       {/* Critical Warnings Block (Overdue Tasks & Capacity Overloads) */}
@@ -96,7 +98,7 @@ export default function DashboardTab() {
         
         {/* Timeline Alerts (Target Dates Approaching) */}
         <div className="paper-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <h3 style={{ fontSize: '1.15rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.5rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h3 style={{ fontSize: '1.15rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.65rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span>📅 Target Submission Deadlines (≤ 7 Days)</span>
             {timeline_alerts.length > 0 && <span className="badge badge-warning">{timeline_alerts.length}</span>}
           </h3>
@@ -108,9 +110,9 @@ export default function DashboardTab() {
               {timeline_alerts.map((opp) => (
                 <div key={opp.id} className="alert-banner alert-banner-warning" style={{ margin: 0, padding: '0.75rem 1rem' }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600 }}>{opp.company} - {opp.opportunity_name}</div>
+                    <div style={{ fontWeight: 700 }}>{opp.company} - {opp.opportunity_name}</div>
                     <div style={{ fontSize: '0.8rem', marginTop: '0.2rem' }}>
-                      Due in <strong>{opp.days_left} {opp.days_left === 1 ? 'day' : 'days'}</strong> ({opp.target_submission_date}) • Presales: {opp.presales_owner}
+                      Due in <strong>{opp.days_left} {opp.days_left === 1 ? 'day' : 'days'}</strong> ({opp.target_submission_date}) • Presales: @{opp.presales_owner}
                     </div>
                   </div>
                   <span className="badge badge-warning">{opp.stage_name}</span>
@@ -122,8 +124,8 @@ export default function DashboardTab() {
 
         {/* Overload Capacity Alerts */}
         <div className="paper-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <h3 style={{ fontSize: '1.15rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.5rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span>⚠️ Resource Overloads</span>
+          <h3 style={{ fontSize: '1.15rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.65rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span>⚠️ Resource Capacity Overloads</span>
             {workload.filter(w => w.is_overloaded).length > 0 && <span className="badge badge-danger">{workload.filter(w => w.is_overloaded).length}</span>}
           </h3>
           
@@ -134,7 +136,7 @@ export default function DashboardTab() {
               {workload.filter(w => w.is_overloaded).map((w, idx) => (
                 <div key={idx} className="alert-banner alert-banner-danger" style={{ margin: 0, padding: '0.75rem 1rem' }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600 }}>@{w.username} ({w.role_name})</div>
+                    <div style={{ fontWeight: 700 }}>@{w.username} ({w.role_name})</div>
                     <div style={{ fontSize: '0.8rem', marginTop: '0.2rem' }}>
                       Workload is <strong>{w.active_hours} hrs</strong> (Capacity: {w.weekly_capacity_hours} hrs)
                     </div>
@@ -147,7 +149,7 @@ export default function DashboardTab() {
         </div>
       </div>
 
-      {/* Overdue Tasks Banner list */}
+      {/* Overdue Tasks Banner List */}
       {overdue_tasks.length > 0 && (
         <div className="paper-panel alert-banner alert-banner-danger" style={{ padding: '1.5rem', flexDirection: 'column' }}>
           <h3 style={{ fontSize: '1.15rem', color: 'var(--color-danger-text)', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -155,12 +157,12 @@ export default function DashboardTab() {
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '100%' }}>
             {overdue_tasks.map((task) => (
-              <div key={task.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0', borderBottom: '1px solid var(--glass-border)' }}>
+              <div key={task.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.65rem 0', borderBottom: '1px solid rgba(239, 68, 68, 0.2)' }}>
                 <span style={{ fontSize: '0.9rem' }}>
                   <strong style={{ color: 'var(--text-primary)' }}>{task.title}</strong> on <span style={{ color: 'var(--text-secondary)' }}>{task.company} - {task.opportunity_name}</span>
                 </span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  <span style={{ fontSize: '0.85rem', color: 'var(--color-danger-text)' }}>Due: {task.due_date}</span>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--color-danger-text)', fontWeight: 600 }}>Due: {task.due_date}</span>
                   <span className="badge badge-danger">@{task.assigned_to}</span>
                 </div>
               </div>
@@ -174,24 +176,25 @@ export default function DashboardTab() {
         
         {/* Opps by Stage */}
         <div className="paper-panel" style={{ padding: '1.5rem' }}>
-          <h3 style={{ fontSize: '1.15rem', marginBottom: '1.25rem', color: 'var(--text-primary)' }}>Pipeline by Stage</h3>
+          <h3 style={{ fontSize: '1.15rem', marginBottom: '1.25rem', color: 'var(--text-primary)' }}>Pipeline Stage Distribution</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {opps_by_stage.map((stage, idx) => (
-              <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-primary)', fontWeight: 500 }}>
-                    <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: stage.stage_color || 'var(--accent-primary)' }}></span>
+              <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-primary)', fontWeight: 600 }}>
+                    <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: stage.stage_color || 'var(--accent-primary)', boxShadow: '0 0 6px currentColor' }}></span>
                     {stage.stage_name} ({stage.count})
                   </span>
-                  <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{formatCurrency(stage.total_value)}</span>
+                  <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{formatCurrency(stage.total_value)}</span>
                 </div>
-                <div style={{ width: '100%', height: '7px', background: 'var(--bg-secondary)', borderRadius: '999px', overflow: 'hidden' }}>
+                <div style={{ width: '100%', height: '8px', background: 'rgba(226, 232, 240, 0.6)', borderRadius: '999px', overflow: 'hidden' }}>
                   <div
                     style={{
                       height: '100%',
                       width: `${summary.pipeline_value > 0 ? (stage.total_value / summary.pipeline_value) * 100 : 0}%`,
                       backgroundColor: stage.stage_color || 'var(--accent-primary)',
-                      borderRadius: '999px'
+                      borderRadius: '999px',
+                      boxShadow: '0 0 8px currentColor'
                     }}
                   />
                 </div>
@@ -208,8 +211,8 @@ export default function DashboardTab() {
           <h3 style={{ fontSize: '1.15rem', marginBottom: '1.25rem', color: 'var(--text-primary)' }}>Task Status Distribution</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
             {tasks_by_status.map((st, idx) => (
-              <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+              <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.65rem 0.85rem', background: 'rgba(226, 232, 240, 0.35)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: 600 }}>
                   <span style={{ width: '10px', height: '10px', borderRadius: '3px', backgroundColor: st.status_color || 'var(--accent-primary)' }}></span>
                   {st.status_name}
                 </span>
@@ -231,7 +234,7 @@ export default function DashboardTab() {
         <div className="paper-panel" style={{ padding: '1.5rem' }}>
           <h3 style={{ fontSize: '1.15rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>Resource Capacity & Allocation</h3>
           <div className="table-container">
-            <table className="custom-table" style={{ fontSize: '0.85rem' }}>
+            <table className="custom-table" style={{ fontSize: '0.88rem' }}>
               <thead>
                 <tr>
                   <th>Resource</th>
@@ -248,8 +251,8 @@ export default function DashboardTab() {
                     <td>{res.active_hours} / {res.weekly_capacity_hours} hrs</td>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span style={{ fontWeight: 600, color: res.is_overloaded ? 'var(--color-danger-text)' : 'var(--text-primary)' }}>{res.utilization_pct}%</span>
-                        <div style={{ width: '60px', height: '6px', background: 'var(--bg-secondary)', borderRadius: '999px', overflow: 'hidden' }}>
+                        <span style={{ fontWeight: 700, color: res.is_overloaded ? 'var(--color-danger-text)' : 'var(--text-primary)' }}>{res.utilization_pct}%</span>
+                        <div style={{ width: '60px', height: '6px', background: 'rgba(226, 232, 240, 0.6)', borderRadius: '999px', overflow: 'hidden' }}>
                           <div
                             style={{
                               height: '100%',
@@ -274,10 +277,10 @@ export default function DashboardTab() {
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             {rework_hotspots.map((h) => (
-              <div key={h.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', background: 'var(--color-danger-bg)', border: '1px solid rgba(239, 68, 68, 0.2)', borderRadius: 'var(--radius-md)' }}>
+              <div key={h.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.85rem 1rem', background: 'var(--color-danger-bg)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: 'var(--radius-md)' }}>
                 <div>
-                  <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{h.company} - {h.opportunity_name}</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+                  <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{h.company} - {h.opportunity_name}</div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
                     Presales Owner: @{h.presales_owner}
                   </div>
                 </div>
