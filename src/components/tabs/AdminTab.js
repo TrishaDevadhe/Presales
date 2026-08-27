@@ -95,7 +95,6 @@ export default function AdminTab() {
     return opts.filter(o => allowedDeliverableNames.includes(o.option_name.toLowerCase()));
   };
 
-  // Set default deliverable type selection once options are loaded
   useEffect(() => {
     const delivOpts = getDeliverableOptions();
     if (delivOpts.length > 0 && !selectedDeliverableType) {
@@ -241,7 +240,6 @@ export default function AdminTab() {
     }
   };
 
-  // Filter dropdowns by selected category (including inactive for admin edit)
   const currentCategoryOptions = dropdownOptions
     .filter(o => {
       if (o.category !== selectedCategory) return false;
@@ -252,7 +250,6 @@ export default function AdminTab() {
     })
     .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || a.option_name.localeCompare(b.option_name));
 
-  // Filter templates by selected deliverable type
   const filteredTemplates = templates.filter(t => t.deliverable_type_id === parseInt(selectedDeliverableType, 10));
 
   return (
@@ -285,8 +282,8 @@ export default function AdminTab() {
         <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
           
           {/* Category picker list */}
-          <div className="glass-panel" style={{ width: '280px', padding: '1rem' }}>
-            <h4 style={{ color: '#fff', fontSize: '1rem', marginBottom: '0.75rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--glass-border)' }}>Categories</h4>
+          <div className="paper-panel" style={{ width: '280px', padding: '1rem' }}>
+            <h4 style={{ color: 'var(--text-primary)', fontSize: '1rem', marginBottom: '0.75rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--glass-border)', fontWeight: 600 }}>Categories</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', maxHeight: '55vh', overflowY: 'auto' }}>
               {categoriesList.map((cat) => (
                 <button
@@ -297,9 +294,9 @@ export default function AdminTab() {
                     width: '100%',
                     textAlign: 'left',
                     padding: '0.6rem 0.8rem',
-                    background: selectedCategory === cat.value ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
-                    border: selectedCategory === cat.value ? '1px solid rgba(99, 102, 241, 0.25)' : '1px solid transparent',
-                    color: selectedCategory === cat.value ? '#fff' : 'var(--text-secondary)',
+                    background: selectedCategory === cat.value ? 'var(--bg-secondary)' : 'transparent',
+                    border: selectedCategory === cat.value ? '1px solid var(--border-subtle)' : '1px solid transparent',
+                    color: selectedCategory === cat.value ? 'var(--text-primary)' : 'var(--text-secondary)',
                     borderRadius: 'var(--radius-md)',
                     cursor: 'pointer',
                     fontSize: '0.85rem',
@@ -314,9 +311,9 @@ export default function AdminTab() {
           </div>
 
           {/* Option list table */}
-          <div className="glass-panel" style={{ flex: 1, padding: '1.5rem' }}>
+          <div className="paper-panel" style={{ flex: 1, padding: '1.5rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-              <h3 style={{ color: '#fff', fontSize: '1.25rem' }}>
+              <h3 style={{ color: 'var(--text-primary)', fontSize: '1.25rem', fontWeight: 700 }}>
                 {categoriesList.find(c => c.value === selectedCategory)?.label} Config Picklist
               </h3>
               <button className="btn btn-primary" style={{ padding: '0.45rem 1rem', fontSize: '0.85rem' }} onClick={openDropdownCreate}>
@@ -338,21 +335,21 @@ export default function AdminTab() {
                 <tbody>
                   {currentCategoryOptions.map((opt) => (
                     <tr key={opt.id}>
-                      <td><strong style={{ color: '#fff' }}>{opt.option_name}</strong></td>
+                      <td><strong style={{ color: 'var(--text-primary)' }}>{opt.option_name}</strong></td>
                       <td>{opt.sort_order || 0}</td>
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <span style={{ width: '14px', height: '14px', borderRadius: '4px', background: opt.color || '#fff', border: '1px solid rgba(255,255,255,0.1)' }}></span>
+                          <span style={{ width: '14px', height: '14px', borderRadius: '4px', background: opt.color || 'var(--accent-primary)', border: '1px solid var(--border-subtle)' }}></span>
                           <code>{opt.color || '-'}</code>
                         </div>
                       </td>
                       <td>
-                        <span className="badge" style={{ background: opt.active ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', color: opt.active ? 'var(--color-success)' : 'var(--color-danger)' }}>
+                        <span className={`badge ${opt.active ? 'badge-success' : 'badge-danger'}`}>
                           {opt.active ? 'Active' : 'Inactive'}
                         </span>
                       </td>
                       <td style={{ textAlign: 'right' }}>
-                        <button className="btn btn-secondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }} onClick={() => openDropdownEdit(opt)}>
+                        <button className="btn btn-secondary" style={{ padding: '0.25rem 0.55rem', fontSize: '0.75rem' }} onClick={() => openDropdownEdit(opt)}>
                           Modify
                         </button>
                       </td>
@@ -376,8 +373,8 @@ export default function AdminTab() {
         <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
           
           {/* Deliverable type selector list */}
-          <div className="glass-panel" style={{ width: '280px', padding: '1rem' }}>
-            <h4 style={{ color: '#fff', fontSize: '1rem', marginBottom: '0.75rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--glass-border)' }}>Deliverable Types</h4>
+          <div className="paper-panel" style={{ width: '280px', padding: '1rem' }}>
+            <h4 style={{ color: 'var(--text-primary)', fontSize: '1rem', marginBottom: '0.75rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--glass-border)', fontWeight: 600 }}>Deliverable Types</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
               {getDeliverableOptions().map((opt) => (
                 <button
@@ -388,9 +385,9 @@ export default function AdminTab() {
                     width: '100%',
                     textAlign: 'left',
                     padding: '0.6rem 0.8rem',
-                    background: selectedDeliverableType === opt.id.toString() ? 'rgba(99, 102, 241, 0.15)' : 'transparent',
-                    border: selectedDeliverableType === opt.id.toString() ? '1px solid rgba(99, 102, 241, 0.25)' : '1px solid transparent',
-                    color: selectedDeliverableType === opt.id.toString() ? '#fff' : 'var(--text-secondary)',
+                    background: selectedDeliverableType === opt.id.toString() ? 'var(--bg-secondary)' : 'transparent',
+                    border: selectedDeliverableType === opt.id.toString() ? '1px solid var(--border-subtle)' : '1px solid transparent',
+                    color: selectedDeliverableType === opt.id.toString() ? 'var(--text-primary)' : 'var(--text-secondary)',
                     borderRadius: 'var(--radius-md)',
                     cursor: 'pointer',
                     fontSize: '0.85rem',
@@ -404,9 +401,9 @@ export default function AdminTab() {
           </div>
 
           {/* Templates list table */}
-          <div className="glass-panel" style={{ flex: 1, padding: '1.5rem' }}>
+          <div className="paper-panel" style={{ flex: 1, padding: '1.5rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-              <h3 style={{ color: '#fff', fontSize: '1.25rem' }}>
+              <h3 style={{ color: 'var(--text-primary)', fontSize: '1.25rem', fontWeight: 700 }}>
                 Auto-initialized Scope Tasks
               </h3>
               <button className="btn btn-primary" style={{ padding: '0.45rem 1rem', fontSize: '0.85rem' }} onClick={openTemplateCreate} disabled={!selectedDeliverableType}>
@@ -428,20 +425,20 @@ export default function AdminTab() {
                 <tbody>
                   {filteredTemplates.map((tpl) => (
                     <tr key={tpl.id}>
-                      <td style={{ fontWeight: 600 }}>#{tpl.sequence || tpl.sequence_order || 1}</td>
-                      <td><strong style={{ color: '#fff' }}>{tpl.task_name}</strong></td>
-                      <td>{tpl.default_estimated_hours} hrs</td>
+                      <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>#{tpl.sequence || tpl.sequence_order || 1}</td>
+                      <td><strong style={{ color: 'var(--text-primary)' }}>{tpl.task_name}</strong></td>
+                      <td style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{tpl.default_estimated_hours} hrs</td>
                       <td>
-                        <span className="badge" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-secondary)' }}>
+                        <span className="badge badge-info">
                           {tpl.default_role_name}
                         </span>
                       </td>
                       <td style={{ textAlign: 'right' }}>
                         <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
-                          <button className="btn btn-secondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }} onClick={() => openTemplateEdit(tpl)}>
+                          <button className="btn btn-secondary" style={{ padding: '0.25rem 0.55rem', fontSize: '0.75rem' }} onClick={() => openTemplateEdit(tpl)}>
                             Modify
                           </button>
-                          <button className="btn btn-danger" style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }} onClick={() => handleTemplateDelete(tpl.id)}>
+                          <button className="btn btn-danger" style={{ padding: '0.25rem 0.55rem', fontSize: '0.75rem' }} onClick={() => handleTemplateDelete(tpl.id)}>
                             Delete
                           </button>
                         </div>
@@ -463,14 +460,14 @@ export default function AdminTab() {
 
       {/* --- SUB TAB 3: AUTOMATION SETTINGS --- */}
       {activeSubTab === 'automations' && automationSettings && (
-        <div className="glass-panel" style={{ maxWidth: '680px', padding: '2rem' }}>
-          <h3 style={{ color: '#fff', fontSize: '1.25rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem', marginBottom: '1.5rem' }}>
+        <div className="paper-panel" style={{ maxWidth: '680px', padding: '2rem' }}>
+          <h3 style={{ color: 'var(--text-primary)', fontSize: '1.25rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem', marginBottom: '1.5rem', fontWeight: 700 }}>
             System Rules & Warnings Thresholds
           </h3>
           
           <form onSubmit={handleAutomationSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             
-            <div className="form-group" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '1rem', padding: '0.75rem 1rem', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-md)' }}>
+            <div className="form-group" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '1rem', padding: '0.75rem 1rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
               <div
                 className={`switch-container ${automationSettings.missing_effort_reminder ? 'checked' : ''}`}
                 onClick={() => handleAutomationChange('missing_effort_reminder', !automationSettings.missing_effort_reminder)}
@@ -552,9 +549,9 @@ export default function AdminTab() {
       {/* --- DROPDOWN EDIT MODAL --- */}
       {isDropdownModalOpen && (
         <div className="modal-overlay">
-          <div className="modal-content glass-panel" style={{ maxWidth: '500px' }}>
+          <div className="modal-content paper-panel" style={{ maxWidth: '500px' }}>
             <button className="modal-close" onClick={() => setIsDropdownModalOpen(false)}>×</button>
-            <h3 style={{ fontSize: '1.3rem', marginBottom: '1.25rem', color: '#fff', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.5rem' }}>
+            <h3 style={{ fontSize: '1.3rem', marginBottom: '1.25rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.5rem' }}>
               {isDropdownEdit ? 'Modify Config Option' : 'Register Picklist Option'}
             </h3>
 
@@ -622,10 +619,10 @@ export default function AdminTab() {
       {/* --- TEMPLATE MODAL --- */}
       {isTemplateModalOpen && (
         <div className="modal-overlay">
-          <div className="modal-content glass-panel" style={{ maxWidth: '550px' }}>
+          <div className="modal-content paper-panel" style={{ maxWidth: '550px' }}>
             <button className="modal-close" onClick={() => setIsTemplateModalOpen(false)}>×</button>
-            <h3 style={{ fontSize: '1.3rem', marginBottom: '1.25rem', color: '#fff', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.5rem' }}>
-              {isTemplateEdit ? 'Modify Task Template' : 'Add Auto-Saffold Task'}
+            <h3 style={{ fontSize: '1.3rem', marginBottom: '1.25rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.5rem' }}>
+              {isTemplateEdit ? 'Modify Task Template' : 'Add Auto-Scaffold Task'}
             </h3>
 
             <form onSubmit={handleTemplateSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>

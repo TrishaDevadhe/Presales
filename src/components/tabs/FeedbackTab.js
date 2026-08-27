@@ -63,11 +63,11 @@ export default function FeedbackTab() {
       version_id: '',
       feedback_from_id: getOptions('feedback_from')[0]?.id || '',
       feedback_type_id: getOptions('feedback_type')[0]?.id || '',
-      severity_id: getOptions('severity')[1]?.id || '', // Medium
+      severity_id: getOptions('severity')[1]?.id || '',
       feedback_text: '',
       action_required: false,
-      owner: allUsers[1] || allUsers[0] || '', // Presales owner or admin
-      due_date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 3 days out
+      owner: allUsers[1] || allUsers[0] || '',
+      due_date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       status_id: getOptions('feedback_status').find(o => o.option_name === 'Open')?.id || ''
     });
     setIsModalOpen(true);
@@ -92,7 +92,6 @@ export default function FeedbackTab() {
     e.preventDefault();
     setError(null);
 
-    // Business rule checks
     if (!formData.opportunity_id || !formData.feedback_from_id || !formData.feedback_type_id || !formData.feedback_text.trim() || !formData.status_id) {
       setError('Please fill in all required fields.');
       return;
@@ -143,7 +142,6 @@ export default function FeedbackTab() {
   };
 
   const handleResolve = async (fb) => {
-    // Quickly mark feedback as resolved
     const resolvedOpt = getOptions('feedback_status').find(o => o.option_name === 'Resolved');
     if (!resolvedOpt) return;
 
@@ -168,12 +166,11 @@ export default function FeedbackTab() {
     }
   };
 
-  // Get task status badge
   const renderTaskStatus = (statusId) => {
     const opt = dropdownOptions.find(o => o.id === statusId);
     if (!opt) return null;
     return (
-      <span className="badge" style={{ background: opt.color || '#555', color: '#fff', fontSize: '0.7rem', padding: '0.1rem 0.4rem' }}>
+      <span className="badge badge-info" style={{ fontSize: '0.7rem', padding: '0.1rem 0.4rem' }}>
         Task: {opt.option_name}
       </span>
     );
@@ -184,14 +181,14 @@ export default function FeedbackTab() {
       
       {/* Header bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ fontSize: '1.5rem', color: '#fff' }}>Client Feedback & Revisions</h2>
+        <h2 style={{ fontSize: '1.5rem', color: 'var(--text-primary)', fontWeight: 700 }}>Client Feedback & Revisions</h2>
         <button className="btn btn-primary" onClick={openCreateModal} disabled={opportunities.length === 0}>
           {opportunities.length === 0 ? 'Register opportunity first' : '+ Register Feedback'}
         </button>
       </div>
 
       {/* Feedback list */}
-      <div className="glass-panel" style={{ overflow: 'hidden' }}>
+      <div className="paper-panel" style={{ overflow: 'hidden' }}>
         {loading ? (
           <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>Loading feedback...</p>
         ) : feedbacks.length === 0 ? (
@@ -215,7 +212,7 @@ export default function FeedbackTab() {
                 {feedbacks.map((fb) => (
                   <tr key={fb.id}>
                     <td>
-                      <div><strong style={{ color: '#fff' }}>{fb.opportunity_name}</strong></div>
+                      <div><strong style={{ color: 'var(--text-primary)' }}>{fb.opportunity_name}</strong></div>
                       <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                         {fb.company} {fb.version_number ? `(v${fb.version_number})` : ''}
                       </div>
@@ -223,17 +220,17 @@ export default function FeedbackTab() {
                     <td>{fb.feedback_from_name}</td>
                     <td>{fb.feedback_type_name}</td>
                     <td>
-                      <span className="badge" style={{ background: fb.severity_name === 'Critical' || fb.severity_name === 'High' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(255,255,255,0.05)', color: fb.severity_name === 'Critical' || fb.severity_name === 'High' ? 'var(--color-danger)' : 'var(--text-secondary)', border: fb.severity_name === 'Critical' ? '1px solid var(--color-danger)' : 'none' }}>
+                      <span className={`badge ${fb.severity_name === 'Critical' || fb.severity_name === 'High' ? 'badge-danger' : 'badge-neutral'}`}>
                         {fb.severity_name || 'Medium'}
                       </span>
                     </td>
-                    <td style={{ fontSize: '0.9rem', maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={fb.feedback_text.replace(/<[^>]*>/g, '')}>
+                    <td style={{ fontSize: '0.9rem', maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-secondary)' }} title={fb.feedback_text.replace(/<[^>]*>/g, '')}>
                       {fb.feedback_text.replace(/<[^>]*>/g, '')}
                     </td>
                     <td>
                       {fb.action_required ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                          <span style={{ fontSize: '0.85rem', color: 'var(--color-warning)' }}>
+                          <span style={{ fontSize: '0.85rem', color: 'var(--color-warning-text)' }}>
                             ⚠️ Owner: <strong>@{fb.owner}</strong>
                           </span>
                           <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
@@ -246,18 +243,18 @@ export default function FeedbackTab() {
                       )}
                     </td>
                     <td>
-                      <span className="badge" style={{ background: fb.status_name === 'Resolved' ? 'rgba(16, 185, 129, 0.15)' : 'rgba(59, 130, 246, 0.15)', color: fb.status_name === 'Resolved' ? 'var(--color-success)' : 'var(--color-info)' }}>
+                      <span className={`badge ${fb.status_name === 'Resolved' ? 'badge-success' : 'badge-info'}`}>
                         {fb.status_name}
                       </span>
                     </td>
                     <td style={{ textAlign: 'right' }}>
                       <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
                         {fb.status_name !== 'Resolved' && (
-                          <button className="btn btn-secondary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem', borderColor: 'var(--color-success)', color: 'var(--color-success)' }} onClick={() => handleResolve(fb)}>
+                          <button className="btn btn-secondary" style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem', color: 'var(--color-success-text)' }} onClick={() => handleResolve(fb)}>
                             Resolve
                           </button>
                         )}
-                        <button className="btn btn-danger" style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem' }} onClick={() => handleDelete(fb.id)}>
+                        <button className="btn btn-danger" style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem' }} onClick={() => handleDelete(fb.id)}>
                           Delete
                         </button>
                       </div>
@@ -273,9 +270,9 @@ export default function FeedbackTab() {
       {/* CREATE FEEDBACK OVERLAY MODAL */}
       {isModalOpen && (
         <div className="modal-overlay">
-          <div className="modal-content glass-panel" style={{ maxWidth: '800px' }}>
+          <div className="modal-content paper-panel" style={{ maxWidth: '800px' }}>
             <button className="modal-close" onClick={() => setIsModalOpen(false)}>×</button>
-            <h3 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', color: '#fff', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
+            <h3 style={{ fontSize: '1.35rem', marginBottom: '1.5rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
               Register Client Feedback & Revisions
             </h3>
 
@@ -382,7 +379,7 @@ export default function FeedbackTab() {
               </div>
 
               {/* Action Required toggle panel */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1.25rem', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--glass-border)', borderRadius: 'var(--radius-md)' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1.25rem', background: 'var(--bg-secondary)', borderLeft: '3px solid var(--accent-primary)', borderRadius: 'var(--radius-md)' }}>
                 <div
                   className={`switch-container ${formData.action_required ? 'checked' : ''}`}
                   onClick={() => handleSwitchChange('action_required', !formData.action_required)}

@@ -10,7 +10,6 @@ export default function WorkItemsTab() {
   const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [successMsg, setSuccessMsg] = useState(null);
 
   // Filters state
   const [filterOpp, setFilterOpp] = useState('');
@@ -81,7 +80,6 @@ export default function WorkItemsTab() {
     const username = formData.assigned_to;
     const hours = parseFloat(formData.estimated_hours) || 0;
 
-    // Find user's capacity profile
     const profile = resourceProfiles.find(p => p.username === username);
     if (!profile) {
       setCapacityWarning(null);
@@ -89,11 +87,9 @@ export default function WorkItemsTab() {
     }
     const capacity = parseFloat(profile.weekly_capacity_hours) || 40;
 
-    // Find the completed status option ID to ignore completed tasks
     const completedOpt = getOptions('task_status').find(o => o.option_name === 'Completed');
     const completedId = completedOpt?.id;
 
-    // Sum active tasks hours for this user in database (excluding the task currently being edited)
     const activeTasksHours = tasks
       .filter(t => t.assigned_to === username && t.status_id !== completedId && (!isEditMode || t.id !== selectedTask?.id))
       .reduce((sum, t) => sum + (parseFloat(t.estimated_hours) || 0), 0);
@@ -118,12 +114,12 @@ export default function WorkItemsTab() {
       title: '',
       description: '',
       deliverable_type_id: getOptions('deliverable_type')[0]?.id || '',
-      assigned_to: allUsers[3] || allUsers[0] || '', // Team member or admin
-      reviewer: allUsers[1] || '', // Presales owner
+      assigned_to: allUsers[3] || allUsers[0] || '',
+      reviewer: allUsers[1] || '',
       collaborators: '',
       priority_id: getOptions('priority').find(o => o.option_name === 'Medium')?.id || '',
       start_date: new Date().toISOString().split('T')[0],
-      due_date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 5 days out
+      due_date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       estimated_hours: 8,
       estimation_confidence_id: getOptions('estimation_confidence')[0]?.id || '',
       is_revision_work: false,
@@ -184,9 +180,7 @@ export default function WorkItemsTab() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
-    setSuccessMsg(null);
 
-    // Business validations (also checked on server)
     const statusOpt = getOptions('task_status').find(o => o.id === parseInt(formData.status_id, 10));
     const statusName = statusOpt?.option_name || '';
 
@@ -223,7 +217,7 @@ export default function WorkItemsTab() {
       setIsModalOpen(false);
       fetchData();
       if (data.warning) {
-        alert(data.warning); // Highlight capacity warnings on save as well
+        alert(data.warning);
       }
     } catch (err) {
       setError(err.message);
@@ -244,7 +238,6 @@ export default function WorkItemsTab() {
     }
   };
 
-  // Filter tasks
   const filteredTasks = tasks.filter(t => {
     if (filterOpp && t.opportunity_id !== parseInt(filterOpp, 10)) return false;
     if (filterUser && t.assigned_to !== filterUser) return false;
@@ -256,22 +249,22 @@ export default function WorkItemsTab() {
       
       {/* Header section */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ fontSize: '1.5rem', color: '#fff' }}>Work Items (Tasks)</h2>
+        <h2 style={{ fontSize: '1.5rem', color: 'var(--text-primary)', fontWeight: 700 }}>Work Items (Tasks)</h2>
         <button className="btn btn-primary" onClick={openCreateModal}>
           + Create Work Item
         </button>
       </div>
 
       {/* Filter panel */}
-      <div className="glass-panel" style={{ padding: '1rem 1.5rem', display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-        <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Filters:</span>
+      <div className="paper-panel" style={{ padding: '1rem 1.5rem', display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+        <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Filters:</span>
         <div style={{ display: 'flex', gap: '1rem', flex: 1 }}>
           <div className="form-group" style={{ flex: 1 }}>
             <select
               className="form-control form-select"
               value={filterOpp}
               onChange={(e) => setFilterOpp(e.target.value)}
-              style={{ padding: '0.5rem 0.8rem', fontSize: '0.85rem' }}
+              style={{ padding: '0.45rem 0.8rem', fontSize: '0.85rem' }}
             >
               <option value="">All Opportunities</option>
               {opportunities.map(opp => (
@@ -284,7 +277,7 @@ export default function WorkItemsTab() {
               className="form-control form-select"
               value={filterUser}
               onChange={(e) => setFilterUser(e.target.value)}
-              style={{ padding: '0.5rem 0.8rem', fontSize: '0.85rem' }}
+              style={{ padding: '0.45rem 0.8rem', fontSize: '0.85rem' }}
             >
               <option value="">All Assignees</option>
               {allUsers.map(u => (
@@ -296,7 +289,7 @@ export default function WorkItemsTab() {
       </div>
 
       {/* Tasks Grid List */}
-      <div className="glass-panel" style={{ overflow: 'hidden' }}>
+      <div className="paper-panel" style={{ overflow: 'hidden' }}>
         {loading ? (
           <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>Loading tasks...</p>
         ) : filteredTasks.length === 0 ? (
@@ -321,19 +314,19 @@ export default function WorkItemsTab() {
                   <tr key={task.id}>
                     <td>
                       <div>
-                        <strong style={{ color: '#fff', fontSize: '0.95rem' }}>{task.title}</strong>
+                        <strong style={{ color: 'var(--text-primary)', fontSize: '0.95rem' }}>{task.title}</strong>
                       </div>
                       <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
                         {task.opportunity_id ? `${task.company} - ${task.opportunity_name}` : 'Non-Opportunity Task'}
                         {task.is_revision_work && (
-                          <span className="badge" style={{ background: 'rgba(239, 68, 68, 0.1)', color: 'var(--color-danger)', border: '1px solid rgba(239, 68, 68, 0.2)', marginLeft: '0.5rem', padding: '0.1rem 0.4rem', fontSize: '0.7rem' }}>
+                          <span className="badge badge-danger" style={{ marginLeft: '0.5rem', padding: '0.1rem 0.4rem', fontSize: '0.7rem' }}>
                             Revision #{task.revision_number}
                           </span>
                         )}
                       </div>
                     </td>
                     <td>
-                      <span className="badge" style={{ backgroundColor: task.work_category_color || 'rgba(255,255,255,0.05)', color: '#fff' }}>
+                      <span className="badge badge-info">
                         {task.work_category_name}
                       </span>
                     </td>
@@ -341,19 +334,19 @@ export default function WorkItemsTab() {
                       <strong style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>@{task.assigned_to}</strong>
                     </td>
                     <td>{task.due_date ? task.due_date.split('T')[0] : 'N/A'}</td>
-                    <td style={{ fontWeight: 600 }}>{task.estimated_hours} hrs</td>
+                    <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{task.estimated_hours} hrs</td>
                     <td>
-                      <span className="badge" style={{ backgroundColor: task.priority_color || 'var(--bg-tertiary)', color: '#fff' }}>
+                      <span className="badge badge-warning">
                         {task.priority_name || 'Medium'}
                       </span>
                     </td>
                     <td>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                        <span className="badge" style={{ backgroundColor: task.status_color || 'var(--bg-tertiary)', color: '#fff' }}>
+                        <span className={`badge ${task.status_name === 'Blocked' ? 'badge-danger' : task.status_name === 'Completed' ? 'badge-success' : 'badge-info'}`}>
                           {task.status_name}
                         </span>
                         {task.status_name === 'Blocked' && (
-                          <span style={{ fontSize: '0.75rem', color: 'var(--color-danger)', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={task.blocker_reason}>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--color-danger-text)', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={task.blocker_reason}>
                             Reason: {task.blocker_reason}
                           </span>
                         )}
@@ -361,10 +354,10 @@ export default function WorkItemsTab() {
                     </td>
                     <td style={{ textAlign: 'right' }}>
                       <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
-                        <button className="btn btn-secondary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem' }} onClick={() => openEditModal(task)}>
+                        <button className="btn btn-secondary" style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem' }} onClick={() => openEditModal(task)}>
                           Edit
                         </button>
-                        <button className="btn btn-danger" style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem' }} onClick={() => handleDelete(task.id)}>
+                        <button className="btn btn-danger" style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem' }} onClick={() => handleDelete(task.id)}>
                           Delete
                         </button>
                       </div>
@@ -380,9 +373,9 @@ export default function WorkItemsTab() {
       {/* CREATE / EDIT WORK ITEM OVERLAY MODAL */}
       {isModalOpen && (
         <div className="modal-overlay">
-          <div className="modal-content glass-panel" style={{ maxWidth: '850px' }}>
+          <div className="modal-content paper-panel" style={{ maxWidth: '850px' }}>
             <button className="modal-close" onClick={() => setIsModalOpen(false)}>×</button>
-            <h3 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', color: '#fff', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
+            <h3 style={{ fontSize: '1.35rem', marginBottom: '1.5rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
               {isEditMode ? 'Edit Work Item' : 'Create New Work Item'}
             </h3>
 
@@ -511,11 +504,9 @@ export default function WorkItemsTab() {
                     onChange={handleInputChange}
                   >
                     <option value="">None</option>
-                    {getOptions('deliverable_type')
-                      .filter(opt => ['rfp', 'proposal', 'presentation deck', 'brochure'].includes(opt.option_name.toLowerCase()))
-                      .map(opt => (
-                        <option key={opt.id} value={opt.id}>{opt.option_name}</option>
-                      ))}
+                    {getOptions('deliverable_type').map(opt => (
+                      <option key={opt.id} value={opt.id}>{opt.option_name}</option>
+                    ))}
                   </select>
                 </div>
 
@@ -572,56 +563,9 @@ export default function WorkItemsTab() {
                   </select>
                 </div>
 
-                <div className="form-group" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '1rem', marginTop: '1.5rem' }}>
-                  <div
-                    className={`switch-container ${formData.is_revision_work ? 'checked' : ''}`}
-                    onClick={() => handleSwitchChange('is_revision_work', !formData.is_revision_work)}
-                  >
-                    <div className="switch-track">
-                      <div className="switch-thumb"></div>
-                    </div>
-                    <span className="form-label" style={{ margin: 0 }}>Is Revision / Rework?</span>
-                  </div>
-                </div>
-
-                {formData.is_revision_work && (
-                  <div className="form-group">
-                    <label className="form-label">Revision Number</label>
-                    <input
-                      type="number"
-                      name="revision_number"
-                      className="form-control"
-                      min="1"
-                      placeholder="e.g. 1"
-                      value={formData.revision_number}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                )}
-
-                {formData.is_revision_work && (
-                  <div className="form-group">
-                    <label className="form-label">Revision Trigger Source</label>
-                    <select
-                      name="trigger_id"
-                      className="form-control form-select"
-                      value={formData.trigger_id}
-                      onChange={handleInputChange}
-                    >
-                      <option value="">Select Trigger</option>
-                      {getOptions('trigger_source').map(opt => (
-                        <option key={opt.id} value={opt.id}>{opt.option_name}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-
-
-                {/* Conditional Blocker Reason field */}
                 {getOptions('task_status').find(o => o.id === parseInt(formData.status_id, 10))?.option_name === 'Blocked' && (
                   <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                    <label className="form-label" style={{ color: 'var(--color-danger)' }}>
+                    <label className="form-label" style={{ color: 'var(--color-danger-text)' }}>
                       Blocker Reason <span className="required">*</span>
                     </label>
                     <input
@@ -637,18 +581,6 @@ export default function WorkItemsTab() {
                   </div>
                 )}
 
-                <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                  <label className="form-label">Deliverable Link (URL)</label>
-                  <input
-                    type="url"
-                    name="deliverable_link"
-                    className="form-control"
-                    placeholder="https://..."
-                    value={formData.deliverable_link}
-                    onChange={handleInputChange}
-                  />
-                </div>
-
               </div>
 
               <div className="form-group">
@@ -657,17 +589,6 @@ export default function WorkItemsTab() {
                   value={formData.description}
                   onChange={(val) => handleSwitchChange('description', val)}
                   placeholder="Detail out the scope of this task..."
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Notes</label>
-                <textarea
-                  name="notes"
-                  className="form-control form-textarea animate-pulse"
-                  placeholder="Additional notes or updates..."
-                  value={formData.notes}
-                  onChange={handleInputChange}
                 />
               </div>
 

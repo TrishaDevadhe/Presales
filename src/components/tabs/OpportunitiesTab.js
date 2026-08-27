@@ -6,7 +6,7 @@ import RichTextEditor from '../RichTextEditor';
 import CompanyAutocomplete from '../CompanyAutocomplete';
 
 export default function OpportunitiesTab() {
-  const { allUsers, getOptions, getAllOptions } = useApp();
+  const { allUsers, getOptions } = useApp();
   const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -65,7 +65,7 @@ export default function OpportunitiesTab() {
       opportunity_name: '',
       company: '',
       opportunity_type_id: getOptions('opportunity_type')[0]?.id || '',
-      primary_sales_owner: allUsers[2] || allUsers[0] || '', // Sales owner
+      primary_sales_owner: allUsers[2] || allUsers[0] || '',
       secondary_sales_owners: '',
       source_id: '',
       deal_stage_id: getOptions('deal_stage').find(o => o.option_name === 'Proposal')?.id || getOptions('deal_stage')[0]?.id || '',
@@ -73,11 +73,11 @@ export default function OpportunitiesTab() {
       estimated_deal_value: 0,
       contract_tenure: 12,
       win_probability: 50,
-      complexity_id: getOptions('complexity')[1]?.id || '', // Medium
+      complexity_id: getOptions('complexity')[1]?.id || '',
       received_date: new Date().toISOString().split('T')[0],
-      target_submission_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 14 days out
+      target_submission_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
       internal_review_date: '',
-      presales_owner: allUsers[1] || allUsers[0] || '', // Presales owner
+      presales_owner: allUsers[1] || allUsers[0] || '',
       supporting_presales_members: '',
       summary: '',
       risks: '',
@@ -133,7 +133,6 @@ export default function OpportunitiesTab() {
     e.preventDefault();
     setError(null);
 
-    // Basic Validations
     if (!formData.opportunity_name.trim() || !formData.company.trim() || !formData.opportunity_type_id || !formData.primary_sales_owner || !formData.presales_owner || !formData.received_date || !formData.target_submission_date) {
       setError('Please fill in all required fields.');
       return;
@@ -190,14 +189,14 @@ export default function OpportunitiesTab() {
       
       {/* Header bar with controls */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ fontSize: '1.5rem', color: '#fff' }}>Opportunities Pipeline</h2>
+        <h2 style={{ fontSize: '1.5rem', color: 'var(--text-primary)', fontWeight: 700 }}>Opportunities Pipeline</h2>
         <button className="btn btn-primary" onClick={openCreateModal}>
           + Create Opportunity
         </button>
       </div>
 
       {/* Main Table Panel */}
-      <div className="glass-panel" style={{ overflow: 'hidden' }}>
+      <div className="paper-panel" style={{ overflow: 'hidden' }}>
         {loading ? (
           <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>Loading opportunities...</p>
         ) : opportunities.length === 0 ? (
@@ -223,36 +222,36 @@ export default function OpportunitiesTab() {
                   <tr key={opp.id}>
                     <td>
                       <div>
-                        <strong style={{ color: '#fff', fontSize: '1rem' }}>{opp.opportunity_name}</strong>
+                        <strong style={{ color: 'var(--text-primary)', fontSize: '0.98rem' }}>{opp.opportunity_name}</strong>
                       </div>
                       <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
                         {opp.company}
                       </div>
                     </td>
                     <td>
-                      <span className="badge" style={{ backgroundColor: 'rgba(99, 102, 241, 0.1)', color: 'var(--accent-primary)', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+                      <span className="badge badge-info">
                         {opp.opportunity_type_name}
                       </span>
                     </td>
                     <td>
-                      <span className="badge" style={{ backgroundColor: opp.deal_stage_color || 'var(--bg-tertiary)', color: '#fff' }}>
+                      <span className="badge badge-neutral">
                         {opp.deal_stage_name || 'Unassigned'}
                       </span>
                     </td>
-                    <td style={{ fontWeight: 600 }}>{formatCurrency(opp.estimated_deal_value)}</td>
+                    <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{formatCurrency(opp.estimated_deal_value)}</td>
                     <td>{opp.target_submission_date ? opp.target_submission_date.split('T')[0] : 'N/A'}</td>
                     <td>
-                      <span className="badge" style={{ backgroundColor: opp.priority_color || 'transparent', color: '#fff' }}>
+                      <span className="badge badge-warning">
                         {opp.priority_name || 'Medium'}
                       </span>
                     </td>
                     <td>
-                      <span style={{ fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
+                      <span style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
                         @{opp.presales_owner}
                       </span>
                     </td>
                     <td style={{ fontSize: '0.85rem' }}>
-                      <span style={{ color: opp.revision_counter >= 3 ? 'var(--color-danger)' : 'var(--text-primary)', fontWeight: opp.revision_counter >= 3 ? 'bold' : 'normal' }}>
+                      <span style={{ color: opp.revision_counter >= 3 ? 'var(--color-danger-text)' : 'var(--text-primary)', fontWeight: opp.revision_counter >= 3 ? 700 : 500 }}>
                         {opp.revision_counter || 0}
                       </span>
                       <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginLeft: '0.25rem' }}>
@@ -261,10 +260,10 @@ export default function OpportunitiesTab() {
                     </td>
                     <td style={{ textAlign: 'right' }}>
                       <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
-                        <button className="btn btn-secondary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem' }} onClick={() => openEditModal(opp)}>
+                        <button className="btn btn-secondary" style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem' }} onClick={() => openEditModal(opp)}>
                           Edit
                         </button>
-                        <button className="btn btn-danger" style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem' }} onClick={() => handleDelete(opp.id)}>
+                        <button className="btn btn-danger" style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem' }} onClick={() => handleDelete(opp.id)}>
                           Delete
                         </button>
                       </div>
@@ -280,9 +279,9 @@ export default function OpportunitiesTab() {
       {/* CREATE / EDIT OPPORTUNITY OVERLAY MODAL */}
       {isModalOpen && (
         <div className="modal-overlay">
-          <div className="modal-content glass-panel" style={{ maxWidth: '850px' }}>
+          <div className="modal-content paper-panel" style={{ maxWidth: '850px' }}>
             <button className="modal-close" onClick={() => setIsModalOpen(false)}>×</button>
-            <h3 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', color: '#fff', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
+            <h3 style={{ fontSize: '1.35rem', marginBottom: '1.5rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
               {isEditMode ? 'Edit Opportunity Details' : 'Register New Opportunity'}
             </h3>
 
@@ -294,7 +293,6 @@ export default function OpportunitiesTab() {
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               
-              {/* Basic Fields Grid */}
               <div className="form-grid">
                 
                 <div className="form-group">
@@ -338,11 +336,6 @@ export default function OpportunitiesTab() {
                       <option key={opt.id} value={opt.id}>{opt.option_name}</option>
                     ))}
                   </select>
-                  {!isEditMode && (
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.1rem' }}>
-                      💡 Generates work items automatically from matching templates.
-                    </span>
-                  )}
                 </div>
 
                 <div className="form-group">
@@ -395,7 +388,7 @@ export default function OpportunitiesTab() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Secondary Sales Owners (Multi)</label>
+                  <label className="form-label">Secondary Sales Owners</label>
                   <input
                     type="text"
                     name="secondary_sales_owners"
@@ -407,7 +400,7 @@ export default function OpportunitiesTab() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Supporting Presales Members (Multi)</label>
+                  <label className="form-label">Supporting Presales Members</label>
                   <input
                     type="text"
                     name="supporting_presales_members"
@@ -417,8 +410,6 @@ export default function OpportunitiesTab() {
                     onChange={handleInputChange}
                   />
                 </div>
-
-
 
                 <div className="form-group">
                   <label className="form-label">Priority</label>
@@ -433,8 +424,6 @@ export default function OpportunitiesTab() {
                     ))}
                   </select>
                 </div>
-
-
 
                 <div className="form-group">
                   <label className="form-label">Contract Tenure (Months)</label>

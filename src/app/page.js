@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 
 // Import Tabs
@@ -18,6 +18,19 @@ import AdminTab from '@/components/tabs/AdminTab';
 export default function Home() {
   const { currentUser, userRole, handleUserChange, loading, allUsers } = useApp();
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [theme, setTheme] = useState('warm-minimal'); // Default to Warm Minimal "The Ledger"
+
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+    }
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'warm-minimal' ? 'dark' : 'warm-minimal'));
+  };
 
   const renderActiveTab = () => {
     switch (activeTab) {
@@ -40,7 +53,7 @@ export default function Home() {
           return (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '50vh', gap: '1rem' }}>
               <div style={{ fontSize: '3rem' }}>🔒</div>
-              <h3 style={{ color: '#fff', fontSize: '1.5rem' }}>Access Denied</h3>
+              <h3 style={{ color: 'var(--text-primary)', fontSize: '1.5rem' }}>Access Denied</h3>
               <p style={{ color: 'var(--text-secondary)', maxWidth: '400px', textAlign: 'center' }}>
                 You are currently impersonating the role <strong>&quot;{userRole}&quot;</strong>. Only users with the <strong>Admin</strong> role can access the Configuration panel.
               </p>
@@ -64,8 +77,8 @@ export default function Home() {
         alignItems: 'center',
         justifyContent: 'center',
         minHeight: '100vh',
-        backgroundColor: '#0a0d16',
-        color: '#fff',
+        backgroundColor: 'var(--bg-primary)',
+        color: 'var(--text-primary)',
         gap: '1rem'
       }}>
         <div style={{ fontSize: '2rem', animation: 'spin 1s linear infinite' }}>🌀</div>
@@ -86,17 +99,17 @@ export default function Home() {
       {/* Sidebar Navigation */}
       <aside className="sidebar">
         
-        {/* Logo Brand Brand */}
+        {/* Logo Brand */}
         <div style={{
-          padding: '2rem 1.5rem 1.5rem',
+          padding: '1.75rem 1.5rem 1.25rem',
           borderBottom: '1px solid var(--glass-border)',
           display: 'flex',
           alignItems: 'center',
           gap: '0.75rem'
         }}>
           <div style={{
-            width: '32px',
-            height: '32px',
+            width: '34px',
+            height: '34px',
             borderRadius: '8px',
             background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))',
             display: 'flex',
@@ -105,13 +118,14 @@ export default function Home() {
             fontWeight: 'bold',
             color: '#fff',
             fontSize: '1.2rem',
-            fontFamily: 'var(--font-title)'
+            fontFamily: 'var(--font-title)',
+            boxShadow: 'var(--shadow-sm)'
           }}>
             G
           </div>
           <div>
-            <h1 style={{ fontSize: '1.25rem', color: '#fff', fontWeight: 700, fontFamily: 'var(--font-title)' }}>GravitySales</h1>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Presales Engine</span>
+            <h1 style={{ fontSize: '1.25rem', color: 'var(--text-primary)', fontWeight: 700, fontFamily: 'var(--font-title)' }}>GravitySales</h1>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Presales Engine</span>
           </div>
         </div>
 
@@ -197,29 +211,45 @@ export default function Home() {
           </li>
         </ul>
 
-        {/* User Identity / Role display footer */}
+        {/* Theme Switcher & Identity Footer */}
         <div style={{
           padding: '1.25rem',
           borderTop: '1px solid var(--glass-border)',
-          background: 'rgba(0,0,0,0.15)',
+          background: 'var(--bg-tertiary)',
           display: 'flex',
           flexDirection: 'column',
-          gap: '0.5rem'
+          gap: '0.75rem'
         }}>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>Active Identity</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: userRole === 'Admin' ? 'var(--color-danger)' : 'var(--color-success)' }}></span>
-            <span style={{ fontSize: '0.88rem', color: '#fff', fontWeight: 600 }}>@{currentUser}</span>
+          {/* Theme Toggle Button */}
+          <button
+            onClick={toggleTheme}
+            className="btn btn-secondary"
+            style={{
+              fontSize: '0.8rem',
+              width: '100%',
+              justifyContent: 'space-between',
+              padding: '0.45rem 0.75rem',
+              borderRadius: 'var(--radius-md)'
+            }}
+          >
+            <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)' }}>THEME MODE</span>
+            <span style={{ fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+              {theme === 'warm-minimal' ? '📜 The Ledger' : '🌙 Obsidian Dark'}
+            </span>
+          </button>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Active Identity</span>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: userRole === 'Admin' ? 'var(--color-danger)' : 'var(--color-success)' }}></span>
+                <span style={{ fontSize: '0.88rem', color: 'var(--text-primary)', fontWeight: 600 }}>@{currentUser}</span>
+              </div>
+              <span className="badge badge-info" style={{ fontSize: '0.7rem' }}>
+                {userRole}
+              </span>
+            </div>
           </div>
-          <span className="badge" style={{
-            background: 'var(--bg-tertiary)',
-            color: 'var(--accent-secondary)',
-            alignSelf: 'flex-start',
-            fontSize: '0.72rem',
-            border: '1px solid rgba(6, 182, 212, 0.2)'
-          }}>
-            {userRole}
-          </span>
         </div>
       </aside>
 
@@ -251,18 +281,14 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Simple mock auth dropdown selector in header */}
+          {/* User selector in header */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Impersonate User:</span>
+            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Impersonate User:</span>
             <select
               className="form-control form-select"
               style={{
                 padding: '0.45rem 1.8rem 0.45rem 0.75rem',
                 fontSize: '0.85rem',
-                background: 'var(--bg-secondary)',
-                borderColor: 'var(--glass-border)',
-                borderRadius: 'var(--radius-md)',
-                color: '#fff',
                 width: '180px'
               }}
               value={currentUser}

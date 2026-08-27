@@ -11,12 +11,19 @@ if (!global._postgresPool) {
   
   global._postgresPool = new Pool({
     connectionString,
-    ssl: isSupabase ? { rejectUnauthorized: false } : false
+    ssl: isSupabase ? { rejectUnauthorized: false } : false,
+    max: 20, // Support concurrent parallel queries
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000
   });
 }
 pool = global._postgresPool;
 
 async function ensureDbInitialized() {
+  // If process already verified database setup, return immediately
+  if (global._dbInitialized) {
+    return;
+  }
   if (initPromise) {
     return initPromise;
   }
@@ -24,10 +31,18 @@ async function ensureDbInitialized() {
   initPromise = (async () => {
     isInitializing = true;
     try {
+      // Fast 1ms probe: check if primary table exists
+      const check = await pool.query("SELECT 1 FROM information_schema.tables WHERE table_name = 'dropdown_options' LIMIT 1;");
+      if (check.rows.length > 0) {
+        global._dbInitialized = true;
+        return;
+      }
+      // If table doesn't exist, run full database schema initialization
       await initDb();
+      global._dbInitialized = true;
     } catch (err) {
       console.error('Failed to initialize database:', err);
-      initPromise = null; // Let next query try again
+      initPromise = null;
       throw err;
     } finally {
       isInitializing = false;
@@ -40,16 +55,13 @@ async function ensureDbInitialized() {
 export default pool;
 
 export async function query(text, params) {
-  // If we are currently running the database initialization script,
-  // bypass ensureDbInitialized() to prevent recursive deadlocks.
-  if (!isInitializing) {
+  if (!isInitializing && !global._dbInitialized) {
     await ensureDbInitialized();
   }
 
   const start = Date.now();
   try {
     const res = await pool.query(text, params);
-    const duration = Date.now() - start;
     return res;
   } catch (err) {
     console.error('Database query error:', err, { text, params });

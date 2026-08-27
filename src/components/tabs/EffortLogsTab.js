@@ -53,12 +53,10 @@ export default function EffortLogsTab() {
     fetchData();
   }, [currentUser]);
 
-  // Update form user when current user changes
   useEffect(() => {
     setFormData(prev => ({ ...prev, person: currentUser }));
   }, [currentUser]);
 
-  // Compute live variance check as user types
   useEffect(() => {
     if (!formData.work_item_id || !formData.hours_logged || !settings) {
       setLiveVarianceWarning(null);
@@ -71,7 +69,6 @@ export default function EffortLogsTab() {
     const estHours = parseFloat(task.estimated_hours) || 0;
     const inputHours = parseFloat(formData.hours_logged) || 0;
 
-    // Sum existing effort logs for this task
     const existingHours = effortLogs
       .filter(l => l.work_item_id === task.id)
       .reduce((sum, l) => sum + (parseFloat(l.hours_logged) || 0), 0);
@@ -99,7 +96,7 @@ export default function EffortLogsTab() {
       date: new Date().toISOString().split('T')[0],
       hours_logged: 4,
       effort_type_id: getOptions('effort_type')[0]?.id || '',
-      activity_type_id: getOptions('work_category')[0]?.id || '', // activity type map to work category
+      activity_type_id: getOptions('work_category')[0]?.id || '',
       notes: ''
     });
     setIsModalOpen(true);
@@ -164,14 +161,14 @@ export default function EffortLogsTab() {
       
       {/* Header bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ fontSize: '1.5rem', color: '#fff' }}>Effort Tracking Log</h2>
+        <h2 style={{ fontSize: '1.5rem', color: 'var(--text-primary)', fontWeight: 700 }}>Effort Tracking Log</h2>
         <button className="btn btn-primary" onClick={openCreateModal} disabled={tasks.length === 0}>
           {tasks.length === 0 ? 'No active tasks to log' : 'Log Effort Hours'}
         </button>
       </div>
 
       {/* Main Table Panel */}
-      <div className="glass-panel" style={{ overflow: 'hidden' }}>
+      <div className="paper-panel" style={{ overflow: 'hidden' }}>
         {loading ? (
           <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>Loading effort logs...</p>
         ) : effortLogs.length === 0 ? (
@@ -194,26 +191,26 @@ export default function EffortLogsTab() {
               <tbody>
                 {effortLogs.map((log) => (
                   <tr key={log.id}>
-                    <td><strong style={{ color: '#fff' }}>{log.date ? log.date.split('T')[0] : ''}</strong></td>
+                    <td><strong style={{ color: 'var(--text-primary)' }}>{log.date ? log.date.split('T')[0] : ''}</strong></td>
                     <td>
-                      <span className="badge" style={{ background: 'rgba(255, 255, 255, 0.05)', color: 'var(--text-secondary)' }}>
+                      <span className="badge badge-neutral">
                         @{log.person}
                       </span>
                     </td>
                     <td>
-                      <div>{log.work_item_title}</div>
+                      <div style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{log.work_item_title}</div>
                       <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                         {log.opportunity_name ? `${log.company} - ${log.opportunity_name}` : 'General Work'}
                       </div>
                     </td>
-                    <td style={{ fontWeight: 600 }}>{log.hours_logged} hrs</td>
-                    <td>{log.activity_type_name || 'General'}</td>
-                    <td>{log.effort_type_name || 'Standard'}</td>
+                    <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{log.hours_logged} hrs</td>
+                    <td><span className="badge badge-info">{log.activity_type_name || 'General'}</span></td>
+                    <td><span className="badge badge-neutral">{log.effort_type_name || 'Standard'}</span></td>
                     <td style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={log.notes}>
                       {log.notes || '-'}
                     </td>
                     <td style={{ textAlign: 'right' }}>
-                      <button className="btn btn-danger" style={{ padding: '0.3rem 0.6rem', fontSize: '0.8rem' }} onClick={() => handleDelete(log.id)}>
+                      <button className="btn btn-danger" style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem' }} onClick={() => handleDelete(log.id)}>
                         Delete
                       </button>
                     </td>
@@ -228,9 +225,9 @@ export default function EffortLogsTab() {
       {/* LOG EFFORT OVERLAY MODAL */}
       {isModalOpen && (
         <div className="modal-overlay">
-          <div className="modal-content glass-panel" style={{ maxWidth: '600px' }}>
+          <div className="modal-content paper-panel" style={{ maxWidth: '600px' }}>
             <button className="modal-close" onClick={() => setIsModalOpen(false)}>×</button>
-            <h3 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', color: '#fff', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
+            <h3 style={{ fontSize: '1.35rem', marginBottom: '1.5rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
               Log Effort Workload
             </h3>
 

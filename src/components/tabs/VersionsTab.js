@@ -69,8 +69,8 @@ export default function VersionsTab() {
       timeline_changed: false,
       estimated_rework_hours: 4,
       deadline_impact_id: getOptions('deadline_impact')[0]?.id || '',
-      reviewed_by: allUsers[1] || allUsers[0] || '', // Presales owner or admin
-      approved_by: allUsers[2] || allUsers[0] || '', // Sales owner or admin
+      reviewed_by: allUsers[1] || allUsers[0] || '',
+      approved_by: allUsers[2] || allUsers[0] || '',
       proposal_link: '',
       pricing_link: ''
     });
@@ -125,14 +125,14 @@ export default function VersionsTab() {
       
       {/* Header bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ fontSize: '1.5rem', color: '#fff' }}>Version & Proposal Revision Logs</h2>
+        <h2 style={{ fontSize: '1.5rem', color: 'var(--text-primary)', fontWeight: 700 }}>Version & Proposal Revision Logs</h2>
         <button className="btn btn-primary" onClick={openCreateModal} disabled={opportunities.length === 0}>
           {opportunities.length === 0 ? 'Register opportunity first' : '+ New Version Revision'}
         </button>
       </div>
 
-      {/* Version list grouped by Opportunity */}
-      <div className="glass-panel" style={{ overflow: 'hidden' }}>
+      {/* Version list */}
+      <div className="paper-panel" style={{ overflow: 'hidden' }}>
         {loading ? (
           <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>Loading versions...</p>
         ) : versions.length === 0 ? (
@@ -156,48 +156,48 @@ export default function VersionsTab() {
                 {versions.map((ver) => (
                   <tr key={ver.id}>
                     <td>
-                      <div><strong style={{ color: '#fff' }}>{ver.opportunity_name}</strong></div>
+                      <div><strong style={{ color: 'var(--text-primary)' }}>{ver.opportunity_name}</strong></div>
                       <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{ver.company}</div>
                     </td>
                     <td>
-                      <span className="badge" style={{ background: 'var(--accent-primary)', color: '#fff', fontWeight: 'bold' }}>
+                      <span className="badge badge-info" style={{ fontWeight: 700 }}>
                         v{ver.version_number}
                       </span>
                     </td>
                     <td>{ver.version_type_name}</td>
                     <td>
-                      <span className="badge" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-secondary)' }}>
+                      <span className="badge badge-neutral">
                         {ver.trigger_source_name}
                       </span>
                     </td>
-                    <td style={{ fontWeight: 600 }}>{ver.estimated_rework_hours} hrs</td>
+                    <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{ver.estimated_rework_hours} hrs</td>
                     <td>
                       <div style={{ display: 'flex', gap: '0.35rem' }}>
-                        <span className="badge" style={{ background: ver.scope_changed ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255,255,255,0.02)', color: ver.scope_changed ? 'var(--accent-primary)' : 'var(--text-muted)' }}>
+                        <span className={`badge ${ver.scope_changed ? 'badge-info' : 'badge-neutral'}`}>
                           Scope
                         </span>
-                        <span className="badge" style={{ background: ver.commercial_changed ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.02)', color: ver.commercial_changed ? 'var(--color-success)' : 'var(--text-muted)' }}>
+                        <span className={`badge ${ver.commercial_changed ? 'badge-success' : 'badge-neutral'}`}>
                           Comm
                         </span>
-                        <span className="badge" style={{ background: ver.timeline_changed ? 'rgba(245, 158, 11, 0.15)' : 'rgba(255,255,255,0.02)', color: ver.timeline_changed ? 'var(--color-warning)' : 'var(--text-muted)' }}>
+                        <span className={`badge ${ver.timeline_changed ? 'badge-warning' : 'badge-neutral'}`}>
                           Time
                         </span>
                       </div>
                     </td>
                     <td>
-                      <span className="badge" style={{ background: 'rgba(0, 0, 0, 0.2)', color: ver.deadline_impact_name?.includes('Critical') ? 'var(--color-danger)' : 'var(--text-primary)' }}>
+                      <span className={`badge ${ver.deadline_impact_name?.includes('Critical') ? 'badge-danger' : 'badge-neutral'}`}>
                         {ver.deadline_impact_name || 'No Impact'}
                       </span>
                     </td>
                     <td>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', fontSize: '0.8rem' }}>
                         {ver.proposal_link ? (
-                          <a href={ver.proposal_link} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-secondary)', textDecoration: 'none' }}>
+                          <a href={ver.proposal_link} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-primary)', textDecoration: 'none', fontWeight: 600 }}>
                             📄 Proposal
                           </a>
                         ) : null}
                         {ver.pricing_link ? (
-                          <a href={ver.pricing_link} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-success)', textDecoration: 'none' }}>
+                          <a href={ver.pricing_link} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-success-text)', textDecoration: 'none', fontWeight: 600 }}>
                             💲 Pricing
                           </a>
                         ) : null}
@@ -215,9 +215,9 @@ export default function VersionsTab() {
       {/* CREATE VERSION REVISION MODAL */}
       {isModalOpen && (
         <div className="modal-overlay">
-          <div className="modal-content glass-panel" style={{ maxWidth: '850px' }}>
+          <div className="modal-content paper-panel" style={{ maxWidth: '850px' }}>
             <button className="modal-close" onClick={() => setIsModalOpen(false)}>×</button>
-            <h3 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', color: '#fff', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
+            <h3 style={{ fontSize: '1.35rem', marginBottom: '1.5rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
               Log New Version & Revision Impact
             </h3>
 
@@ -295,7 +295,7 @@ export default function VersionsTab() {
               </div>
 
               {/* Scope Toggles Row */}
-              <div style={{ display: 'flex', gap: '2rem', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-md)' }}>
+              <div style={{ display: 'flex', gap: '2rem', padding: '1rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
                 <div
                   className={`switch-container ${formData.commercial_changed ? 'checked' : ''}`}
                   onClick={() => handleSwitchChange('commercial_changed', !formData.commercial_changed)}
