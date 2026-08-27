@@ -320,8 +320,10 @@ export default function OpportunitiesTab() {
 
                   <div className="form-group">
                     <CompanyAutocomplete
+                      label="Company Name"
                       value={formData.company}
                       onChange={(val) => setFormData(prev => ({ ...prev, company: val }))}
+                      opportunities={opportunities}
                       required={true}
                     />
                   </div>

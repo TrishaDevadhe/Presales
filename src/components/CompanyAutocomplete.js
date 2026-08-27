@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 
-export default function CompanyAutocomplete({ value, onChange, opportunities = [] }) {
+export default function CompanyAutocomplete({ label = 'Company Name', required = true, value, onChange, opportunities = [] }) {
   const [inputValue, setInputValue] = useState(value || '');
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -58,6 +58,11 @@ export default function CompanyAutocomplete({ value, onChange, opportunities = [
 
   return (
     <div ref={containerRef} className="autocomplete-container">
+      {label && (
+        <label className="form-label">
+          {label} {required && <span className="required">*</span>}
+        </label>
+      )}
       <input
         type="text"
         className="form-control"
@@ -65,6 +70,7 @@ export default function CompanyAutocomplete({ value, onChange, opportunities = [
         value={inputValue}
         onChange={handleInputChange}
         onFocus={() => setShowSuggestions(true)}
+        required={required}
       />
       {showSuggestions && (inputValue.trim() !== '' || companies.length > 0) && (
         <div className="autocomplete-dropdown">
