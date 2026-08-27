@@ -33,6 +33,7 @@ export async function initDb() {
       opportunity_name VARCHAR(255) NOT NULL,
       company VARCHAR(255) NOT NULL,
       opportunity_type_id INTEGER REFERENCES dropdown_options(id) ON DELETE RESTRICT,
+      deliverable_type_id INTEGER REFERENCES dropdown_options(id) ON DELETE SET NULL,
       primary_sales_owner VARCHAR(100) NOT NULL,
       secondary_sales_owners TEXT,
       source_id INTEGER REFERENCES dropdown_options(id) ON DELETE SET NULL,
@@ -54,6 +55,9 @@ export async function initDb() {
       commercial_revision_counter INTEGER DEFAULT 0,
       UNIQUE (company, opportunity_name)
     );
+
+    -- Ensure deliverable_type_id column exists if table was created previously
+    ALTER TABLE opportunities ADD COLUMN IF NOT EXISTS deliverable_type_id INTEGER REFERENCES dropdown_options(id) ON DELETE SET NULL;
 
     CREATE TABLE IF NOT EXISTS versions (
       id SERIAL PRIMARY KEY,
@@ -184,11 +188,10 @@ export async function initDb() {
     ['complexity', 'High', 3, '#f97316'],
     ['complexity', 'Complex', 4, '#ef4444'],
     ['work_category', 'Proposal Writing', 1, '#3b82f6'],
-    ['work_category', 'Architecture Design', 2, '#8b5cf6'],
-    ['work_category', 'Pricing & Estimation', 3, '#06b6d4'],
-    ['work_category', 'Demo Preparation', 4, '#ec4899'],
-    ['work_category', 'Client Meeting', 5, '#10b981'],
-    ['work_category', 'Review & QA', 6, '#f59e0b'],
+    ['work_category', 'Product demo', 2, '#ec4899'],
+    ['work_category', 'technical scoping', 3, '#8b5cf6'],
+    ['work_category', 'Pricing', 4, '#06b6d4'],
+    ['work_category', 'Documentation', 5, '#10b981'],
     ['deliverable_type', 'RFP', 1, '#ef4444'],
     ['deliverable_type', 'Proposal', 2, '#f97316'],
     ['deliverable_type', 'presentation deck', 3, '#22c55e'],

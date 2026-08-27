@@ -8,12 +8,14 @@ export async function GET(request, { params }) {
     const result = await query(
       `SELECT o.*,
               ot.option_name AS opportunity_type_name,
+              dt.option_name AS deliverable_type_name,
               src.option_name AS source_name,
               ds.option_name AS deal_stage_name,
               p.option_name AS priority_name,
               cx.option_name AS complexity_name
        FROM opportunities o
        JOIN dropdown_options ot ON o.opportunity_type_id = ot.id
+       LEFT JOIN dropdown_options dt ON o.deliverable_type_id = dt.id
        LEFT JOIN dropdown_options src ON o.source_id = src.id
        LEFT JOIN dropdown_options ds ON o.deal_stage_id = ds.id
        LEFT JOIN dropdown_options p ON o.priority_id = p.id
@@ -41,6 +43,7 @@ export async function PUT(request, { params }) {
       opportunity_name,
       company,
       opportunity_type_id,
+      deliverable_type_id,
       primary_sales_owner,
       secondary_sales_owners,
       source_id,
@@ -84,29 +87,31 @@ export async function PUT(request, { params }) {
        SET opportunity_name = $1,
            company = $2,
            opportunity_type_id = $3,
-           primary_sales_owner = $4,
-           secondary_sales_owners = $5,
-           source_id = $6,
-           deal_stage_id = $7,
-           priority_id = $8,
-           estimated_deal_value = $9,
-           contract_tenure = $10,
-           win_probability = $11,
-           complexity_id = $12,
-           received_date = $13,
-           target_submission_date = $14,
-           internal_review_date = $15,
-           presales_owner = $16,
-           supporting_presales_members = $17,
-           summary = $18,
-           risks = $19,
-           special_instructions = $20
-       WHERE id = $21
+           deliverable_type_id = $4,
+           primary_sales_owner = $5,
+           secondary_sales_owners = $6,
+           source_id = $7,
+           deal_stage_id = $8,
+           priority_id = $9,
+           estimated_deal_value = $10,
+           contract_tenure = $11,
+           win_probability = $12,
+           complexity_id = $13,
+           received_date = $14,
+           target_submission_date = $15,
+           internal_review_date = $16,
+           presales_owner = $17,
+           supporting_presales_members = $18,
+           summary = $19,
+           risks = $20,
+           special_instructions = $21
+       WHERE id = $22
        RETURNING *`,
       [
         opportunity_name,
         company,
         opportunity_type_id,
+        deliverable_type_id || null,
         primary_sales_owner,
         secondary_sales_owners || '',
         source_id || null,

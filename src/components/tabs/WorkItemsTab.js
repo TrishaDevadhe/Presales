@@ -5,7 +5,7 @@ import { useApp } from '@/context/AppContext';
 import RichTextEditor from '../RichTextEditor';
 
 export default function WorkItemsTab() {
-  const { allUsers, getOptions, resourceProfiles } = useApp();
+  const { allUsers, getOptions, resourceProfiles, showToast, showAlert, showConfirm } = useApp();
   const [tasks, setTasks] = useState([]);
   const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -130,6 +130,7 @@ export default function WorkItemsTab() {
       deliverable_link: '',
       notes: ''
     });
+    setError(null);
     setIsModalOpen(true);
   };
 
@@ -140,7 +141,7 @@ export default function WorkItemsTab() {
     setFormData({
       opportunity_id: task.opportunity_id || '',
       work_category_id: task.work_category_id || '',
-      title: task.title,
+      title: task.title || '',
       description: task.description || '',
       deliverable_type_id: task.deliverable_type_id || '',
       assigned_to: task.assigned_to || '',
@@ -149,7 +150,7 @@ export default function WorkItemsTab() {
       priority_id: task.priority_id || '',
       start_date: task.start_date ? task.start_date.split('T')[0] : '',
       due_date: task.due_date ? task.due_date.split('T')[0] : '',
-      estimated_hours: parseFloat(task.estimated_hours) || 0,
+      estimated_hours: task.estimated_hours || 0,
       estimation_confidence_id: task.estimation_confidence_id || '',
       is_revision_work: task.is_revision_work === true,
       revision_number: task.revision_number || '',
@@ -159,21 +160,22 @@ export default function WorkItemsTab() {
       deliverable_link: task.deliverable_link || '',
       notes: task.notes || ''
     });
+    setError(null);
     setIsModalOpen(true);
   };
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: type === 'checkbox' ? checked : value
     }));
   };
 
-  const handleSwitchChange = (name, val) => {
+  const handleSwitchChange = (name, value) => {
     setFormData(prev => ({
       ...prev,
-      [name]: val
+      [name]: value
     }));
   };
 
@@ -181,21 +183,8 @@ export default function WorkItemsTab() {
     e.preventDefault();
     setError(null);
 
-    const statusOpt = getOptions('task_status').find(o => o.id === parseInt(formData.status_id, 10));
-    const statusName = statusOpt?.option_name || '';
-
-    if (statusName === 'In Progress' && (parseFloat(formData.estimated_hours) || 0) <= 0) {
-      setError('Cannot start a task without Estimated Hours. Please enter estimated hours.');
-      return;
-    }
-
-    if (statusName === 'Blocked' && (!formData.blocker_reason || !formData.blocker_reason.trim())) {
-      setError('Blocked status requires a Blocker Reason.');
-      return;
-    }
-
-    if (new Date(formData.due_date) < new Date(formData.start_date)) {
-      setError('Due Date must be on or after Start Date.');
+    if (!formData.title || !formData.work_category_id || !formData.assigned_to) {
+      setError('Title, Work Category, and Assignee are required.');
       return;
     }
 
@@ -216,8 +205,9 @@ export default function WorkItemsTab() {
 
       setIsModalOpen(false);
       fetchData();
+      showToast(isEditMode ? 'Work item updated successfully' : 'Work item created successfully', 'success');
       if (data.warning) {
-        alert(data.warning);
+        showAlert(data.warning, 'Capacity Alert', 'warning');
       }
     } catch (err) {
       setError(err.message);
@@ -225,16 +215,23 @@ export default function WorkItemsTab() {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this work item?')) return;
+    const confirmed = await showConfirm({
+      title: 'Delete Work Item',
+      message: 'Are you sure you want to delete this work item?',
+      danger: true
+    });
+    if (!confirmed) return;
+
     try {
       const res = await fetch(`/api/workitems/${id}`, { method: 'DELETE' });
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || 'Failed to delete task');
       }
+      showToast('Work item deleted successfully', 'success');
       fetchData();
     } catch (err) {
-      alert(err.message);
+      showAlert(err.message, 'Error', 'danger');
     }
   };
 
@@ -305,7 +302,6 @@ export default function WorkItemsTab() {
                   <th>Due Date</th>
                   <th>Estimate</th>
                   <th>Priority</th>
-                  <th>Status</th>
                   <th style={{ textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
@@ -339,18 +335,6 @@ export default function WorkItemsTab() {
                       <span className="badge badge-warning">
                         {task.priority_name || 'Medium'}
                       </span>
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                        <span className={`badge ${task.status_name === 'Blocked' ? 'badge-danger' : task.status_name === 'Completed' ? 'badge-success' : 'badge-info'}`}>
-                          {task.status_name}
-                        </span>
-                        {task.status_name === 'Blocked' && (
-                          <span style={{ fontSize: '0.75rem', color: 'var(--color-danger-text)', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={task.blocker_reason}>
-                            Reason: {task.blocker_reason}
-                          </span>
-                        )}
-                      </div>
                     </td>
                     <td style={{ textAlign: 'right' }}>
                       <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
@@ -598,7 +582,7 @@ export default function WorkItemsTab() {
                   Cancel
                 </button>
                 <button type="submit" className="btn btn-primary">
-                  {isEditMode ? 'Save Changes' : 'Create Task'}
+                  {isEditMode ? 'Save Changes' : 'Create Work Item'}
                 </button>
               </div>
 

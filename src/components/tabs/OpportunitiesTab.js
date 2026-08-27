@@ -4,13 +4,14 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import RichTextEditor from '../RichTextEditor';
 import CompanyAutocomplete from '../CompanyAutocomplete';
+import StaffMultiSelect from '../StaffMultiSelect';
 
 export default function OpportunitiesTab() {
-  const { allUsers, getOptions } = useApp();
+  const { allUsers, getOptions, showToast, showAlert, showConfirm } = useApp();
   const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+
   // Modals state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -21,6 +22,7 @@ export default function OpportunitiesTab() {
     opportunity_name: '',
     company: '',
     opportunity_type_id: '',
+    deliverable_type_id: '',
     primary_sales_owner: '',
     secondary_sales_owners: '',
     source_id: '',
@@ -58,13 +60,21 @@ export default function OpportunitiesTab() {
     fetchOpportunities();
   }, []);
 
+  // Filter Opportunity Types to ONLY "New Business" and "Renewal"
+  const allowedOpportunityTypes = getOptions('opportunity_type').filter(opt => {
+    const name = opt.option_name.toLowerCase().trim();
+    return name === 'new business' || name === 'renewal';
+  });
+
   const openCreateModal = () => {
     setIsEditMode(false);
     setSelectedOpp(null);
+    const defaultOppType = allowedOpportunityTypes[0]?.id || getOptions('opportunity_type')[0]?.id || '';
     setFormData({
       opportunity_name: '',
       company: '',
-      opportunity_type_id: getOptions('opportunity_type')[0]?.id || '',
+      opportunity_type_id: defaultOppType,
+      deliverable_type_id: getOptions('deliverable_type')[0]?.id || '',
       primary_sales_owner: allUsers[2] || allUsers[0] || '',
       secondary_sales_owners: '',
       source_id: '',
@@ -93,6 +103,7 @@ export default function OpportunitiesTab() {
       opportunity_name: opp.opportunity_name,
       company: opp.company,
       opportunity_type_id: opp.opportunity_type_id || '',
+      deliverable_type_id: opp.deliverable_type_id || '',
       primary_sales_owner: opp.primary_sales_owner || '',
       secondary_sales_owners: opp.secondary_sales_owners || '',
       source_id: opp.source_id || '',
@@ -122,7 +133,7 @@ export default function OpportunitiesTab() {
     }));
   };
 
-  const handleSwitchChange = (name, val) => {
+  const handleRichTextChange = (name, val) => {
     setFormData(prev => ({
       ...prev,
       [name]: val
@@ -133,13 +144,8 @@ export default function OpportunitiesTab() {
     e.preventDefault();
     setError(null);
 
-    if (!formData.opportunity_name.trim() || !formData.company.trim() || !formData.opportunity_type_id || !formData.primary_sales_owner || !formData.presales_owner || !formData.received_date || !formData.target_submission_date) {
-      setError('Please fill in all required fields.');
-      return;
-    }
-
-    if (new Date(formData.target_submission_date) < new Date(formData.received_date)) {
-      setError('Target Submission Date must be on or after Received Date.');
+    if (!formData.opportunity_name || !formData.company || !formData.opportunity_type_id) {
+      setError('Opportunity Name, Company Name, and Opportunity Type are required.');
       return;
     }
 
@@ -153,20 +159,27 @@ export default function OpportunitiesTab() {
         body: JSON.stringify(formData)
       });
 
-      const data = await res.json();
       if (!res.ok) {
+        const data = await res.json();
         throw new Error(data.error || 'Failed to save opportunity');
       }
 
+      const oppName = formData.opportunity_name;
       setIsModalOpen(false);
       fetchOpportunities();
+      showToast(`✓ Opportunity "${oppName}" has been ${isEditMode ? 'updated' : 'registered'} successfully!`, 'success');
     } catch (err) {
       setError(err.message);
     }
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this opportunity? This will permanently delete all associated tasks, versions, and feedback!')) return;
+    const confirmed = await showConfirm({
+      title: 'Delete Opportunity',
+      message: 'Are you sure you want to delete this opportunity? This will permanently delete all associated tasks, versions, and feedback!',
+      danger: true
+    });
+    if (!confirmed) return;
 
     try {
       const res = await fetch(`/api/opportunities/${id}`, { method: 'DELETE' });
@@ -175,8 +188,9 @@ export default function OpportunitiesTab() {
         throw new Error(data.error || 'Failed to delete opportunity');
       }
       fetchOpportunities();
+      showToast('Opportunity deleted successfully.', 'success');
     } catch (err) {
-      alert(err.message);
+      showAlert(err.message, 'Error', 'danger');
     }
   };
 
@@ -191,29 +205,28 @@ export default function OpportunitiesTab() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 style={{ fontSize: '1.5rem', color: 'var(--text-primary)', fontWeight: 700 }}>Opportunities Pipeline</h2>
         <button className="btn btn-primary" onClick={openCreateModal}>
-          + Create Opportunity
+          + Add Opportunity
         </button>
       </div>
 
-      {/* Main Table Panel */}
+      {/* Grid Table view */}
       <div className="paper-panel" style={{ overflow: 'hidden' }}>
         {loading ? (
           <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>Loading opportunities...</p>
         ) : opportunities.length === 0 ? (
-          <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>No opportunities found. Click &quot;Create Opportunity&quot; to begin.</p>
+          <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>No opportunities found. Click "+ Add Opportunity" to create one.</p>
         ) : (
           <div className="table-container">
             <table className="custom-table">
               <thead>
                 <tr>
-                  <th>Opportunity & Company</th>
+                  <th>Opportunity & Client</th>
                   <th>Type</th>
-                  <th>Deal Stage</th>
+                  <th>Deliverable Type</th>
+                  <th>Stage</th>
                   <th>Value</th>
-                  <th>Target Date</th>
-                  <th>Priority</th>
+                  <th>Due Date</th>
                   <th>Presales Owner</th>
-                  <th>Revisions</th>
                   <th style={{ textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
@@ -222,41 +235,33 @@ export default function OpportunitiesTab() {
                   <tr key={opp.id}>
                     <td>
                       <div>
-                        <strong style={{ color: 'var(--text-primary)', fontSize: '0.98rem' }}>{opp.opportunity_name}</strong>
+                        <strong style={{ color: 'var(--text-primary)', fontSize: '0.95rem' }}>{opp.opportunity_name}</strong>
                       </div>
-                      <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
-                        {opp.company}
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
+                        🏢 {opp.company}
                       </div>
                     </td>
                     <td>
                       <span className="badge badge-info">
-                        {opp.opportunity_type_name}
+                        {opp.opportunity_type_name || 'N/A'}
                       </span>
                     </td>
                     <td>
                       <span className="badge badge-neutral">
-                        {opp.deal_stage_name || 'Unassigned'}
+                        {opp.deliverable_type_name || 'N/A'}
                       </span>
                     </td>
-                    <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{formatCurrency(opp.estimated_deal_value)}</td>
+                    <td>
+                      <span className="badge badge-primary">
+                        {opp.deal_stage_name || 'Proposal'}
+                      </span>
+                    </td>
+                    <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                      {formatCurrency(opp.estimated_deal_value || 0)}
+                    </td>
                     <td>{opp.target_submission_date ? opp.target_submission_date.split('T')[0] : 'N/A'}</td>
                     <td>
-                      <span className="badge badge-warning">
-                        {opp.priority_name || 'Medium'}
-                      </span>
-                    </td>
-                    <td>
-                      <span style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
-                        @{opp.presales_owner}
-                      </span>
-                    </td>
-                    <td style={{ fontSize: '0.85rem' }}>
-                      <span style={{ color: opp.revision_counter >= 3 ? 'var(--color-danger-text)' : 'var(--text-primary)', fontWeight: opp.revision_counter >= 3 ? 700 : 500 }}>
-                        {opp.revision_counter || 0}
-                      </span>
-                      <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginLeft: '0.25rem' }}>
-                        (C:{opp.commercial_revision_counter || 0})
-                      </span>
+                      <strong style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>@{opp.presales_owner || 'Unassigned'}</strong>
                     </td>
                     <td style={{ textAlign: 'right' }}>
                       <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
@@ -279,10 +284,10 @@ export default function OpportunitiesTab() {
       {/* CREATE / EDIT OPPORTUNITY OVERLAY MODAL */}
       {isModalOpen && (
         <div className="modal-overlay">
-          <div className="modal-content paper-panel" style={{ maxWidth: '850px' }}>
+          <div className="modal-content paper-panel" style={{ maxWidth: '900px', width: '90%' }}>
             <button className="modal-close" onClick={() => setIsModalOpen(false)}>×</button>
-            <h3 style={{ fontSize: '1.35rem', marginBottom: '1.5rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
-              {isEditMode ? 'Edit Opportunity Details' : 'Register New Opportunity'}
+            <h3 style={{ fontSize: '1.35rem', marginBottom: '1.5rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem', fontWeight: 700 }}>
+              {isEditMode ? 'Modify Opportunity' : 'Register New Opportunity'}
             </h3>
 
             {error && (
@@ -293,235 +298,284 @@ export default function OpportunitiesTab() {
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               
-              <div className="form-grid">
+              {/* Section 1: Basic Information */}
+              <div>
+                <h4 style={{ fontSize: '0.95rem', color: 'var(--accent-primary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem', fontWeight: 700 }}>
+                  1. Opportunity Overview
+                </h4>
+                <div className="form-grid">
+                  <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                    <label className="form-label">Opportunity Name <span className="required">*</span></label>
+                    <input
+                      type="text"
+                      name="opportunity_name"
+                      className="form-control"
+                      placeholder="e.g. Enterprise Cloud Infrastructure Migration"
+                      value={formData.opportunity_name}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <CompanyAutocomplete
+                      value={formData.company}
+                      onChange={(val) => setFormData(prev => ({ ...prev, company: val }))}
+                      required={true}
+                    />
+                  </div>
+
+                  {/* Restrict Opportunity Type dropdown to ONLY New Business & Renewal */}
+                  <div className="form-group">
+                    <label className="form-label">Opportunity Type <span className="required">*</span></label>
+                    <select
+                      name="opportunity_type_id"
+                      className="form-control form-select"
+                      value={formData.opportunity_type_id}
+                      onChange={handleInputChange}
+                      required
+                    >
+                      {allowedOpportunityTypes.map(opt => (
+                        <option key={opt.id} value={opt.id}>{opt.option_name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Added Deliverable Type field */}
+                  <div className="form-group">
+                    <label className="form-label">Deliverable Type <span className="required">*</span></label>
+                    <select
+                      name="deliverable_type_id"
+                      className="form-control form-select"
+                      value={formData.deliverable_type_id}
+                      onChange={handleInputChange}
+                      required
+                    >
+                      {getOptions('deliverable_type').map(opt => (
+                        <option key={opt.id} value={opt.id}>{opt.option_name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Primary Sales Owner <span className="required">*</span></label>
+                    <select
+                      name="primary_sales_owner"
+                      className="form-control form-select"
+                      value={formData.primary_sales_owner}
+                      onChange={handleInputChange}
+                      required
+                    >
+                      <option value="">Select Account Manager / Sales Owner</option>
+                      {allUsers.map(u => (
+                        <option key={u} value={u}>@{u}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <StaffMultiSelect
+                      label="Secondary Sales Owners"
+                      options={allUsers}
+                      selectedValues={formData.secondary_sales_owners ? formData.secondary_sales_owners.split(',').map(s => s.trim()).filter(Boolean) : []}
+                      onChange={(vals) => setFormData(prev => ({ ...prev, secondary_sales_owners: vals.join(', ') }))}
+                      placeholder="Select secondary owners..."
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Lead Source</label>
+                    <select
+                      name="source_id"
+                      className="form-control form-select"
+                      value={formData.source_id}
+                      onChange={handleInputChange}
+                    >
+                      <option value="">Select Lead Source</option>
+                      {getOptions('source').map(opt => (
+                        <option key={opt.id} value={opt.id}>{opt.option_name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 2: Financials & Timeline */}
+              <div style={{ borderTop: '1px solid var(--glass-border)', paddingTop: '1.25rem' }}>
+                <h4 style={{ fontSize: '0.95rem', color: 'var(--accent-primary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem', fontWeight: 700 }}>
+                  2. Commercials & Key Dates
+                </h4>
+                <div className="form-grid">
+                  <div className="form-group">
+                    <label className="form-label">Deal Stage</label>
+                    <select
+                      name="deal_stage_id"
+                      className="form-control form-select"
+                      value={formData.deal_stage_id}
+                      onChange={handleInputChange}
+                    >
+                      {getOptions('deal_stage').map(opt => (
+                        <option key={opt.id} value={opt.id}>{opt.option_name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Priority</label>
+                    <select
+                      name="priority_id"
+                      className="form-control form-select"
+                      value={formData.priority_id}
+                      onChange={handleInputChange}
+                    >
+                      {getOptions('priority').map(opt => (
+                        <option key={opt.id} value={opt.id}>{opt.option_name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Estimated Deal Value ($)</label>
+                    <input
+                      type="number"
+                      name="estimated_deal_value"
+                      className="form-control"
+                      value={formData.estimated_deal_value}
+                      onChange={handleInputChange}
+                      min="0"
+                      step="1000"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Contract Tenure (Months)</label>
+                    <input
+                      type="number"
+                      name="contract_tenure"
+                      className="form-control"
+                      value={formData.contract_tenure}
+                      onChange={handleInputChange}
+                      min="1"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Win Probability (%)</label>
+                    <input
+                      type="number"
+                      name="win_probability"
+                      className="form-control"
+                      value={formData.win_probability}
+                      onChange={handleInputChange}
+                      min="0"
+                      max="100"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Technical Complexity</label>
+                    <select
+                      name="complexity_id"
+                      className="form-control form-select"
+                      value={formData.complexity_id}
+                      onChange={handleInputChange}
+                    >
+                      {getOptions('complexity').map(opt => (
+                        <option key={opt.id} value={opt.id}>{opt.option_name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">RFP/Req Received Date <span className="required">*</span></label>
+                    <input
+                      type="date"
+                      name="received_date"
+                      className="form-control"
+                      value={formData.received_date}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Target Submission Date <span className="required">*</span></label>
+                    <input
+                      type="date"
+                      name="target_submission_date"
+                      className="form-control"
+                      value={formData.target_submission_date}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Internal Review Date</label>
+                    <input
+                      type="date"
+                      name="internal_review_date"
+                      className="form-control"
+                      value={formData.internal_review_date}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <StaffMultiSelect
+                      label="Presales Members"
+                      options={allUsers}
+                      selectedValues={formData.supporting_presales_members ? formData.supporting_presales_members.split(',').map(s => s.trim()).filter(Boolean) : []}
+                      onChange={(vals) => setFormData(prev => ({ ...prev, supporting_presales_members: vals.join(', ') }))}
+                      placeholder="Select presales team members..."
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 3: Detailed Notes */}
+              <div style={{ borderTop: '1px solid var(--glass-border)', paddingTop: '1.25rem' }}>
+                <h4 style={{ fontSize: '0.95rem', color: 'var(--accent-primary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem', fontWeight: 700 }}>
+                  3. Executive Briefing & Special Requirements
+                </h4>
                 
-                <div className="form-group">
-                  <label className="form-label">
-                    Opportunity Name <span className="required">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="opportunity_name"
-                    className="form-control"
-                    value={formData.opportunity_name}
-                    onChange={handleInputChange}
-                    required
-                    placeholder="e.g. Cloud ERP Upgrade"
-                  />
-                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                  <div className="form-group">
+                    <label className="form-label">Opportunity Summary</label>
+                    <RichTextEditor
+                      value={formData.summary}
+                      onChange={(val) => handleRichTextChange('summary', val)}
+                      placeholder="Enter executive summary, core scope, and client pain points..."
+                    />
+                  </div>
 
-                <div className="form-group">
-                  <label className="form-label">
-                    Company Name <span className="required">*</span>
-                  </label>
-                  <CompanyAutocomplete
-                    value={formData.company}
-                    onChange={(val) => handleSwitchChange('company', val)}
-                    opportunities={opportunities}
-                  />
-                </div>
+                  <div className="form-group">
+                    <label className="form-label">Key Risks & Mitigation Strategy</label>
+                    <RichTextEditor
+                      value={formData.risks}
+                      onChange={(val) => handleRichTextChange('risks', val)}
+                      placeholder="Highlight technical risks, tight deadlines, resource constraints..."
+                    />
+                  </div>
 
-                <div className="form-group">
-                  <label className="form-label">
-                    Opportunity Type <span className="required">*</span>
-                  </label>
-                  <select
-                    name="opportunity_type_id"
-                    className="form-control form-select"
-                    value={formData.opportunity_type_id}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    {getOptions('opportunity_type').map(opt => (
-                      <option key={opt.id} value={opt.id}>{opt.option_name}</option>
-                    ))}
-                  </select>
+                  <div className="form-group">
+                    <label className="form-label">Special Instructions & Deliverable Expectations</label>
+                    <RichTextEditor
+                      value={formData.special_instructions}
+                      onChange={(val) => handleRichTextChange('special_instructions', val)}
+                      placeholder="Specify custom client templates, pricing rules, compliance requirements..."
+                    />
+                  </div>
                 </div>
-
-                <div className="form-group">
-                  <label className="form-label">
-                    Complexity <span className="required">*</span>
-                  </label>
-                  <select
-                    name="complexity_id"
-                    className="form-control form-select"
-                    value={formData.complexity_id}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    {getOptions('complexity').map(opt => (
-                      <option key={opt.id} value={opt.id}>{opt.option_name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Primary Sales Owner <span className="required">*</span></label>
-                  <select
-                    name="primary_sales_owner"
-                    className="form-control form-select"
-                    value={formData.primary_sales_owner}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="">Select Sales Owner</option>
-                    {allUsers.map(u => (
-                      <option key={u} value={u}>@{u}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Presales Owner <span className="required">*</span></label>
-                  <select
-                    name="presales_owner"
-                    className="form-control form-select"
-                    value={formData.presales_owner}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="">Select Presales Owner</option>
-                    {allUsers.map(u => (
-                      <option key={u} value={u}>@{u}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Secondary Sales Owners</label>
-                  <input
-                    type="text"
-                    name="secondary_sales_owners"
-                    className="form-control"
-                    placeholder="e.g. john_smith, alice_williams"
-                    value={formData.secondary_sales_owners}
-                    onChange={handleInputChange}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Supporting Presales Members</label>
-                  <input
-                    type="text"
-                    name="supporting_presales_members"
-                    className="form-control"
-                    placeholder="e.g. bob_jones, jane_doe"
-                    value={formData.supporting_presales_members}
-                    onChange={handleInputChange}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Priority</label>
-                  <select
-                    name="priority_id"
-                    className="form-control form-select"
-                    value={formData.priority_id}
-                    onChange={handleInputChange}
-                  >
-                    {getOptions('priority').map(opt => (
-                      <option key={opt.id} value={opt.id}>{opt.option_name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Contract Tenure (Months)</label>
-                  <input
-                    type="number"
-                    name="contract_tenure"
-                    className="form-control"
-                    min="0"
-                    value={formData.contract_tenure}
-                    onChange={handleInputChange}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Win Probability %</label>
-                  <input
-                    type="number"
-                    name="win_probability"
-                    className="form-control"
-                    min="0"
-                    max="100"
-                    value={formData.win_probability}
-                    onChange={handleInputChange}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Received Date <span className="required">*</span></label>
-                  <input
-                    type="date"
-                    name="received_date"
-                    className="form-control"
-                    value={formData.received_date}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Target Submission Date <span className="required">*</span></label>
-                  <input
-                    type="date"
-                    name="target_submission_date"
-                    className="form-control"
-                    value={formData.target_submission_date}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Internal Review Date</label>
-                  <input
-                    type="date"
-                    name="internal_review_date"
-                    className="form-control"
-                    value={formData.internal_review_date}
-                    onChange={handleInputChange}
-                  />
-                </div>
-
               </div>
 
-              {/* Rich Text Areas */}
-              <div className="form-group">
-                <label className="form-label">Opportunity Summary</label>
-                <RichTextEditor
-                  value={formData.summary}
-                  onChange={(val) => handleSwitchChange('summary', val)}
-                  placeholder="Summarize the deal context and key client needs..."
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Key Risks & Mitigations</label>
-                <RichTextEditor
-                  value={formData.risks}
-                  onChange={(val) => handleSwitchChange('risks', val)}
-                  placeholder="Document delivery risks, technology constraints, competitors..."
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Special Instructions</label>
-                <RichTextEditor
-                  value={formData.special_instructions}
-                  onChange={(val) => handleSwitchChange('special_instructions', val)}
-                  placeholder="Note any specific document formats, executive summaries, or custom needs..."
-                />
-              </div>
-
-              {/* Submit Buttons */}
+              {/* Action Buttons */}
               <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', borderTop: '1px solid var(--glass-border)', paddingTop: '1.25rem', marginTop: '0.5rem' }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>
                   Cancel
                 </button>
                 <button type="submit" className="btn btn-primary">
-                  {isEditMode ? 'Save Changes' : 'Create Opportunity'}
+                  {isEditMode ? 'Save Opportunity Changes' : 'Submit Opportunity'}
                 </button>
               </div>
 

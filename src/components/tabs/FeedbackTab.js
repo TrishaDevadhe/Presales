@@ -5,7 +5,7 @@ import { useApp } from '@/context/AppContext';
 import RichTextEditor from '../RichTextEditor';
 
 export default function FeedbackTab() {
-  const { allUsers, getOptions, dropdownOptions } = useApp();
+  const { allUsers, getOptions, dropdownOptions, showToast, showAlert, showConfirm } = useApp();
   const [feedbacks, setFeedbacks] = useState([]);
   const [opportunities, setOpportunities] = useState([]);
   const [versions, setVersions] = useState([]);
@@ -122,22 +122,30 @@ export default function FeedbackTab() {
 
       setIsModalOpen(false);
       fetchData();
+      showToast('Client feedback logged successfully', 'success');
     } catch (err) {
       setError(err.message);
     }
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this feedback log?')) return;
+    const confirmed = await showConfirm({
+      title: 'Delete Feedback Log',
+      message: 'Are you sure you want to delete this feedback log?',
+      danger: true
+    });
+    if (!confirmed) return;
+
     try {
       const res = await fetch(`/api/feedbacks/${id}`, { method: 'DELETE' });
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || 'Failed to delete feedback');
       }
+      showToast('Feedback log deleted successfully', 'success');
       fetchData();
     } catch (err) {
-      alert(err.message);
+      showAlert(err.message, 'Error', 'danger');
     }
   };
 
@@ -160,9 +168,10 @@ export default function FeedbackTab() {
         const data = await res.json();
         throw new Error(data.error || 'Failed to resolve feedback');
       }
+      showToast('Feedback marked as resolved', 'success');
       fetchData();
     } catch (err) {
-      alert(err.message);
+      showAlert(err.message, 'Error', 'danger');
     }
   };
 

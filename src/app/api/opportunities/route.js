@@ -9,12 +9,14 @@ export async function GET() {
     const result = await query(`
       SELECT o.*,
              ot.option_name AS opportunity_type_name, ot.color AS opportunity_type_color,
+             dt.option_name AS deliverable_type_name, dt.color AS deliverable_type_color,
              src.option_name AS source_name, src.color AS source_color,
              ds.option_name AS deal_stage_name, ds.color AS deal_stage_color,
              p.option_name AS priority_name, p.color AS priority_color,
              cx.option_name AS complexity_name, cx.color AS complexity_color
       FROM opportunities o
       JOIN dropdown_options ot ON o.opportunity_type_id = ot.id
+      LEFT JOIN dropdown_options dt ON o.deliverable_type_id = dt.id
       LEFT JOIN dropdown_options src ON o.source_id = src.id
       LEFT JOIN dropdown_options ds ON o.deal_stage_id = ds.id
       LEFT JOIN dropdown_options p ON o.priority_id = p.id
@@ -35,6 +37,7 @@ export async function POST(request) {
       opportunity_name,
       company,
       opportunity_type_id,
+      deliverable_type_id,
       primary_sales_owner,
       secondary_sales_owners,
       source_id,
@@ -76,16 +79,17 @@ export async function POST(request) {
     // Insert Opportunity
     const oppResult = await query(
       `INSERT INTO opportunities (
-        opportunity_name, company, opportunity_type_id, primary_sales_owner, secondary_sales_owners,
+        opportunity_name, company, opportunity_type_id, deliverable_type_id, primary_sales_owner, secondary_sales_owners,
         source_id, deal_stage_id, priority_id, estimated_deal_value, contract_tenure,
         win_probability, complexity_id, received_date, target_submission_date, internal_review_date,
         presales_owner, supporting_presales_members, summary, risks, special_instructions
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
       RETURNING *`,
       [
         opportunity_name,
         company,
         opportunity_type_id,
+        deliverable_type_id || null,
         primary_sales_owner,
         secondary_sales_owners || '',
         source_id || null,
@@ -109,9 +113,21 @@ export async function POST(request) {
     const opportunity = oppResult.rows[0];
 
     // AUTOMATION: Generate tasks from template
-    const templates = await query(
-      'SELECT * FROM task_templates ORDER BY sequence ASC'
-    );
+    // If deliverable_type_id is specified, prioritize templates for that deliverable_type
+    let templateQuery = 'SELECT * FROM task_templates';
+    let templateParams = [];
+    if (deliverable_type_id) {
+      templateQuery += ' WHERE deliverable_type_id = $1';
+      templateParams.push(deliverable_type_id);
+    }
+    templateQuery += ' ORDER BY sequence ASC';
+
+    let templates = await query(templateQuery, templateParams);
+    
+    // Fallback if no specific templates found for deliverable_type_id
+    if (templates.rows.length === 0 && deliverable_type_id) {
+      templates = await query('SELECT * FROM task_templates ORDER BY sequence ASC');
+    }
 
     if (templates.rows.length > 0) {
       // 1. Get Complexity multiplier
@@ -174,8 +190,8 @@ export async function POST(request) {
           ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
           [
             opportunity.id,
-            workCategoryId || null,
-            t.deliverable_type_id || null,
+            t.work_category_id || workCategoryId || null,
+            t.deliverable_type_id || deliverable_type_id || null,
             t.task_name,
             `Auto-generated task from deliverable template for complexity: ${multiplier}x`,
             assignedUser,

@@ -11,9 +11,11 @@ export async function GET(request) {
     let sql = `
       SELECT t.*, 
              d.option_name AS deliverable_type_name, 
+             wc.option_name AS work_category_name,
              r.option_name AS default_role_name 
       FROM task_templates t
       JOIN dropdown_options d ON t.deliverable_type_id = d.id
+      LEFT JOIN dropdown_options wc ON t.work_category_id = wc.id
       LEFT JOIN dropdown_options r ON t.default_role_id = r.id
     `;
     const params = [];
@@ -35,7 +37,7 @@ export async function GET(request) {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { deliverable_type_id, task_name, default_estimated_hours, default_role_id, sequence, sequence_order } = body;
+    const { deliverable_type_id, task_name, work_category_id, default_estimated_hours, default_role_id, sequence, sequence_order } = body;
 
     const finalSequence = sequence || sequence_order;
 
@@ -44,12 +46,13 @@ export async function POST(request) {
     }
 
     const result = await query(
-      `INSERT INTO task_templates (deliverable_type_id, task_name, default_estimated_hours, default_role_id, sequence)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO task_templates (deliverable_type_id, task_name, work_category_id, default_estimated_hours, default_role_id, sequence)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
       [
         deliverable_type_id,
         task_name,
+        work_category_id || null,
         parseFloat(default_estimated_hours) || 0.0,
         default_role_id || null,
         parseInt(finalSequence, 10) || 0
@@ -57,6 +60,48 @@ export async function POST(request) {
     );
 
     return NextResponse.json(result.rows[0], { status: 201 });
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function PUT(request) {
+  try {
+    const body = await request.json();
+    const { id, deliverable_type_id, task_name, work_category_id, default_estimated_hours, default_role_id, sequence, sequence_order } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: 'Template ID is required for update' }, { status: 400 });
+    }
+
+    const finalSequence = sequence || sequence_order;
+
+    const result = await query(
+      `UPDATE task_templates 
+       SET deliverable_type_id = $1,
+           task_name = $2,
+           work_category_id = $3,
+           default_estimated_hours = $4,
+           default_role_id = $5,
+           sequence = $6
+       WHERE id = $7
+       RETURNING *`,
+      [
+        deliverable_type_id,
+        task_name,
+        work_category_id || null,
+        parseFloat(default_estimated_hours) || 0.0,
+        default_role_id || null,
+        parseInt(finalSequence, 10) || 0,
+        id
+      ]
+    );
+
+    if (result.rows.length === 0) {
+      return NextResponse.json({ error: 'Template not found' }, { status: 404 });
+    }
+
+    return NextResponse.json(result.rows[0]);
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

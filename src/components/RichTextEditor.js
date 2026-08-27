@@ -1,9 +1,11 @@
 'use client';
 
 import React, { useRef } from 'react';
+import { useApp } from '@/context/AppContext';
 
 export default function RichTextEditor({ value, onChange, placeholder = 'Write details here...' }) {
   const textareaRef = useRef(null);
+  const { showPrompt } = useApp();
 
   const insertFormat = (tagOpen, tagClose = '') => {
     const textarea = textareaRef.current;
@@ -26,6 +28,11 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write d
       textarea.focus();
       textarea.setSelectionRange(start + tagOpen.length, start + tagOpen.length + selected.length);
     }, 0);
+  };
+
+  const handleLinkClick = async () => {
+    const url = await showPrompt({ title: 'Insert Link', message: 'Enter target web address URL:' });
+    if (url) insertFormat(`[`, `](${url})`);
   };
 
   return (
@@ -74,10 +81,7 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write d
         <button 
           type="button" 
           className="rich-text-btn" 
-          onClick={() => {
-            const url = prompt('Enter URL:');
-            if (url) insertFormat(`[`, `](${url})`);
-          }}
+          onClick={handleLinkClick}
           title="Link"
         >
           Link
@@ -98,6 +102,7 @@ export default function RichTextEditor({ value, onChange, placeholder = 'Write d
         value={value || ''}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
+        rows={6}
       />
     </div>
   );

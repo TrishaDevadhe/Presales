@@ -11,12 +11,15 @@ export async function GET(request) {
     let sql = `
       SELECT el.*,
              wi.title AS work_item_title, wi.estimated_hours AS work_item_estimated_hours,
+             wi.opportunity_id, wi.deliverable_type_id,
              opp.opportunity_name, opp.company,
+             dt.option_name AS deliverable_type_name,
              et.option_name AS effort_type_name,
              act.option_name AS activity_type_name
       FROM effort_logs el
       JOIN work_items wi ON el.work_item_id = wi.id
       LEFT JOIN opportunities opp ON wi.opportunity_id = opp.id
+      LEFT JOIN dropdown_options dt ON wi.deliverable_type_id = dt.id
       LEFT JOIN dropdown_options et ON el.effort_type_id = et.id
       LEFT JOIN dropdown_options act ON el.activity_type_id = act.id
     `;

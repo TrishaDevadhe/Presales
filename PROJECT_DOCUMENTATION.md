@@ -328,3 +328,27 @@ Buttons across the app adhere to a strict visual hierarchy, 3 size levels, and c
 }
 [data-theme="dark"] .btn-danger:hover { background: rgba(239,68,68,0.12); }
 ```
+
+---
+
+## 9. Recent System Workflows & Configuration Updates
+
+### A. Task Templates Work Category Configuration
+- **Database Schema**: Added `work_category_id` (foreign key to `dropdown_options`) on the `task_templates` table.
+- **Admin Configuration Console**:
+  - The Task Template creation and edit modal includes a **Work Category** dropdown picklist options (*Proposal Writing*, *Product demo*, *technical scoping*, *Pricing*, *Documentation*).
+  - The Auto-initialized Scope Tasks table displays a dedicated **Work Category** column for each task template.
+  - When new opportunities auto-scaffold tasks based on deliverable types, each generated task inherits its template's assigned work category.
+
+### B. Effort Tracking Log Multi-Filtering
+- **Top Filter Bar**: Added an interactive Filter Bar to the Effort Tracking Log view containing:
+  - **Filter by Opportunity**: Scopes logs to specific active opportunities.
+  - **Filter by Deliverable Type**: Scopes logs to deliverable classifications (*RFP*, *Proposal*, etc.).
+  - **Filter by Logging Person**: Scopes logs to individual team members (`@admin`, `@jane_doe`, `@bob_jones`, `@alice_williams`, `@john_smith`).
+- **Form Opportunity Selector**: The *Log Effort Workload* modal features an Opportunity selector at the top that dynamically scopes the available Work Item Tasks dropdown.
+
+### C. Work Items Table Refinement & Global App-Themed Dialog System
+- **Work Items Table**: Removed the Status column from the main Work Items (Tasks) grid table for cleaner details display.
+- **Global App-Themed Dialogs**: Replaced all native browser popups (`alert`, `confirm`, `prompt`) with unified, application-themed Toast notifications, confirmation modals, alert dialogs, and link insertion prompts styled under "The Ledger" design system.
+
+

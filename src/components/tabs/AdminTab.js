@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 
 export default function AdminTab() {
-  const { dropdownOptions, refreshDropdowns, getOptions } = useApp();
+  const { dropdownOptions, refreshDropdowns, getOptions, showToast, showAlert, showConfirm } = useApp();
   const [activeSubTab, setActiveSubTab] = useState('dropdowns');
   
   // -- Dropdown Manager State --
@@ -29,6 +29,7 @@ export default function AdminTab() {
   const [templateForm, setTemplateForm] = useState({
     deliverable_type_id: '',
     task_name: '',
+    work_category_id: '',
     default_estimated_hours: 4,
     default_role_id: '',
     sequence_order: 1
@@ -147,8 +148,9 @@ export default function AdminTab() {
       
       setIsDropdownModalOpen(false);
       refreshDropdowns();
+      showToast('Dropdown option saved successfully!', 'success');
     } catch (err) {
-      alert(err.message);
+      showAlert(err.message, 'Error', 'danger');
     }
   };
 
@@ -157,9 +159,11 @@ export default function AdminTab() {
     setIsTemplateEdit(false);
     setSelectedTemplate(null);
     const delivOpts = getDeliverableOptions();
+    const workCatOpts = getOptions('work_category');
     setTemplateForm({
       deliverable_type_id: selectedDeliverableType || delivOpts[0]?.id || '',
       task_name: '',
+      work_category_id: workCatOpts[0]?.id || '',
       default_estimated_hours: 8,
       default_role_id: getOptions('role')[0]?.id || '',
       sequence_order: templates.filter(t => t.deliverable_type_id === parseInt(selectedDeliverableType, 10)).length + 1
@@ -173,6 +177,7 @@ export default function AdminTab() {
     setTemplateForm({
       deliverable_type_id: tpl.deliverable_type_id,
       task_name: tpl.task_name,
+      work_category_id: tpl.work_category_id || getOptions('work_category')[0]?.id || '',
       default_estimated_hours: parseFloat(tpl.default_estimated_hours) || 4,
       default_role_id: tpl.default_role_id || '',
       sequence_order: tpl.sequence || tpl.sequence_order || 1
@@ -198,19 +203,27 @@ export default function AdminTab() {
 
       setIsTemplateModalOpen(false);
       fetchTemplates();
+      showToast(isTemplateEdit ? 'Task template modified successfully' : 'Task template created successfully', 'success');
     } catch (err) {
-      alert(err.message);
+      showAlert(err.message, 'Error', 'danger');
     }
   };
 
   const handleTemplateDelete = async (id) => {
-    if (!confirm('Delete this template task?')) return;
+    const confirmed = await showConfirm({
+      title: 'Delete Task Template',
+      message: 'Are you sure you want to delete this template task?',
+      danger: true
+    });
+    if (!confirmed) return;
+
     try {
       const res = await fetch(`/api/tasktemplates?id=${id}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete template');
+      showToast('Template task deleted successfully', 'success');
       fetchTemplates();
     } catch (err) {
-      alert(err.message);
+      showAlert(err.message, 'Error', 'danger');
     }
   };
 
@@ -232,9 +245,9 @@ export default function AdminTab() {
         body: JSON.stringify(automationSettings)
       });
       if (!res.ok) throw new Error('Failed to save settings');
-      alert('Automation settings updated successfully!');
+      showToast('Automation settings updated successfully!', 'success');
     } catch (err) {
-      alert(err.message);
+      showAlert(err.message, 'Error', 'danger');
     } finally {
       setSavingSettings(false);
     }
@@ -299,9 +312,8 @@ export default function AdminTab() {
                     color: selectedCategory === cat.value ? 'var(--text-primary)' : 'var(--text-secondary)',
                     borderRadius: 'var(--radius-md)',
                     cursor: 'pointer',
-                    fontSize: '0.85rem',
-                    fontWeight: selectedCategory === cat.value ? 600 : 500,
-                    transition: 'all 0.2s'
+                    fontSize: '0.88rem',
+                    fontWeight: selectedCategory === cat.value ? 600 : 400
                   }}
                 >
                   {cat.label}
@@ -310,24 +322,27 @@ export default function AdminTab() {
             </div>
           </div>
 
-          {/* Option list table */}
+          {/* Category values list */}
           <div className="paper-panel" style={{ flex: 1, padding: '1.5rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-              <h3 style={{ color: 'var(--text-primary)', fontSize: '1.25rem', fontWeight: 700 }}>
-                {categoriesList.find(c => c.value === selectedCategory)?.label} Config Picklist
-              </h3>
+              <div>
+                <h3 style={{ color: 'var(--text-primary)', fontSize: '1.25rem', fontWeight: 700 }}>
+                  {categoriesList.find(c => c.value === selectedCategory)?.label}
+                </h3>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Category key: <code>{selectedCategory}</code></p>
+              </div>
               <button className="btn btn-primary" style={{ padding: '0.45rem 1rem', fontSize: '0.85rem' }} onClick={openDropdownCreate}>
                 + Add Option
               </button>
             </div>
 
             <div className="table-container">
-              <table className="custom-table" style={{ fontSize: '0.85rem' }}>
+              <table className="custom-table" style={{ fontSize: '0.88rem' }}>
                 <thead>
                   <tr>
+                    <th>Order</th>
                     <th>Option Name</th>
-                    <th>Sort Order</th>
-                    <th>Color Tag</th>
+                    <th>Tag Color</th>
                     <th>Status</th>
                     <th style={{ textAlign: 'right' }}>Actions</th>
                   </tr>
@@ -335,21 +350,21 @@ export default function AdminTab() {
                 <tbody>
                   {currentCategoryOptions.map((opt) => (
                     <tr key={opt.id}>
+                      <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>#{opt.sort_order || 0}</td>
                       <td><strong style={{ color: 'var(--text-primary)' }}>{opt.option_name}</strong></td>
-                      <td>{opt.sort_order || 0}</td>
                       <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <span style={{ width: '14px', height: '14px', borderRadius: '4px', background: opt.color || 'var(--accent-primary)', border: '1px solid var(--border-subtle)' }}></span>
-                          <code>{opt.color || '-'}</code>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <span style={{ display: 'inline-block', width: '14px', height: '14px', borderRadius: '50%', background: opt.color || '#3b82f6' }}></span>
+                          <code style={{ fontSize: '0.78rem' }}>{opt.color || '#3b82f6'}</code>
                         </div>
                       </td>
                       <td>
-                        <span className={`badge ${opt.active ? 'badge-success' : 'badge-danger'}`}>
-                          {opt.active ? 'Active' : 'Inactive'}
+                        <span className={`badge ${opt.active ? 'badge-success' : 'badge-neutral'}`}>
+                          {opt.active ? 'Active' : 'Disabled'}
                         </span>
                       </td>
                       <td style={{ textAlign: 'right' }}>
-                        <button className="btn btn-secondary" style={{ padding: '0.25rem 0.55rem', fontSize: '0.75rem' }} onClick={() => openDropdownEdit(opt)}>
+                        <button className="btn btn-secondary" style={{ padding: '0.25rem 0.55rem', fontSize: '0.78rem' }} onClick={() => openDropdownEdit(opt)}>
                           Modify
                         </button>
                       </td>
@@ -357,7 +372,7 @@ export default function AdminTab() {
                   ))}
                   {currentCategoryOptions.length === 0 && (
                     <tr>
-                      <td colSpan="5" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No options defined for this category.</td>
+                      <td colSpan="5" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No options defined for this category yet.</td>
                     </tr>
                   )}
                 </tbody>
@@ -372,9 +387,9 @@ export default function AdminTab() {
       {activeSubTab === 'templates' && (
         <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start' }}>
           
-          {/* Deliverable type selector list */}
+          {/* Deliverable Type Picker list */}
           <div className="paper-panel" style={{ width: '280px', padding: '1rem' }}>
-            <h4 style={{ color: 'var(--text-primary)', fontSize: '1rem', marginBottom: '0.75rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--glass-border)', fontWeight: 600 }}>Deliverable Types</h4>
+            <h4 style={{ color: 'var(--text-primary)', fontSize: '1rem', marginBottom: '0.75rem', paddingBottom: '0.5rem', borderBottom: '1px solid var(--glass-border)', fontWeight: 600 }}>Deliverable Scaffolds</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
               {getDeliverableOptions().map((opt) => (
                 <button
@@ -390,11 +405,11 @@ export default function AdminTab() {
                     color: selectedDeliverableType === opt.id.toString() ? 'var(--text-primary)' : 'var(--text-secondary)',
                     borderRadius: 'var(--radius-md)',
                     cursor: 'pointer',
-                    fontSize: '0.85rem',
-                    fontWeight: selectedDeliverableType === opt.id.toString() ? 600 : 500
+                    fontSize: '0.88rem',
+                    fontWeight: selectedDeliverableType === opt.id.toString() ? 600 : 400
                   }}
                 >
-                  {opt.option_name}
+                  📄 {opt.option_name}
                 </button>
               ))}
             </div>
@@ -417,6 +432,7 @@ export default function AdminTab() {
                   <tr>
                     <th>Seq Order</th>
                     <th>Task Scope Name</th>
+                    <th>Work Category</th>
                     <th>Default Est. Hours</th>
                     <th>Default Assignee Role</th>
                     <th style={{ textAlign: 'right' }}>Actions</th>
@@ -427,6 +443,11 @@ export default function AdminTab() {
                     <tr key={tpl.id}>
                       <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>#{tpl.sequence || tpl.sequence_order || 1}</td>
                       <td><strong style={{ color: 'var(--text-primary)' }}>{tpl.task_name}</strong></td>
+                      <td>
+                        <span className="badge badge-neutral">
+                          {tpl.work_category_name || 'Proposal Writing'}
+                        </span>
+                      </td>
                       <td style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{tpl.default_estimated_hours} hrs</td>
                       <td>
                         <span className="badge badge-info">
@@ -447,7 +468,7 @@ export default function AdminTab() {
                   ))}
                   {filteredTemplates.length === 0 && (
                     <tr>
-                      <td colSpan="5" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No tasks defined in template for this deliverable type.</td>
+                      <td colSpan="6" style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No tasks defined in template for this deliverable type.</td>
                     </tr>
                   )}
                 </tbody>
@@ -538,7 +559,7 @@ export default function AdminTab() {
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--glass-border)', paddingTop: '1.25rem', marginTop: '1rem' }}>
               <button type="submit" className="btn btn-primary" disabled={savingSettings}>
-                {savingSettings ? 'Saving Changes...' : 'Save Automation Rules'}
+                {savingSettings ? 'Saving...' : 'Save Configuration'}
               </button>
             </div>
 
@@ -546,7 +567,7 @@ export default function AdminTab() {
         </div>
       )}
 
-      {/* --- DROPDOWN EDIT MODAL --- */}
+      {/* --- DROPDOWN MODAL --- */}
       {isDropdownModalOpen && (
         <div className="modal-overlay">
           <div className="modal-content paper-panel" style={{ maxWidth: '500px' }}>
@@ -651,6 +672,22 @@ export default function AdminTab() {
                   onChange={(e) => setTemplateForm(prev => ({ ...prev, task_name: e.target.value }))}
                   required
                 />
+              </div>
+
+              {/* Work Category Selector */}
+              <div className="form-group">
+                <label className="form-label">Work Category <span className="required">*</span></label>
+                <select
+                  className="form-control form-select"
+                  value={templateForm.work_category_id}
+                  onChange={(e) => setTemplateForm(prev => ({ ...prev, work_category_id: e.target.value }))}
+                  required
+                >
+                  <option value="">Select Work Category</option>
+                  {getOptions('work_category').map(opt => (
+                    <option key={opt.id} value={opt.id}>{opt.option_name}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="form-grid">
