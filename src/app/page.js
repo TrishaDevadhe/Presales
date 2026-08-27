@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
+import LoaderSpinner from '@/components/LoaderSpinner';
 
 // Import Tabs
 import DashboardTab from '@/components/tabs/DashboardTab';
@@ -79,16 +80,12 @@ export default function Home() {
         minHeight: '100vh',
         backgroundColor: 'var(--bg-primary)',
         color: 'var(--text-primary)',
-        gap: '1rem'
+        gap: '1.25rem'
       }}>
-        <div style={{ fontSize: '2rem', animation: 'spin 1s linear infinite' }}>🌀</div>
-        <div style={{ fontFamily: 'var(--font-title)', fontWeight: 600 }}>GravitySales System initializing...</div>
-        <style jsx global>{`
-          @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-          }
-        `}</style>
+        <LoaderSpinner size={56} color="var(--accent-primary)" />
+        <div style={{ fontFamily: 'var(--font-title)', fontWeight: 600, fontSize: '1.05rem', color: 'var(--text-secondary)' }}>
+          NetSales System initializing...
+        </div>
       </div>
     );
   }
@@ -121,10 +118,10 @@ export default function Home() {
             fontFamily: 'var(--font-title)',
             boxShadow: 'var(--shadow-sm)'
           }}>
-            G
+            N
           </div>
           <div>
-            <h1 style={{ fontSize: '1.25rem', color: 'var(--text-primary)', fontWeight: 700, fontFamily: 'var(--font-title)' }}>GravitySales</h1>
+            <h1 style={{ fontSize: '1.25rem', color: 'var(--text-primary)', fontWeight: 700, fontFamily: 'var(--font-title)' }}>NetSales</h1>
             <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>Presales Engine</span>
           </div>
         </div>

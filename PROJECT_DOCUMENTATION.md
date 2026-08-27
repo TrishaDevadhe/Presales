@@ -1,6 +1,6 @@
-# GravitySales Presales Engine — Complete Technical & UI/UX Documentation
+# NetSales Presales Engine — Complete Technical & UI/UX Documentation
 
-Welcome to the official developer and design documentation for **GravitySales Presales Engine**, an enterprise solution built for managing presales pipelines, tracking proposal revisions, logging team effort, managing workload capacities, and capturing client feedback loops.
+Welcome to the official developer and design documentation for **NetSales Presales Engine**, an enterprise solution built for managing presales pipelines, tracking proposal revisions, logging team effort, managing workload capacities, and capturing client feedback loops.
 
 ---
 
