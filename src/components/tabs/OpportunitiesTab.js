@@ -76,7 +76,7 @@ export default function OpportunitiesTab() {
       opportunity_type_id: defaultOppType,
       deliverable_type_id: getOptions('deliverable_type')[0]?.id || '',
       primary_sales_owner: allUsers[2] || allUsers[0] || '',
-      secondary_sales_owners: '',
+      secondary_sales_owners: allUsers[0] || '',
       source_id: '',
       deal_stage_id: getOptions('deal_stage').find(o => o.option_name === 'Proposal')?.id || getOptions('deal_stage')[0]?.id || '',
       priority_id: getOptions('priority').find(o => o.option_name === 'Medium')?.id || '',
@@ -167,7 +167,7 @@ export default function OpportunitiesTab() {
       const oppName = formData.opportunity_name;
       setIsModalOpen(false);
       fetchOpportunities();
-      showToast(`✓ Opportunity "${oppName}" has been ${isEditMode ? 'updated' : 'registered'} successfully!`, 'success');
+      showToast(`✓ Opportunity "${oppName}" registered successfully!`, 'success');
     } catch (err) {
       setError(err.message);
     }
@@ -284,7 +284,7 @@ export default function OpportunitiesTab() {
       {/* CREATE / EDIT OPPORTUNITY OVERLAY MODAL */}
       {isModalOpen && (
         <div className="modal-overlay">
-          <div className="modal-content paper-panel" style={{ maxWidth: '900px', width: '90%' }}>
+          <div className="modal-content paper-panel" style={{ maxWidth: '960px', width: '92%', maxHeight: '90vh', overflowY: 'auto' }}>
             <button className="modal-close" onClick={() => setIsModalOpen(false)}>×</button>
             <h3 style={{ fontSize: '1.35rem', marginBottom: '1.5rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem', fontWeight: 700 }}>
               {isEditMode ? 'Modify Opportunity' : 'Register New Opportunity'}
@@ -296,14 +296,15 @@ export default function OpportunitiesTab() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
               
-              {/* Section 1: Basic Information */}
+              {/* Section 1: Basic Information & Team Roles */}
               <div>
                 <h4 style={{ fontSize: '0.95rem', color: 'var(--accent-primary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem', fontWeight: 700 }}>
-                  1. Opportunity Overview
+                  1. Opportunity Overview & Team Assignments
                 </h4>
-                <div className="form-grid">
+                <div className="form-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.25rem' }}>
+                  
                   <div className="form-group" style={{ gridColumn: 'span 2' }}>
                     <label className="form-label">Opportunity Name <span className="required">*</span></label>
                     <input
@@ -341,7 +342,7 @@ export default function OpportunitiesTab() {
                     </select>
                   </div>
 
-                  {/* Added Deliverable Type field */}
+                  {/* Deliverable Type option */}
                   <div className="form-group">
                     <label className="form-label">Deliverable Type <span className="required">*</span></label>
                     <select
@@ -357,6 +358,23 @@ export default function OpportunitiesTab() {
                     </select>
                   </div>
 
+                  {/* Lead Source */}
+                  <div className="form-group">
+                    <label className="form-label">Lead Source</label>
+                    <select
+                      name="source_id"
+                      className="form-control form-select"
+                      value={formData.source_id}
+                      onChange={handleInputChange}
+                    >
+                      <option value="">Select Lead Source</option>
+                      {getOptions('source').map(opt => (
+                        <option key={opt.id} value={opt.id}>{opt.option_name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Primary Sales Owner */}
                   <div className="form-group">
                     <label className="form-label">Primary Sales Owner <span className="required">*</span></label>
                     <select
@@ -373,30 +391,50 @@ export default function OpportunitiesTab() {
                     </select>
                   </div>
 
+                  {/* Secondary Sales Owner */}
                   <div className="form-group">
-                    <StaffMultiSelect
-                      label="Secondary Sales Owners"
-                      options={allUsers}
-                      selectedValues={formData.secondary_sales_owners ? formData.secondary_sales_owners.split(',').map(s => s.trim()).filter(Boolean) : []}
-                      onChange={(vals) => setFormData(prev => ({ ...prev, secondary_sales_owners: vals.join(', ') }))}
-                      placeholder="Select secondary owners..."
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Lead Source</label>
+                    <label className="form-label">Secondary Sales Owner</label>
                     <select
-                      name="source_id"
+                      name="secondary_sales_owners"
                       className="form-control form-select"
-                      value={formData.source_id}
+                      value={formData.secondary_sales_owners}
                       onChange={handleInputChange}
                     >
-                      <option value="">Select Lead Source</option>
-                      {getOptions('source').map(opt => (
-                        <option key={opt.id} value={opt.id}>{opt.option_name}</option>
+                      <option value="">Select Secondary Sales Owner</option>
+                      {allUsers.map(u => (
+                        <option key={u} value={u}>@{u}</option>
                       ))}
                     </select>
                   </div>
+
+                  {/* Presales Owner */}
+                  <div className="form-group">
+                    <label className="form-label">Presales Owner <span className="required">*</span></label>
+                    <select
+                      name="presales_owner"
+                      className="form-control form-select"
+                      value={formData.presales_owner}
+                      onChange={handleInputChange}
+                      required
+                    >
+                      <option value="">Select Presales Lead</option>
+                      {allUsers.map(u => (
+                        <option key={u} value={u}>@{u}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Presales Members (Multi-Select) */}
+                  <div className="form-group">
+                    <StaffMultiSelect
+                      label="Presales Members (Multi-Select)"
+                      options={allUsers}
+                      selectedValues={formData.supporting_presales_members ? formData.supporting_presales_members.split(',').map(s => s.trim()).filter(Boolean) : []}
+                      onChange={(vals) => setFormData(prev => ({ ...prev, supporting_presales_members: Array.isArray(vals) ? vals.join(', ') : vals }))}
+                      placeholder="Select presales team members..."
+                    />
+                  </div>
+
                 </div>
               </div>
 
@@ -405,7 +443,8 @@ export default function OpportunitiesTab() {
                 <h4 style={{ fontSize: '0.95rem', color: 'var(--accent-primary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem', fontWeight: 700 }}>
                   2. Commercials & Key Dates
                 </h4>
-                <div className="form-grid">
+                <div className="form-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.25rem' }}>
+                  
                   <div className="form-group">
                     <label className="form-label">Deal Stage</label>
                     <select
@@ -510,7 +549,7 @@ export default function OpportunitiesTab() {
                     />
                   </div>
 
-                  <div className="form-group">
+                  <div className="form-group" style={{ gridColumn: 'span 2' }}>
                     <label className="form-label">Internal Review Date</label>
                     <input
                       type="date"
@@ -521,51 +560,44 @@ export default function OpportunitiesTab() {
                     />
                   </div>
 
-                  <div className="form-group">
-                    <StaffMultiSelect
-                      label="Presales Members"
-                      options={allUsers}
-                      selectedValues={formData.supporting_presales_members ? formData.supporting_presales_members.split(',').map(s => s.trim()).filter(Boolean) : []}
-                      onChange={(vals) => setFormData(prev => ({ ...prev, supporting_presales_members: vals.join(', ') }))}
-                      placeholder="Select presales team members..."
-                    />
-                  </div>
                 </div>
               </div>
 
-              {/* Section 3: Detailed Notes */}
+              {/* Section 3: Detailed Briefings - Full Width & Spacious */}
               <div style={{ borderTop: '1px solid var(--glass-border)', paddingTop: '1.25rem' }}>
-                <h4 style={{ fontSize: '0.95rem', color: 'var(--accent-primary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem', fontWeight: 700 }}>
+                <h4 style={{ fontSize: '0.95rem', color: 'var(--accent-primary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1.25rem', fontWeight: 700 }}>
                   3. Executive Briefing & Special Requirements
                 </h4>
                 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                  <div className="form-group">
-                    <label className="form-label">Opportunity Summary</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem', width: '100%' }}>
+                  
+                  <div className="form-group" style={{ width: '100%' }}>
+                    <label className="form-label" style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.5rem' }}>Opportunity Summary</label>
                     <RichTextEditor
                       value={formData.summary}
                       onChange={(val) => handleRichTextChange('summary', val)}
-                      placeholder="Enter executive summary, core scope, and client pain points..."
+                      placeholder="Enter executive summary, core scope, and key client pain points..."
                     />
                   </div>
 
-                  <div className="form-group">
-                    <label className="form-label">Key Risks & Mitigation Strategy</label>
+                  <div className="form-group" style={{ width: '100%' }}>
+                    <label className="form-label" style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.5rem' }}>Key Risks & Mitigation Strategy</label>
                     <RichTextEditor
                       value={formData.risks}
                       onChange={(val) => handleRichTextChange('risks', val)}
-                      placeholder="Highlight technical risks, tight deadlines, resource constraints..."
+                      placeholder="Highlight technical risks, tight deadlines, resource constraints, and mitigations..."
                     />
                   </div>
 
-                  <div className="form-group">
-                    <label className="form-label">Special Instructions & Deliverable Expectations</label>
+                  <div className="form-group" style={{ width: '100%' }}>
+                    <label className="form-label" style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.5rem' }}>Special Instructions & Deliverable Expectations</label>
                     <RichTextEditor
                       value={formData.special_instructions}
                       onChange={(val) => handleRichTextChange('special_instructions', val)}
-                      placeholder="Specify custom client templates, pricing rules, compliance requirements..."
+                      placeholder="Specify custom client templates, pricing rules, compliance standards, and submission guidelines..."
                     />
                   </div>
+
                 </div>
               </div>
 
@@ -574,7 +606,7 @@ export default function OpportunitiesTab() {
                 <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary">
+                <button type="submit" className="btn btn-primary" style={{ padding: '0.65rem 1.5rem', fontWeight: 600 }}>
                   {isEditMode ? 'Save Opportunity Changes' : 'Submit Opportunity'}
                 </button>
               </div>

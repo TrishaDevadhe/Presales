@@ -4,18 +4,29 @@ import React, { useState, useRef, useEffect } from 'react';
 
 export default function StaffMultiSelect({
   label,
-  value = '',
+  value,
+  selectedValues,
   onChange,
   allUsers = [],
+  options = [],
   placeholder = 'Select team members...'
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
 
-  // Convert comma-separated string value into array of selected usernames
-  const selectedList = value
-    ? value.split(',').map(s => s.trim()).filter(Boolean)
-    : [];
+  const usersList = options.length > 0 ? options : allUsers;
+
+  // Normalize selected items into an array of string usernames
+  let selectedList = [];
+  if (selectedValues !== undefined && selectedValues !== null) {
+    selectedList = Array.isArray(selectedValues)
+      ? selectedValues
+      : String(selectedValues).split(',').map(s => s.trim()).filter(Boolean);
+  } else if (value !== undefined && value !== null) {
+    selectedList = Array.isArray(value)
+      ? value
+      : String(value).split(',').map(s => s.trim()).filter(Boolean);
+  }
 
   const toggleUser = (user) => {
     let updated;
@@ -24,7 +35,7 @@ export default function StaffMultiSelect({
     } else {
       updated = [...selectedList, user];
     }
-    onChange(updated.join(', '));
+    onChange(updated);
   };
 
   // Close dropdown on outside click
@@ -40,7 +51,7 @@ export default function StaffMultiSelect({
 
   return (
     <div className="form-group" ref={containerRef} style={{ position: 'relative' }}>
-      <label className="form-label">{label}</label>
+      {label && <label className="form-label">{label}</label>}
       
       {/* Selected Items Box / Trigger */}
       <div
@@ -112,10 +123,10 @@ export default function StaffMultiSelect({
             background: 'var(--paper-panel)'
           }}
         >
-          {allUsers.length === 0 ? (
+          {usersList.length === 0 ? (
             <p style={{ padding: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>No resources found</p>
           ) : (
-            allUsers.map(u => {
+            usersList.map(u => {
               const isSelected = selectedList.includes(u);
               return (
                 <div
