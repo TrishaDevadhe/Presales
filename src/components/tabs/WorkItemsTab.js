@@ -108,12 +108,13 @@ export default function WorkItemsTab() {
     setIsEditMode(false);
     setSelectedTask(null);
     setCapacityWarning(null);
+    const initialOpp = opportunities[0];
     setFormData({
-      opportunity_id: opportunities[0]?.id || '',
+      opportunity_id: initialOpp?.id || '',
       work_category_id: getOptions('work_category')[0]?.id || '',
       title: '',
       description: '',
-      deliverable_type_id: getOptions('deliverable_type')[0]?.id || '',
+      deliverable_type_id: initialOpp?.deliverable_type_id || getOptions('deliverable_type')[0]?.id || '',
       assigned_to: allUsers[3] || allUsers[0] || '',
       reviewer: allUsers[1] || '',
       collaborators: '',
@@ -166,10 +167,19 @@ export default function WorkItemsTab() {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+    if (name === 'opportunity_id') {
+      const selectedOpp = opportunities.find(o => String(o.id) === String(value));
+      setFormData(prev => ({
+        ...prev,
+        opportunity_id: value,
+        deliverable_type_id: selectedOpp?.deliverable_type_id || prev.deliverable_type_id
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value
+      }));
+    }
   };
 
   const handleSwitchChange = (name, value) => {
@@ -480,12 +490,20 @@ export default function WorkItemsTab() {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Deliverable Type</label>
+                  <label className="form-label">
+                    Deliverable Type
+                    {formData.opportunity_id && (
+                      <span style={{ fontSize: '0.75rem', color: 'var(--accent-primary)', marginLeft: '0.5rem', fontWeight: 'normal' }}>
+                        (Inherited from Opportunity)
+                      </span>
+                    )}
+                  </label>
                   <select
                     name="deliverable_type_id"
                     className="form-control form-select"
                     value={formData.deliverable_type_id}
                     onChange={handleInputChange}
+                    disabled={!!formData.opportunity_id}
                   >
                     <option value="">None</option>
                     {getOptions('deliverable_type').map(opt => (
