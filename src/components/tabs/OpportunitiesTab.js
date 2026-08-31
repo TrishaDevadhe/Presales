@@ -449,34 +449,6 @@ export default function OpportunitiesTab() {
                 <div className="form-grid-3">
                   
                   <div className="form-group">
-                    <label className="form-label">Deal Stage <span className="required">*</span></label>
-                    <select
-                      name="deal_stage_id"
-                      className="form-control form-select"
-                      value={formData.deal_stage_id}
-                      onChange={handleInputChange}
-                      required
-                    >
-                      {getOptions('deal_stage').map(opt => (
-                        <option key={opt.id} value={opt.id}>{opt.option_name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Estimated Deal Value ($ USD) <span className="required">*</span></label>
-                    <input
-                      type="number"
-                      name="estimated_deal_value"
-                      className="form-control"
-                      placeholder="e.g. 150000"
-                      value={formData.estimated_deal_value}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
                     <label className="form-label">Priority</label>
                     <select
                       name="priority_id"
@@ -516,20 +488,6 @@ export default function OpportunitiesTab() {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Technical Complexity</label>
-                    <select
-                      name="complexity_id"
-                      className="form-control form-select"
-                      value={formData.complexity_id}
-                      onChange={handleInputChange}
-                    >
-                      {getOptions('complexity').map(opt => (
-                        <option key={opt.id} value={opt.id}>{opt.option_name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="form-group">
                     <label className="form-label">RFP/Req Received Date <span className="required">*</span></label>
                     <input
                       type="date"
@@ -566,6 +524,7 @@ export default function OpportunitiesTab() {
 
                 </div>
               </div>
+
 
               {/* Section 3: Detailed Briefings - Full Width & Spacious */}
               <div className="form-section">
