@@ -94,7 +94,7 @@ export default function DashboardTab() {
       </div>
 
       {/* Critical Warnings Block (Overdue Tasks & Capacity Overloads) */}
-      <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))' }}>
+      <div className="dashboard-grid-auto">
         
         {/* Timeline Alerts (Target Dates Approaching) */}
         <div className="paper-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -172,7 +172,7 @@ export default function DashboardTab() {
       )}
 
       {/* Middle Block: Opportunities by Stage & Task Status */}
-      <div className="dashboard-grid" style={{ gridTemplateColumns: '2fr 1fr' }}>
+      <div className="dashboard-split-grid">
         
         {/* Opps by Stage */}
         <div className="paper-panel" style={{ padding: '1.5rem' }}>
@@ -234,7 +234,7 @@ export default function DashboardTab() {
       </div>
 
       {/* Rework Hotspots and Team Capacity Table */}
-      <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))' }}>
+      <div className="dashboard-grid-auto">
         
         {/* Team Workload */}
         <div className="paper-panel" style={{ padding: '1.5rem' }}>

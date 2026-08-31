@@ -534,7 +534,7 @@ export default function OpportunitiesTab() {
                   </span>
                 </div>
                 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.25rem', width: '100%', alignItems: 'stretch' }}>
+                <div className="executive-briefing-grid">
                   
                   <div className="form-group" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                     <label className="form-label" style={{ minHeight: '2.5rem', display: 'flex', alignItems: 'flex-end', marginBottom: '0.5rem' }}>Opportunity Summary</label>

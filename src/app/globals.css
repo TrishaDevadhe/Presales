@@ -249,8 +249,9 @@ p, body, input, select, textarea, button {
   display: flex;
   flex-direction: column;
   position: fixed;
+  left: 0; top: 0; bottom: 0;
   z-index: 100;
-  transition: background-color 0.25s ease, border-color 0.25s ease;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: 4px 0 24px rgba(30, 58, 138, 0.03);
   overflow-y: auto;
 }
@@ -263,11 +264,66 @@ p, body, input, select, textarea, button {
 .main-content {
   flex: 1;
   margin-left: 270px;
-  padding: 2.5rem;
+  padding: 2.25rem 2.5rem;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   gap: 2rem;
+  width: calc(100% - 270px);
+  max-width: 1700px;
+  box-sizing: border-box;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Fluid Responsive Breakpoints for Sidebar & Main Content */
+@media (max-width: 1440px) {
+  .sidebar {
+    width: 245px;
+  }
+  .main-content {
+    margin-left: 245px;
+    width: calc(100% - 245px);
+    padding: 1.75rem 2rem;
+  }
+}
+
+@media (max-width: 1200px) {
+  .sidebar {
+    width: 220px;
+  }
+  .main-content {
+    margin-left: 220px;
+    width: calc(100% - 220px);
+    padding: 1.5rem 1.5rem;
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 992px) {
+  .sidebar {
+    width: 200px;
+  }
+  .main-content {
+    margin-left: 200px;
+    width: calc(100% - 200px);
+    padding: 1.25rem 1.25rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+    position: fixed;
+    z-index: 999;
+  }
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+  .main-content {
+    margin-left: 0;
+    width: 100%;
+    padding: 1rem;
+  }
 }
 
 /* Navigation Links */
@@ -714,8 +770,35 @@ p, body, input, select, textarea, button {
    ========================================================================== */
 .dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 1.5rem;
+  width: 100%;
+}
+
+.dashboard-grid-auto {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.dashboard-split-grid {
+  display: grid;
+  grid-template-columns: 1.8fr 1fr;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+@media (max-width: 1200px) {
+  .dashboard-split-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard-grid-auto {
+    grid-template-columns: 1fr;
+  }
 }
 
 .metrics-card {
@@ -892,6 +975,38 @@ p, body, input, select, textarea, button {
   grid-template-columns: repeat(4, 1fr);
   gap: 1.25rem;
   width: 100%;
+}
+
+.executive-briefing-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+  width: 100%;
+  align-items: stretch;
+}
+
+@media (max-width: 1200px) {
+  .form-grid-3,
+  .form-grid-4,
+  .executive-briefing-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .form-grid,
+  .form-grid-2,
+  .form-grid-3,
+  .form-grid-4,
+  .executive-briefing-grid {
+    grid-template-columns: 1fr;
+  }
+  .form-group.col-span-2,
+  .col-span-2,
+  .form-group.col-span-3,
+  .col-span-3 {
+    grid-column: span 1 !important;
+  }
 }
 
 .form-group.col-span-2,
@@ -1373,8 +1488,8 @@ select.form-select option {
 
 .modal-content {
   position: relative;
-  width: 100%;
-  max-width: 1200px;
+  width: 94%;
+  max-width: 1150px;
   max-height: 88vh;
   overflow-y: auto;
   background: var(--paper-panel, rgba(255, 255, 255, 0.95));
@@ -1383,7 +1498,24 @@ select.form-select option {
   box-shadow: var(--shadow-lift, 0 25px 60px -15px rgba(15, 23, 42, 0.35)), 0 0 1px rgba(255, 255, 255, 0.8);
   padding: 2.25rem 2.5rem;
   z-index: 10001;
+  box-sizing: border-box;
   animation: scaleUpModal 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@media (max-width: 1200px) {
+  .modal-content {
+    width: 96%;
+    padding: 1.5rem 1.75rem;
+    max-height: 90vh;
+    border-radius: var(--radius-lg, 18px);
+  }
+}
+
+@media (max-width: 768px) {
+  .modal-content {
+    width: 98%;
+    padding: 1.25rem 1rem;
+  }
 }
 
 [data-theme="dark"] .modal-content {
