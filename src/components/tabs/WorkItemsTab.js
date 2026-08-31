@@ -5,7 +5,7 @@ import { useApp } from '@/context/AppContext';
 import RichTextEditor from '../RichTextEditor';
 
 export default function WorkItemsTab() {
-  const { allUsers, getOptions, resourceProfiles, showToast, showAlert, showConfirm } = useApp();
+  const { allUsers, getOptions, resourceProfiles, getOptionBadgeStyle, showToast, showAlert, showConfirm } = useApp();
   const [tasks, setTasks] = useState([]);
   const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -456,7 +456,7 @@ export default function WorkItemsTab() {
                       </div>
                     </td>
                     <td>
-                      <span className="badge badge-info">
+                      <span className="badge" style={getOptionBadgeStyle('work_category', task.work_category_name)}>
                         {task.work_category_name}
                       </span>
                     </td>
@@ -466,7 +466,7 @@ export default function WorkItemsTab() {
                     <td>{task.due_date ? task.due_date.split('T')[0] : 'N/A'}</td>
                     <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{task.estimated_hours} hrs</td>
                     <td>
-                      <span className="badge badge-warning">
+                      <span className="badge" style={getOptionBadgeStyle('priority', task.priority_name || 'Medium')}>
                         {task.priority_name || 'Medium'}
                       </span>
                     </td>
@@ -772,14 +772,15 @@ export default function WorkItemsTab() {
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <h4 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                        Tasks in this Batch ({bulkTasks.length})
-                      </h4>
+                  <div className="form-section">
+                    <div className="form-section-header">
+                      <span className="form-section-title">
+                        <span>⚡</span> Tasks in this Batch ({bulkTasks.length})
+                      </span>
                       <button
                         type="button"
                         className="btn btn-secondary btn-sm"
+                        style={{ borderRadius: 'var(--radius-pill)', padding: '0.4rem 1.1rem', fontSize: '0.84rem' }}
                         onClick={() => {
                           const defaultCategoryId = getOptions('work_category')[0]?.id || '';
                           const defaultAssignee = allUsers[3] || allUsers[0] || '';
@@ -803,17 +804,17 @@ export default function WorkItemsTab() {
                       </button>
                     </div>
 
-                    <div style={{ overflowX: 'auto', width: '100%', borderRadius: '12px', border: '1px solid var(--glass-border-strong, rgba(37, 99, 235, 0.25))', backgroundColor: 'rgba(255, 255, 255, 0.05)' }}>
-                      <div style={{ minWidth: '1600px', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    <div style={{ overflowX: 'auto', width: '100%', borderRadius: '12px', border: '1px solid var(--border-subtle)', background: 'var(--surface-card, rgba(255, 255, 255, 0.95))' }}>
+                      <div style={{ minWidth: '1750px', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                         
                         {/* Header Row */}
                         <div style={{
                           display: 'grid',
-                          gridTemplateColumns: '40px 2.2fr 1.5fr 1.5fr 1fr 1.5fr 1.5fr 1.5fr 1.8fr 3fr 40px',
+                          gridTemplateColumns: '36px 2.2fr 1.6fr 1.6fr 1.3fr 1.4fr 1.4fr 1.4fr 1.8fr 2.5fr 36px',
                           gap: '0.75rem',
                           alignItems: 'center',
-                          paddingBottom: '0.5rem',
-                          borderBottom: '1px solid var(--glass-border-strong, rgba(37, 99, 235, 0.2))',
+                          paddingBottom: '0.65rem',
+                          borderBottom: '1px solid var(--border-subtle)',
                           fontWeight: 700,
                           fontSize: '0.8rem',
                           textTransform: 'uppercase',
@@ -821,15 +822,15 @@ export default function WorkItemsTab() {
                           color: 'var(--text-secondary)'
                         }}>
                           <div style={{ textAlign: 'center' }}>#</div>
-                          <div>Task Title <span className="required">*</span></div>
-                          <div>Work Category <span className="required">*</span></div>
-                          <div>Assigned To <span className="required">*</span></div>
-                          <div>Est. Hours <span className="required">*</span></div>
-                          <div>Start Date <span className="required">*</span></div>
-                          <div>Due Date <span className="required">*</span></div>
-                          <div>Reviewer</div>
-                          <div>Collaborators</div>
-                          <div>Task Description</div>
+                          <div style={{ whiteSpace: 'nowrap' }}>Task Title <span className="required">*</span></div>
+                          <div style={{ whiteSpace: 'nowrap' }}>Work Category <span className="required">*</span></div>
+                          <div style={{ whiteSpace: 'nowrap' }}>Assigned To <span className="required">*</span></div>
+                          <div style={{ whiteSpace: 'nowrap' }}>Estimated Hours <span className="required">*</span></div>
+                          <div style={{ whiteSpace: 'nowrap' }}>Start Date <span className="required">*</span></div>
+                          <div style={{ whiteSpace: 'nowrap' }}>Due Date <span className="required">*</span></div>
+                          <div style={{ whiteSpace: 'nowrap' }}>Reviewer</div>
+                          <div style={{ whiteSpace: 'nowrap' }}>Collaborators</div>
+                          <div style={{ whiteSpace: 'nowrap' }}>Task Description</div>
                           <div></div>
                         </div>
 
@@ -839,11 +840,11 @@ export default function WorkItemsTab() {
                             key={index}
                             style={{
                               display: 'grid',
-                              gridTemplateColumns: '40px 2.2fr 1.5fr 1.5fr 1fr 1.5fr 1.5fr 1.5fr 1.8fr 3fr 40px',
+                              gridTemplateColumns: '36px 2.2fr 1.6fr 1.6fr 1.3fr 1.4fr 1.4fr 1.4fr 1.8fr 2.5fr 36px',
                               gap: '0.75rem',
                               alignItems: 'center',
                               padding: '0.5rem 0',
-                              borderBottom: index === bulkTasks.length - 1 ? 'none' : '1px solid rgba(226, 232, 240, 0.4)'
+                              borderBottom: index === bulkTasks.length - 1 ? 'none' : '1px solid rgba(226, 232, 240, 0.5)'
                             }}
                           >
                             <div style={{
@@ -859,7 +860,7 @@ export default function WorkItemsTab() {
                               <input
                                 type="text"
                                 className="form-control"
-                                placeholder="e.g. Design Proposal"
+                                placeholder="e.g. Design Cloud Security Framework"
                                 value={task.title}
                                 onChange={(e) => {
                                   const val = e.target.value;
@@ -911,7 +912,7 @@ export default function WorkItemsTab() {
                                 className="form-control"
                                 min="0"
                                 step="0.5"
-                                placeholder="Hours"
+                                placeholder="e.g. 16.0"
                                 value={task.estimated_hours}
                                 onChange={(e) => {
                                   const val = e.target.value;
@@ -971,7 +972,7 @@ export default function WorkItemsTab() {
                               <input
                                 type="text"
                                 className="form-control"
-                                placeholder="Collaborators"
+                                placeholder="e.g. bob_jones, jane_doe"
                                 value={task.collaborators}
                                 onChange={(e) => {
                                   const val = e.target.value;
@@ -985,7 +986,7 @@ export default function WorkItemsTab() {
                               <input
                                 type="text"
                                 className="form-control"
-                                placeholder="Detail out the scope..."
+                                placeholder="Detail out the scope of this task..."
                                 value={task.description}
                                 onChange={(e) => {
                                   const val = e.target.value;

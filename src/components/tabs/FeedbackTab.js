@@ -5,7 +5,7 @@ import { useApp } from '@/context/AppContext';
 import RichTextEditor from '../RichTextEditor';
 
 export default function FeedbackTab() {
-  const { allUsers, getOptions, dropdownOptions, showToast, showAlert, showConfirm } = useApp();
+  const { allUsers, getOptions, dropdownOptions, getOptionBadgeStyle, showToast, showAlert, showConfirm } = useApp();
   const [feedbacks, setFeedbacks] = useState([]);
   const [opportunities, setOpportunities] = useState([]);
   const [versions, setVersions] = useState([]);
@@ -226,8 +226,8 @@ export default function FeedbackTab() {
                         {fb.company} {fb.version_number ? `(v${fb.version_number})` : ''}
                       </div>
                     </td>
-                    <td>{fb.feedback_from_name}</td>
-                    <td>{fb.feedback_type_name}</td>
+                    <td><span className="badge" style={getOptionBadgeStyle('feedback_from', fb.feedback_from_name)}>{fb.feedback_from_name}</span></td>
+                    <td><span className="badge" style={getOptionBadgeStyle('feedback_type', fb.feedback_type_name)}>{fb.feedback_type_name}</span></td>
                     <td>
                       <span className={`badge ${fb.severity_name === 'Critical' || fb.severity_name === 'High' ? 'badge-danger' : 'badge-neutral'}`}>
                         {fb.severity_name || 'Medium'}
@@ -252,7 +252,7 @@ export default function FeedbackTab() {
                       )}
                     </td>
                     <td>
-                      <span className={`badge ${fb.status_name === 'Resolved' ? 'badge-success' : 'badge-info'}`}>
+                      <span className="badge" style={getOptionBadgeStyle('feedback_status', fb.status_name)}>
                         {fb.status_name}
                       </span>
                     </td>

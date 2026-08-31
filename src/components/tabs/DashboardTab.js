@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 
 export default function DashboardTab() {
-  const { currentUser, userRole } = useApp();
+  const { currentUser, userRole, getOptionColor, getOptionBadgeStyle } = useApp();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -178,28 +178,31 @@ export default function DashboardTab() {
         <div className="paper-panel" style={{ padding: '1.5rem' }}>
           <h3 style={{ fontSize: '1.15rem', marginBottom: '1.25rem', color: 'var(--text-primary)' }}>Pipeline Stage Distribution</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {opps_by_stage.map((stage, idx) => (
-              <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-primary)', fontWeight: 600 }}>
-                    <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: stage.stage_color || 'var(--accent-primary)', boxShadow: '0 0 6px currentColor' }}></span>
-                    {stage.stage_name} ({stage.count})
-                  </span>
-                  <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{formatCurrency(stage.total_value)}</span>
+            {opps_by_stage.map((stage, idx) => {
+              const stageColor = stage.stage_color || getOptionColor('deal_stage', stage.stage_name) || '#2563EB';
+              return (
+                <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-primary)', fontWeight: 600 }}>
+                      <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: stageColor, boxShadow: `0 0 6px ${stageColor}` }}></span>
+                      {stage.stage_name} ({stage.count})
+                    </span>
+                    <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{formatCurrency(stage.total_value)}</span>
+                  </div>
+                  <div style={{ width: '100%', height: '8px', background: 'rgba(226, 232, 240, 0.6)', borderRadius: '999px', overflow: 'hidden' }}>
+                    <div
+                      style={{
+                        height: '100%',
+                        width: `${summary.pipeline_value > 0 ? (stage.total_value / summary.pipeline_value) * 100 : 0}%`,
+                        backgroundColor: stageColor,
+                        borderRadius: '999px',
+                        boxShadow: `0 0 8px ${stageColor}`
+                      }}
+                    />
+                  </div>
                 </div>
-                <div style={{ width: '100%', height: '8px', background: 'rgba(226, 232, 240, 0.6)', borderRadius: '999px', overflow: 'hidden' }}>
-                  <div
-                    style={{
-                      height: '100%',
-                      width: `${summary.pipeline_value > 0 ? (stage.total_value / summary.pipeline_value) * 100 : 0}%`,
-                      backgroundColor: stage.stage_color || 'var(--accent-primary)',
-                      borderRadius: '999px',
-                      boxShadow: '0 0 8px currentColor'
-                    }}
-                  />
-                </div>
-              </div>
-            ))}
+              );
+            })}
             {opps_by_stage.length === 0 && (
               <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '1.5rem 0' }}>No opportunities in pipeline.</p>
             )}
@@ -210,15 +213,18 @@ export default function DashboardTab() {
         <div className="paper-panel" style={{ padding: '1.5rem' }}>
           <h3 style={{ fontSize: '1.15rem', marginBottom: '1.25rem', color: 'var(--text-primary)' }}>Task Status Distribution</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-            {tasks_by_status.map((st, idx) => (
-              <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.65rem 0.85rem', background: 'rgba(226, 232, 240, 0.35)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: 600 }}>
-                  <span style={{ width: '10px', height: '10px', borderRadius: '3px', backgroundColor: st.status_color || 'var(--accent-primary)' }}></span>
-                  {st.status_name}
-                </span>
-                <span className="badge badge-info">{st.count}</span>
-              </div>
-            ))}
+            {tasks_by_status.map((st, idx) => {
+              const statusColor = st.status_color || getOptionColor('task_status', st.status_name) || '#3B82F6';
+              return (
+                <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.65rem 0.85rem', background: 'rgba(226, 232, 240, 0.35)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: 600 }}>
+                    <span style={{ width: '10px', height: '10px', borderRadius: '3px', backgroundColor: statusColor }}></span>
+                    {st.status_name}
+                  </span>
+                  <span className="badge" style={getOptionBadgeStyle('task_status', st.status_name)}>{st.count}</span>
+                </div>
+              );
+            })}
             {tasks_by_status.length === 0 && (
               <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '1.5rem 0' }}>No tasks found.</p>
             )}
@@ -247,7 +253,7 @@ export default function DashboardTab() {
                 {workload.map((res, idx) => (
                   <tr key={idx}>
                     <td><strong style={{ color: 'var(--text-primary)' }}>@{res.username}</strong></td>
-                    <td>{res.role_name || 'N/A'}</td>
+                    <td><span className="badge" style={getOptionBadgeStyle('role', res.role_name)}>{res.role_name || 'N/A'}</span></td>
                     <td>{res.active_hours} / {res.weekly_capacity_hours} hrs</td>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

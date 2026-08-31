@@ -108,18 +108,84 @@ export function AppProvider({ children }) {
     showToast('Logged out of session');
   };
 
+  // Title Case Option Text Helper
+  const formatOptionLabel = (str) => {
+    if (!str || typeof str !== 'string') return str;
+    return str
+      .replace(/_/g, ' ')
+      .trim()
+      .split(/\s+/)
+      .map(word => {
+        if (!word) return '';
+        if (word.length <= 4 && word === word.toUpperCase() && /^[A-Z]+$/.test(word)) {
+          return word;
+        }
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      })
+      .join(' ');
+  };
+
   // Filter dropdowns helper
   const getOptions = (category) => {
     return dropdownOptions
       .filter(o => o.category === category && o.active === true)
-      .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || a.option_name.localeCompare(b.option_name));
+      .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || a.option_name.localeCompare(b.option_name))
+      .map(o => ({
+        ...o,
+        option_name: formatOptionLabel(o.option_name)
+      }));
   };
 
   // Include inactive for edits
   const getAllOptions = (category) => {
     return dropdownOptions
       .filter(o => o.category === category)
-      .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || a.option_name.localeCompare(b.option_name));
+      .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || a.option_name.localeCompare(b.option_name))
+      .map(o => ({
+        ...o,
+        option_name: formatOptionLabel(o.option_name)
+      }));
+  };
+
+  // Color Coding Helpers for Dropdown Picklist Options
+  const hexToRgba = (colorStr, alpha = 0.15) => {
+    if (!colorStr) return null;
+    if (colorStr.startsWith('#')) {
+      let hex = colorStr.replace('#', '');
+      if (hex.length === 3) {
+        hex = hex.split('').map(c => c + c).join('');
+      }
+      const r = parseInt(hex.substring(0, 2), 16);
+      const g = parseInt(hex.substring(2, 4), 16);
+      const b = parseInt(hex.substring(4, 6), 16);
+      if (!isNaN(r) && !isNaN(g) && !isNaN(b)) {
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+      }
+    }
+    if (colorStr.startsWith('hsl')) {
+      return colorStr.replace('hsl(', 'hsla(').replace(')', `, ${alpha})`);
+    }
+    return colorStr;
+  };
+
+  const getOptionColor = (category, valueOrName) => {
+    if (!valueOrName || !dropdownOptions.length) return null;
+    const match = dropdownOptions.find(o => 
+      o.category === category && (
+        o.option_name.toLowerCase() === valueOrName.toString().toLowerCase() ||
+        o.id.toString() === valueOrName.toString()
+      )
+    );
+    return match ? match.color : null;
+  };
+
+  const getOptionBadgeStyle = (category, valueOrName, fallbackColor = '#3b82f6') => {
+    const color = getOptionColor(category, valueOrName) || fallbackColor;
+    return {
+      backgroundColor: hexToRgba(color, 0.14) || 'rgba(59, 130, 246, 0.14)',
+      color: color,
+      border: `1px solid ${hexToRgba(color, 0.35) || 'rgba(59, 130, 246, 0.35)'}`
+    };
   };
 
   // App-Themed Toast Trigger
@@ -207,6 +273,9 @@ export function AppProvider({ children }) {
         refreshProfiles: fetchResourceProfiles,
         getOptions,
         getAllOptions,
+        getOptionColor,
+        getOptionBadgeStyle,
+        formatOptionLabel,
         showToast,
         showAlert,
         showConfirm,

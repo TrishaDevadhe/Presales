@@ -7,7 +7,7 @@ import CompanyAutocomplete from '../CompanyAutocomplete';
 import StaffMultiSelect from '../StaffMultiSelect';
 
 export default function OpportunitiesTab() {
-  const { allUsers, getOptions, showToast, showAlert, showConfirm } = useApp();
+  const { allUsers, getOptions, getOptionBadgeStyle, showToast, showAlert, showConfirm } = useApp();
   const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -242,17 +242,17 @@ export default function OpportunitiesTab() {
                       </div>
                     </td>
                     <td>
-                      <span className="badge badge-info">
+                      <span className="badge" style={getOptionBadgeStyle('opportunity_type', opp.opportunity_type_name)}>
                         {opp.opportunity_type_name || 'N/A'}
                       </span>
                     </td>
                     <td>
-                      <span className="badge badge-neutral">
+                      <span className="badge" style={getOptionBadgeStyle('deliverable_type', opp.deliverable_type_name)}>
                         {opp.deliverable_type_name || 'N/A'}
                       </span>
                     </td>
                     <td>
-                      <span className="badge badge-primary">
+                      <span className="badge" style={getOptionBadgeStyle('deal_stage', opp.deal_stage_name)}>
                         {opp.deal_stage_name || 'Proposal'}
                       </span>
                     </td>
@@ -534,33 +534,39 @@ export default function OpportunitiesTab() {
                   </span>
                 </div>
                 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', width: '100%' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.25rem', width: '100%', alignItems: 'stretch' }}>
                   
-                  <div className="form-group" style={{ width: '100%' }}>
-                    <label className="form-label">Opportunity Summary</label>
-                    <RichTextEditor
-                      value={formData.summary}
-                      onChange={(val) => handleRichTextChange('summary', val)}
-                      placeholder="Enter executive summary, core scope, and key client pain points..."
-                    />
+                  <div className="form-group" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                    <label className="form-label" style={{ minHeight: '2.5rem', display: 'flex', alignItems: 'flex-end', marginBottom: '0.5rem' }}>Opportunity Summary</label>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                      <RichTextEditor
+                        value={formData.summary}
+                        onChange={(val) => handleRichTextChange('summary', val)}
+                        placeholder="Enter executive summary, core scope, and key client pain points..."
+                      />
+                    </div>
                   </div>
 
-                  <div className="form-group" style={{ width: '100%' }}>
-                    <label className="form-label">Key Risks & Mitigation Strategy</label>
-                    <RichTextEditor
-                      value={formData.risks}
-                      onChange={(val) => handleRichTextChange('risks', val)}
-                      placeholder="Highlight technical risks, tight deadlines, resource constraints, and mitigations..."
-                    />
+                  <div className="form-group" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                    <label className="form-label" style={{ minHeight: '2.5rem', display: 'flex', alignItems: 'flex-end', marginBottom: '0.5rem' }}>Key Risks & Mitigation Strategy</label>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                      <RichTextEditor
+                        value={formData.risks}
+                        onChange={(val) => handleRichTextChange('risks', val)}
+                        placeholder="Highlight technical risks, tight deadlines, resource constraints, and mitigations..."
+                      />
+                    </div>
                   </div>
 
-                  <div className="form-group" style={{ width: '100%' }}>
-                    <label className="form-label">Special Instructions & Deliverable Expectations</label>
-                    <RichTextEditor
-                      value={formData.special_instructions}
-                      onChange={(val) => handleRichTextChange('special_instructions', val)}
-                      placeholder="Specify custom client templates, pricing rules, compliance standards, and submission guidelines..."
-                    />
+                  <div className="form-group" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                    <label className="form-label" style={{ minHeight: '2.5rem', display: 'flex', alignItems: 'flex-end', marginBottom: '0.5rem' }}>Special Instructions & Deliverable Expectations</label>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                      <RichTextEditor
+                        value={formData.special_instructions}
+                        onChange={(val) => handleRichTextChange('special_instructions', val)}
+                        placeholder="Specify custom client templates, pricing rules, compliance standards, and submission guidelines..."
+                      />
+                    </div>
                   </div>
 
                 </div>

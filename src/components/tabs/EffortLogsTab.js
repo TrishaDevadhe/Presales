@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 
 export default function EffortLogsTab() {
-  const { currentUser, allUsers, getOptions, showToast, showAlert, showConfirm } = useApp();
+  const { currentUser, allUsers, getOptions, getOptionBadgeStyle, showToast, showAlert, showConfirm } = useApp();
   const [effortLogs, setEffortLogs] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [opportunities, setOpportunities] = useState([]);
@@ -361,13 +361,13 @@ export default function EffortLogsTab() {
                       </div>
                     </td>
                     <td>
-                      <span className="badge badge-neutral">
+                      <span className="badge" style={getOptionBadgeStyle('deliverable_type', log.deliverable_type_name)}>
                         {log.deliverable_type_name || 'N/A'}
                       </span>
                     </td>
                     <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{log.hours_logged} hrs</td>
-                    <td><span className="badge badge-info">{log.activity_type_name || 'General'}</span></td>
-                    <td><span className="badge badge-neutral">{log.effort_type_name || 'Standard'}</span></td>
+                    <td><span className="badge" style={getOptionBadgeStyle('work_category', log.activity_type_name)}>{log.activity_type_name || 'General'}</span></td>
+                    <td><span className="badge" style={getOptionBadgeStyle('effort_type', log.effort_type_name)}>{log.effort_type_name || 'Standard'}</span></td>
                     <td style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={log.notes}>
                       {log.notes || '-'}
                     </td>

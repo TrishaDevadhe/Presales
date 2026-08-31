@@ -6,6 +6,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
 import LoaderSpinner from '@/components/LoaderSpinner';
 import LoginPage from '@/components/LoginPage';
+import { Sun, Moon, LogOut } from 'lucide-react';
 
 // Import Tabs
 import DashboardTab from '@/components/tabs/DashboardTab';
@@ -20,7 +21,7 @@ import AdminTab from '@/components/tabs/AdminTab';
 export default function Home() {
   const { currentUser, userRole, isLoggedIn, logout, handleUserChange, loading, allUsers } = useApp();
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [theme, setTheme] = useState('glass-light'); 
+  const [theme, setTheme] = useState('glass-light');
 
   // Inactivity session timeout: 5 minutes warning, 60 seconds countdown
   const [showTimeoutWarning, setShowTimeoutWarning] = useState(false);
@@ -156,7 +157,7 @@ export default function Home() {
       }}>
         <LoaderSpinner size={56} color="var(--accent-primary)" />
         <div style={{ fontFamily: 'var(--font-title)', fontWeight: 700, fontSize: '1.1rem', color: 'var(--accent-primary)', letterSpacing: '0.04em' }}>
-          ISOMETRIC TECH ENGINE INITIALIZING...
+          NetSales INITIALIZING...
         </div>
       </div>
     );
@@ -186,10 +187,10 @@ export default function Home() {
 
   return (
     <div className="app-container">
-      
+
       {/* Sidebar Navigation */}
       <aside className="sidebar">
-        
+
         {/* Logo Brand Panel */}
         <div style={{
           padding: '1.75rem 1.5rem 1.25rem',
@@ -216,7 +217,7 @@ export default function Home() {
           </div>
           <div>
             <h1 style={{ fontSize: '1.3rem', color: 'var(--text-primary)', fontWeight: 800, fontFamily: 'var(--font-title)', letterSpacing: '-0.02em' }}>NetSales</h1>
-            <span style={{ fontSize: '0.7rem', color: 'var(--accent-primary)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 800 }}>ISOMETRIC TECH</span>
+            <span style={{ fontSize: '0.7rem', color: 'var(--accent-primary)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 800 }}>NetSales</span>
           </div>
         </div>
 
@@ -303,58 +304,34 @@ export default function Home() {
         </ul>
 
         {/* Theme Switcher & User Footer */}
-        <div style={{
-          padding: '1.25rem',
-          borderTop: '1px solid var(--border-subtle)',
-          background: 'rgba(226, 232, 240, 0.3)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '0.85rem'
-        }}>
-          {/* Theme Toggle Button */}
-          <button
-            onClick={toggleTheme}
-            className="btn btn-secondary"
-            style={{
-              fontSize: '0.8rem',
-              width: '100%',
-              justifyContent: 'space-between',
-              padding: '0.5rem 0.85rem',
-              borderRadius: 'var(--radius-pill)'
-            }}
-          >
-            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)' }}>THEME PERSPECTIVE</span>
-            <span style={{ fontWeight: 800, color: 'var(--accent-primary)', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              {theme === 'glass-light' ? '💎 Glass Tech' : '🌙 Obsidian Dark'}
-            </span>
-          </button>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Active User</span>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: userRole === 'Admin' ? 'var(--color-danger)' : 'var(--color-success)', boxShadow: '0 0 6px currentColor' }}></span>
-                <span style={{ fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: 700 }}>@{currentUser}</span>
-              </div>
-              <span className="badge badge-info" style={{ fontSize: '0.72rem' }}>
-                {userRole}
-              </span>
+        <div className="sidebar-footer">
+          {/* Minimalistic Theme Switch Toggle */}
+          <div className="minimal-theme-toggle" onClick={toggleTheme} title="Switch Theme">
+            <div className="toggle-info">
+              {theme === 'dark' ? <Moon size={15} className="toggle-icon" /> : <Sun size={15} className="toggle-icon" />}
+              <span className="toggle-text">{theme === 'dark' ? 'Dark Mode' : 'Light Mode'}</span>
             </div>
-            
+            <div className={`minimal-switch-track ${theme === 'dark' ? 'checked' : ''}`}>
+              <div className="minimal-switch-thumb" />
+            </div>
+          </div>
+
+          {/* Minimalistic Active User Profile Section */}
+          <div className="minimal-user-card">
+            <div className="user-avatar-badge">
+              <span>{currentUser ? currentUser.charAt(0).toUpperCase() : 'U'}</span>
+              <span className={`status-dot ${userRole === 'Admin' ? 'admin' : 'user'}`} />
+            </div>
+            <div className="user-details">
+              <div className="user-name">@{currentUser}</div>
+              <div className="user-role">{userRole}</div>
+            </div>
             <button
               onClick={logout}
-              className="btn btn-secondary btn-sm"
-              style={{
-                fontSize: '0.75rem',
-                width: '100%',
-                marginTop: '0.5rem',
-                justifyContent: 'center',
-                borderRadius: 'var(--radius-pill)',
-                border: '1px solid rgba(239, 68, 68, 0.25)',
-                color: 'var(--color-danger-text)'
-              }}
+              className="btn-logout-minimal"
+              title="Sign Out Session"
             >
-              <span>🚪</span> Sign Out Session
+              <LogOut size={15} />
             </button>
           </div>
         </div>
@@ -362,12 +339,12 @@ export default function Home() {
 
       {/* Main Workspace Workspace */}
       <main className="main-content">
-        
+
         {/* Header navigation bar */}
         <header className="app-header">
           <div className="header-title-section">
             <h2 className="header-title">
-              {activeTab === 'dashboard' && 'Isometric Solution Stage'}
+              {activeTab === 'dashboard' && 'NetSales Solution Stage'}
               {activeTab === 'opportunities' && 'Opportunities Pipeline'}
               {activeTab === 'workitems' && 'Work Items & Task Boards'}
               {activeTab === 'efforts' && 'Workload Effort Logging'}
@@ -424,7 +401,7 @@ export default function Home() {
             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '1.5rem' }}>
               You have been inactive for 5 minutes. You will be automatically logged out in:
             </p>
-            
+
             {/* Countdown Badge */}
             <div style={{
               width: '80px',

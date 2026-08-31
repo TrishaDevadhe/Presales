@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 
 export default function ResourceProfilesTab() {
-  const { getOptions, refreshProfiles, showToast, showAlert } = useApp();
+  const { getOptions, getOptionBadgeStyle, refreshProfiles, showToast, showAlert } = useApp();
   const [profiles, setProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -165,7 +165,7 @@ export default function ResourceProfilesTab() {
                       <strong style={{ color: 'var(--text-primary)', fontSize: '0.98rem' }}>@{prof.username}</strong>
                     </td>
                     <td>
-                      <span className="badge badge-info">
+                      <span className="badge" style={getOptionBadgeStyle('role', prof.role_name)}>
                         {prof.role_name}
                       </span>
                     </td>
@@ -181,8 +181,8 @@ export default function ResourceProfilesTab() {
                         {prof.password || 'N/A'}
                       </code>
                     </td>
-                    <td>{prof.seniority_name}</td>
-                    <td>{prof.department_name}</td>
+                    <td><span className="badge" style={getOptionBadgeStyle('seniority', prof.seniority_name)}>{prof.seniority_name}</span></td>
+                    <td><span className="badge" style={getOptionBadgeStyle('department', prof.department_name)}>{prof.department_name}</span></td>
                     <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{prof.weekly_capacity_hours} hrs</td>
                     <td>{prof.standard_focus_area || 'Core Presales'}</td>
                     <td>

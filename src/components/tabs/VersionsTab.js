@@ -5,7 +5,7 @@ import { useApp } from '@/context/AppContext';
 import RichTextEditor from '../RichTextEditor';
 
 export default function VersionsTab() {
-  const { allUsers, getOptions } = useApp();
+  const { allUsers, getOptions, getOptionBadgeStyle } = useApp();
   const [versions, setVersions] = useState([]);
   const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -164,9 +164,9 @@ export default function VersionsTab() {
                         v{ver.version_number}
                       </span>
                     </td>
-                    <td>{ver.version_type_name}</td>
+                    <td><span className="badge" style={getOptionBadgeStyle('version_type', ver.version_type_name)}>{ver.version_type_name}</span></td>
                     <td>
-                      <span className="badge badge-neutral">
+                      <span className="badge" style={getOptionBadgeStyle('trigger_source', ver.trigger_source_name)}>
                         {ver.trigger_source_name}
                       </span>
                     </td>
@@ -185,7 +185,7 @@ export default function VersionsTab() {
                       </div>
                     </td>
                     <td>
-                      <span className={`badge ${ver.deadline_impact_name?.includes('Critical') ? 'badge-danger' : 'badge-neutral'}`}>
+                      <span className="badge" style={getOptionBadgeStyle('deadline_impact', ver.deadline_impact_name || 'No Impact')}>
                         {ver.deadline_impact_name || 'No Impact'}
                       </span>
                     </td>
