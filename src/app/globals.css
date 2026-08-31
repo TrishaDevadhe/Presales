@@ -419,6 +419,56 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: 0 8px 20px rgba(220, 38, 38, 0.3);
 }
 
+/* Obsidian (dark) theme button overrides */
+[data-theme="dark"] .btn-pill-cobalt,
+[data-theme="dark"] .btn-primary {
+  background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
+}
+[data-theme="dark"] .btn-pill-cobalt:hover,
+[data-theme="dark"] .btn-primary:hover {
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+  transform: translateY(-1px);
+}
+[data-theme="dark"] .btn-pill-cobalt:active,
+[data-theme="dark"] .btn-primary:active {
+  transform: scale(0.98);
+}
+
+[data-theme="dark"] .btn-secondary {
+  background: var(--glass-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+[data-theme="dark"] .btn-secondary:hover {
+  border-color: rgba(99, 102, 241, 0.4);
+  background: var(--glass-highlight);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+}
+[data-theme="dark"] .btn-ghost:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+[data-theme="dark"] .btn-danger {
+  background: transparent;
+  color: #F87171;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+[data-theme="dark"] .btn-danger:hover {
+  background: rgba(239, 68, 68, 0.12);
+  color: #F87171;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
+}
+
 /* Sizing */
 .btn-sm {
   height: 34px;
@@ -876,7 +926,7 @@ h1, h2, h3, h4, h5, h6 {
   width: 100%;
   height: 44px;
   padding: 0 1.1rem;
-  background: rgba(255, 255, 255, 0.85);
+  background-color: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(203, 213, 225, 0.9);
@@ -907,11 +957,11 @@ textarea.form-control,
 
 .form-control:hover {
   border-color: rgba(37, 99, 235, 0.45);
-  background: rgba(255, 255, 255, 0.95);
+  background-color: rgba(255, 255, 255, 0.95);
 }
 
 .form-control:focus {
-  background: #FFFFFF;
+  background-color: #FFFFFF;
   border-color: #2563EB;
   box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.18), 0 4px 16px rgba(30, 58, 138, 0.08);
 }
