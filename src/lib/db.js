@@ -34,6 +34,17 @@ async function ensureDbInitialized() {
       // Fast 1ms probe: check if primary table exists
       const check = await pool.query("SELECT 1 FROM information_schema.tables WHERE table_name = 'dropdown_options' LIMIT 1;");
       if (check.rows.length > 0) {
+        // ALWAYS make sure password column exists and is populated for existing tables
+        try {
+          await pool.query(`
+            ALTER TABLE resource_profiles ADD COLUMN IF NOT EXISTS password VARCHAR(255);
+            UPDATE resource_profiles 
+            SET password = SPLIT_PART(username, '_', 1) || '123' 
+            WHERE password IS NULL;
+          `);
+        } catch (alterErr) {
+          console.error('Error running migrations in ensureDbInitialized:', alterErr);
+        }
         global._dbInitialized = true;
         return;
       }

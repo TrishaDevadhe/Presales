@@ -7,6 +7,7 @@ export async function GET() {
   try {
     const result = await query(`
       SELECT r.*, 
+             r.standard_focus AS standard_focus_area,
              ro.option_name AS role_name, 
              ro.color AS role_color,
              se.option_name AS seniority_name, 
@@ -23,23 +24,36 @@ export async function GET() {
   }
 }
 
+function generateRandomPassword() {
+  const length = 8;
+  const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let ret = "";
+  for (let i = 0; i < length; ++i) {
+    ret += charset.charAt(Math.floor(Math.random() * charset.length));
+  }
+  return ret;
+}
+
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { username, role_id, seniority_id, skills, department_id, weekly_capacity_hours, standard_focus } = body;
+    const { username, role_id, seniority_id, skills, department_id, weekly_capacity_hours } = body;
+    const standard_focus = body.standard_focus || body.standard_focus_area || '';
+    const passwordInput = body.password;
 
     if (!username) {
       return NextResponse.json({ error: 'Username is required' }, { status: 400 });
     }
 
-    const check = await query('SELECT id FROM resource_profiles WHERE username = $1', [username]);
+    const check = await query('SELECT id, password FROM resource_profiles WHERE username = $1', [username.toLowerCase().trim()]);
 
     let result;
     if (check.rows.length === 0) {
+      const generatedPassword = passwordInput || generateRandomPassword();
       result = await query(
         `INSERT INTO resource_profiles 
-         (username, role_id, seniority_id, skills, department_id, weekly_capacity_hours, standard_focus)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         (username, role_id, seniority_id, skills, department_id, weekly_capacity_hours, standard_focus, password)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
          RETURNING *`,
         [
           username.toLowerCase().trim(),
@@ -48,10 +62,13 @@ export async function POST(request) {
           skills || '',
           department_id || null,
           parseFloat(weekly_capacity_hours) || 40.0,
-          standard_focus || ''
+          standard_focus,
+          generatedPassword
         ]
       );
     } else {
+      const existingPassword = check.rows[0].password || generateRandomPassword();
+      const finalPassword = passwordInput || existingPassword;
       result = await query(
         `UPDATE resource_profiles
          SET role_id = $1,
@@ -59,8 +76,9 @@ export async function POST(request) {
              skills = $3,
              department_id = $4,
              weekly_capacity_hours = $5,
-             standard_focus = $6
-         WHERE username = $7
+             standard_focus = $6,
+             password = $7
+         WHERE username = $8
          RETURNING *`,
         [
           role_id || null,
@@ -68,14 +86,24 @@ export async function POST(request) {
           skills || '',
           department_id || null,
           parseFloat(weekly_capacity_hours) || 40.0,
-          standard_focus || '',
+          standard_focus,
+          finalPassword,
           username.toLowerCase().trim()
         ]
       );
     }
 
-    return NextResponse.json(result.rows[0]);
+    const returnedRow = {
+      ...result.rows[0],
+      standard_focus_area: result.rows[0].standard_focus
+    };
+
+    return NextResponse.json(returnedRow);
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+}
+
+export async function PUT(request) {
+  return POST(request);
 }

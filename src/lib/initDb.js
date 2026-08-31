@@ -25,7 +25,8 @@ export async function initDb() {
       skills TEXT,
       department_id INTEGER REFERENCES dropdown_options(id) ON DELETE SET NULL,
       weekly_capacity_hours NUMERIC(5,2) DEFAULT 40.0,
-      standard_focus TEXT
+      standard_focus TEXT,
+      password VARCHAR(255)
     );
 
     CREATE TABLE IF NOT EXISTS opportunities (
@@ -278,8 +279,9 @@ export async function initDb() {
   ];
 
   for (const u of userRoles) {
+    const defaultPassword = u.username.split('_')[0] + '123';
     await query(
-      `INSERT INTO resource_profiles (username, role_id, seniority_id, skills, department_id, weekly_capacity_hours, standard_focus)
+      `INSERT INTO resource_profiles (username, role_id, seniority_id, skills, department_id, weekly_capacity_hours, standard_focus, password)
        VALUES (
          $1, 
          (SELECT id FROM dropdown_options WHERE category = 'role' AND option_name = $2 LIMIT 1),
@@ -287,10 +289,11 @@ export async function initDb() {
          $4,
          (SELECT id FROM dropdown_options WHERE category = 'department' AND option_name = $5 LIMIT 1),
          $6,
-         $7
+         $7,
+         $8
        )
        ON CONFLICT (username) DO NOTHING;`,
-      [u.username, u.role, u.seniority, u.focus, u.dept, u.cap, u.focus]
+      [u.username, u.role, u.seniority, u.focus, u.dept, u.cap, u.focus, defaultPassword]
     );
   }
 

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 
 export default function ResourceProfilesTab() {
-  const { getOptions, refreshProfiles } = useApp();
+  const { getOptions, refreshProfiles, showToast, showAlert } = useApp();
   const [profiles, setProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -28,7 +28,7 @@ export default function ResourceProfilesTab() {
   const fetchProfiles = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/resourceprofiles');
+      const res = await fetch(`/api/resourceprofiles?t=${Date.now()}`, { cache: 'no-store' });
       const data = await res.json();
       setProfiles(data);
     } catch (e) {
@@ -110,6 +110,16 @@ export default function ResourceProfilesTab() {
       setIsModalOpen(false);
       fetchProfiles();
       refreshProfiles();
+
+      if (!isEditMode) {
+        showAlert(
+          'Resource Registered Successfully',
+          `A secure passcode has been generated for @${formData.username.toLowerCase().trim()}:\n\nPasscode: ${data.password}\n\nPlease share this passcode with the employee.`,
+          'info'
+        );
+      } else {
+        showToast('Resource profile updated successfully!', 'success');
+      }
     } catch (err) {
       setError(err.message);
     }
@@ -139,6 +149,7 @@ export default function ResourceProfilesTab() {
                 <tr>
                   <th>Username</th>
                   <th>Role</th>
+                  <th>Password Passcode</th>
                   <th>Seniority</th>
                   <th>Department</th>
                   <th>Weekly Capacity</th>
@@ -157,6 +168,18 @@ export default function ResourceProfilesTab() {
                       <span className="badge badge-info">
                         {prof.role_name}
                       </span>
+                    </td>
+                    <td>
+                      <code style={{ 
+                        background: 'rgba(37, 99, 235, 0.08)', 
+                        color: 'var(--accent-secondary)', 
+                        padding: '0.2rem 0.55rem', 
+                        borderRadius: 'var(--radius-sm)',
+                        fontSize: '0.82rem',
+                        fontWeight: 700
+                      }}>
+                        {prof.password || 'N/A'}
+                      </code>
                     </td>
                     <td>{prof.seniority_name}</td>
                     <td>{prof.department_name}</td>

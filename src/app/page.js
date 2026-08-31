@@ -2,9 +2,10 @@
 
 export const dynamic = 'force-dynamic';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
 import LoaderSpinner from '@/components/LoaderSpinner';
+import LoginPage from '@/components/LoginPage';
 
 // Import Tabs
 import DashboardTab from '@/components/tabs/DashboardTab';
@@ -17,9 +18,80 @@ import ResourceProfilesTab from '@/components/tabs/ResourceProfilesTab';
 import AdminTab from '@/components/tabs/AdminTab';
 
 export default function Home() {
-  const { currentUser, userRole, handleUserChange, loading, allUsers } = useApp();
+  const { currentUser, userRole, isLoggedIn, logout, handleUserChange, loading, allUsers } = useApp();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [theme, setTheme] = useState('glass-light'); 
+
+  // Inactivity session timeout: 5 minutes warning, 60 seconds countdown
+  const [showTimeoutWarning, setShowTimeoutWarning] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(60);
+  const lastActivityRef = useRef(Date.now());
+  const warningTimerRef = useRef(null);
+
+  // Monitor user activity events
+  useEffect(() => {
+    if (!isLoggedIn) {
+      setShowTimeoutWarning(false);
+      return;
+    }
+
+    const updateActivity = () => {
+      // Only update activity if warning is not active
+      if (!showTimeoutWarning) {
+        lastActivityRef.current = Date.now();
+      }
+    };
+
+    const events = ['mousemove', 'keydown', 'mousedown', 'scroll', 'touchstart', 'click'];
+    events.forEach(event => window.addEventListener(event, updateActivity));
+
+    // Check inactivity every 2 seconds
+    const intervalId = setInterval(() => {
+      if (!showTimeoutWarning) {
+        const inactiveTime = Date.now() - lastActivityRef.current;
+        if (inactiveTime >= 5 * 60 * 1000) { // 5 minutes
+          setShowTimeoutWarning(true);
+          setTimeLeft(60);
+        }
+      }
+    }, 2000);
+
+    return () => {
+      events.forEach(event => window.removeEventListener(event, updateActivity));
+      clearInterval(intervalId);
+    };
+  }, [isLoggedIn, showTimeoutWarning]);
+
+  // Warning Countdown timer
+  useEffect(() => {
+    if (showTimeoutWarning) {
+      warningTimerRef.current = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            clearInterval(warningTimerRef.current);
+            logout();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } else {
+      if (warningTimerRef.current) {
+        clearInterval(warningTimerRef.current);
+      }
+    }
+
+    return () => {
+      if (warningTimerRef.current) {
+        clearInterval(warningTimerRef.current);
+      }
+    };
+  }, [showTimeoutWarning]);
+
+  const handleExtendSession = () => {
+    setShowTimeoutWarning(false);
+    lastActivityRef.current = Date.now();
+  };
 
   useEffect(() => {
     if (theme === 'dark') {
@@ -87,6 +159,28 @@ export default function Home() {
           ISOMETRIC TECH ENGINE INITIALIZING...
         </div>
       </div>
+    );
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <>
+        <div style={{ position: 'fixed', top: '1.5rem', right: '1.5rem', zIndex: 100 }}>
+          <button
+            onClick={toggleTheme}
+            className="btn btn-secondary"
+            style={{
+              fontSize: '0.82rem',
+              borderRadius: 'var(--radius-pill)',
+              padding: '0.5rem 1rem',
+              boxShadow: 'var(--shadow-md)'
+            }}
+          >
+            {theme === 'glass-light' ? '🌙 Obsidian Dark' : '💎 Glass Tech'}
+          </button>
+        </div>
+        <LoginPage />
+      </>
     );
   }
 
@@ -246,6 +340,22 @@ export default function Home() {
                 {userRole}
               </span>
             </div>
+            
+            <button
+              onClick={logout}
+              className="btn btn-secondary btn-sm"
+              style={{
+                fontSize: '0.75rem',
+                width: '100%',
+                marginTop: '0.5rem',
+                justifyContent: 'center',
+                borderRadius: 'var(--radius-pill)',
+                border: '1px solid rgba(239, 68, 68, 0.25)',
+                color: 'var(--color-danger-text)'
+              }}
+            >
+              <span>🚪</span> Sign Out Session
+            </button>
           </div>
         </div>
       </aside>
@@ -277,35 +387,82 @@ export default function Home() {
               {activeTab === 'admin' && 'Modify picklist choices, predefined task lists, and warning thresholds.'}
             </p>
           </div>
-
-          {/* User Impersonation selector */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <span style={{ fontSize: '0.85rem', color: '#0369A1', fontWeight: 700 }}>Active Role:</span>
-            <select
-              className="form-control form-select"
-              style={{
-                padding: '0.45rem 1.8rem 0.45rem 0.85rem',
-                fontSize: '0.85rem',
-                width: '180px',
-                borderRadius: 'var(--radius-pill)',
-                fontWeight: 600
-              }}
-              value={currentUser}
-              onChange={(e) => handleUserChange(e.target.value)}
-            >
-              {allUsers.map((username) => (
-                <option key={username} value={username}>
-                  @{username}
-                </option>
-              ))}
-            </select>
-          </div>
         </header>
 
         {/* Active view component */}
         {renderActiveTab()}
 
       </main>
+
+      {/* Inactivity Warning Modal */}
+      {showTimeoutWarning && (
+        <div style={{
+          position: 'fixed',
+          top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.75)',
+          backdropFilter: 'blur(12px)',
+          zIndex: 10000,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '1.5rem',
+          animation: 'fadeInOverlay 0.25s ease'
+        }}>
+          <div className="paper-panel" style={{
+            maxWidth: '420px',
+            width: '100%',
+            padding: '2.25rem',
+            textAlign: 'center',
+            boxShadow: 'var(--shadow-lg), 0 20px 40px rgba(0,0,0,0.3)',
+            border: '1.5px solid rgba(239, 68, 68, 0.25)',
+            animation: 'scaleUpModal 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards'
+          }}>
+            <div style={{ fontSize: '3rem', marginBottom: '1.25rem' }}>⏳</div>
+            <h3 style={{ fontSize: '1.25rem', color: 'var(--text-primary)', marginBottom: '0.5rem', fontFamily: 'var(--font-title)', fontWeight: 800 }}>
+              Session Inactivity Warning
+            </h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: '1.5rem' }}>
+              You have been inactive for 5 minutes. You will be automatically logged out in:
+            </p>
+            
+            {/* Countdown Badge */}
+            <div style={{
+              width: '80px',
+              height: '80px',
+              borderRadius: '50%',
+              border: '3px solid var(--color-danger)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '1.8rem',
+              fontWeight: 800,
+              color: 'var(--color-danger-text)',
+              margin: '0 auto 1.75rem',
+              backgroundColor: 'rgba(239, 68, 68, 0.05)',
+              boxShadow: '0 0 15px rgba(239, 68, 68, 0.15)'
+            }}>
+              {timeLeft}s
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button
+                onClick={logout}
+                className="btn btn-secondary"
+                style={{ flex: 1, borderRadius: 'var(--radius-pill)', justifyContent: 'center' }}
+              >
+                Sign Out
+              </button>
+              <button
+                onClick={handleExtendSession}
+                className="btn btn-pill-cobalt"
+                style={{ flex: 1.3, borderRadius: 'var(--radius-pill)', justifyContent: 'center' }}
+              >
+                Stay Connected
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

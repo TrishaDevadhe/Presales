@@ -5,8 +5,9 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 const AppContext = createContext();
 
 export function AppProvider({ children }) {
-  const [currentUser, setCurrentUser] = useState('admin');
-  const [userRole, setUserRole] = useState('Admin');
+  const [currentUser, setCurrentUser] = useState(null);
+  const [userRole, setUserRole] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [dropdownOptions, setDropdownOptions] = useState([]);
   const [resourceProfiles, setResourceProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -41,7 +42,7 @@ export function AppProvider({ children }) {
   // Fetch resource profiles (users)
   const fetchResourceProfiles = async () => {
     try {
-      const res = await fetch('/api/resourceprofiles');
+      const res = await fetch(`/api/resourceprofiles?t=${Date.now()}`, { cache: 'no-store' });
       const data = await res.json();
       setResourceProfiles(data);
     } catch (error) {
@@ -52,7 +53,15 @@ export function AppProvider({ children }) {
   useEffect(() => {
     const init = async () => {
       setLoading(true);
-      await Promise.all([fetchDropdowns(), fetchResourceProfiles()]);
+      const profilesPromise = fetchResourceProfiles();
+      const dropdownsPromise = fetchDropdowns();
+      await Promise.all([dropdownsPromise, profilesPromise]);
+
+      // Always show login page first on fresh load or browser refresh
+      setCurrentUser(null);
+      setUserRole(null);
+      setIsLoggedIn(false);
+
       setLoading(false);
     };
     init();
@@ -73,6 +82,30 @@ export function AppProvider({ children }) {
         setUserRole('Team Member');
       }
     }
+  };
+
+  const login = (username) => {
+    const found = users.find(u => u.username === username);
+    let role = 'Team Member';
+    if (found) {
+      role = found.role;
+    } else {
+      const prof = resourceProfiles.find(p => p.username === username);
+      if (prof) {
+        role = prof.role_name || 'Team Member';
+      }
+    }
+    setCurrentUser(username);
+    setUserRole(role);
+    setIsLoggedIn(true);
+    showToast(`Successfully authenticated as @${username} (${role})`);
+  };
+
+  const logout = () => {
+    setCurrentUser(null);
+    setUserRole(null);
+    setIsLoggedIn(false);
+    showToast('Logged out of session');
   };
 
   // Filter dropdowns helper
@@ -161,6 +194,9 @@ export function AppProvider({ children }) {
       value={{
         currentUser,
         userRole,
+        isLoggedIn,
+        login,
+        logout,
         usersList: users,
         allUsers: resourceProfiles.length > 0 ? resourceProfiles.map(p => p.username) : users.map(u => u.username),
         dropdownOptions,
