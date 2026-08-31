@@ -210,7 +210,7 @@ export default function ResourceProfilesTab() {
       {/* CREATE / EDIT PROFILE OVERLAY MODAL */}
       {isModalOpen && (
         <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}>
-          <div className="modal-content paper-panel" style={{ maxWidth: '650px' }}>
+          <div className="modal-content paper-panel" style={{ maxWidth: '1000px', width: '95%' }}>
             <button className="modal-close" onClick={() => setIsModalOpen(false)}>×</button>
             <h3 style={{ fontSize: '1.35rem', marginBottom: '1.5rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
               {isEditMode ? `Edit Profile: @${formData.username}` : 'Register Team Member Profile'}

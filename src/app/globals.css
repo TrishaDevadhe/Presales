@@ -1319,7 +1319,7 @@ textarea.form-control,
 .modal-content {
   position: relative;
   width: 100%;
-  max-width: 850px;
+  max-width: 1200px;
   max-height: 88vh;
   overflow-y: auto;
   background: var(--paper-panel, rgba(255, 255, 255, 0.95));

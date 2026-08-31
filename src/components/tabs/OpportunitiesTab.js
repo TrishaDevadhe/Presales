@@ -284,7 +284,7 @@ export default function OpportunitiesTab() {
       {/* CREATE / EDIT OPPORTUNITY OVERLAY MODAL */}
       {isModalOpen && (
         <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}>
-          <div className="modal-content paper-panel" style={{ maxWidth: '960px', width: '92%', maxHeight: '90vh', overflowY: 'auto' }}>
+          <div className="modal-content paper-panel" style={{ maxWidth: '1400px', width: '95%', maxHeight: '90vh', overflowY: 'auto' }}>
             <button className="modal-close" onClick={() => setIsModalOpen(false)}>×</button>
             <h3 style={{ fontSize: '1.35rem', marginBottom: '1.5rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem', fontWeight: 700 }}>
               {isEditMode ? 'Modify Opportunity' : 'Register New Opportunity'}

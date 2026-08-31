@@ -215,7 +215,7 @@ export default function VersionsTab() {
       {/* CREATE VERSION REVISION MODAL */}
       {isModalOpen && (
         <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}>
-          <div className="modal-content paper-panel" style={{ maxWidth: '850px' }}>
+          <div className="modal-content paper-panel" style={{ maxWidth: '1200px', width: '95%' }}>
             <button className="modal-close" onClick={() => setIsModalOpen(false)}>×</button>
             <h3 style={{ fontSize: '1.35rem', marginBottom: '1.5rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
               Log New Version & Revision Impact

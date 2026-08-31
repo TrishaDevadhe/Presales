@@ -47,6 +47,20 @@ export default function WorkItemsTab() {
     notes: ''
   });
 
+  const [bulkTasks, setBulkTasks] = useState([
+    {
+      title: '',
+      work_category_id: '',
+      assigned_to: '',
+      estimated_hours: 8,
+      start_date: new Date().toISOString().split('T')[0],
+      due_date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      reviewer: '',
+      collaborators: '',
+      description: ''
+    }
+  ]);
+
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -72,50 +86,86 @@ export default function WorkItemsTab() {
 
   // Compute live capacity check as the user fills out the form
   useEffect(() => {
-    if (!formData.assigned_to) {
-      setCapacityWarning(null);
-      return;
-    }
+    if (isEditMode) {
+      if (!formData.assigned_to) {
+        setCapacityWarning(null);
+        return;
+      }
 
-    const username = formData.assigned_to;
-    const hours = parseFloat(formData.estimated_hours) || 0;
+      const username = formData.assigned_to;
+      const hours = parseFloat(formData.estimated_hours) || 0;
 
-    const profile = resourceProfiles.find(p => p.username === username);
-    if (!profile) {
-      setCapacityWarning(null);
-      return;
-    }
-    const capacity = parseFloat(profile.weekly_capacity_hours) || 40;
+      const profile = resourceProfiles.find(p => p.username === username);
+      if (!profile) {
+        setCapacityWarning(null);
+        return;
+      }
+      const capacity = parseFloat(profile.weekly_capacity_hours) || 40;
 
-    const completedOpt = getOptions('task_status').find(o => o.option_name === 'Completed');
-    const completedId = completedOpt?.id;
+      const completedOpt = getOptions('task_status').find(o => o.option_name === 'Completed');
+      const completedId = completedOpt?.id;
 
-    const activeTasksHours = tasks
-      .filter(t => t.assigned_to === username && t.status_id !== completedId && (!isEditMode || t.id !== selectedTask?.id))
-      .reduce((sum, t) => sum + (parseFloat(t.estimated_hours) || 0), 0);
+      const activeTasksHours = tasks
+        .filter(t => t.assigned_to === username && t.status_id !== completedId && t.id !== selectedTask?.id)
+        .reduce((sum, t) => sum + (parseFloat(t.estimated_hours) || 0), 0);
 
-    const totalHours = activeTasksHours + hours;
-    if (totalHours > capacity) {
-      setCapacityWarning(
-        `⚠️ Capacity Alert: Adding this task brings @${username}'s workload to ${totalHours} hours, which exceeds their weekly capacity of ${capacity} hours (Current active load: ${activeTasksHours} hours).`
-      );
+      const totalHours = activeTasksHours + hours;
+      if (totalHours > capacity) {
+        setCapacityWarning(
+          `⚠️ Capacity Alert: Adding this task brings @${username}'s workload to ${totalHours} hours, which exceeds their weekly capacity of ${capacity} hours (Current active load: ${activeTasksHours} hours).`
+        );
+      } else {
+        setCapacityWarning(null);
+      }
     } else {
-      setCapacityWarning(null);
+      // Bulk mode capacity warning check
+      const warnings = [];
+      const completedOpt = getOptions('task_status').find(o => o.option_name === 'Completed');
+      const completedId = completedOpt?.id;
+
+      const addedHoursMap = {};
+      bulkTasks.forEach(t => {
+        if (t.assigned_to) {
+          addedHoursMap[t.assigned_to] = (addedHoursMap[t.assigned_to] || 0) + (parseFloat(t.estimated_hours) || 0);
+        }
+      });
+
+      Object.entries(addedHoursMap).forEach(([username, hours]) => {
+        const profile = resourceProfiles.find(p => p.username === username);
+        if (!profile) return;
+        const capacity = parseFloat(profile.weekly_capacity_hours) || 40;
+        const activeTasksHours = tasks
+          .filter(t => t.assigned_to === username && t.status_id !== completedId)
+          .reduce((sum, t) => sum + (parseFloat(t.estimated_hours) || 0), 0);
+        const totalHours = activeTasksHours + hours;
+        if (totalHours > capacity) {
+          warnings.push(`@${username}: ${totalHours} hrs (exceeds ${capacity} capacity by ${totalHours - capacity} hrs)`);
+        }
+      });
+
+      if (warnings.length > 0) {
+        setCapacityWarning(`⚠️ Capacity Alert: The following assignees will exceed their capacity in this batch: ${warnings.join(', ')}`);
+      } else {
+        setCapacityWarning(null);
+      }
     }
-  }, [formData.assigned_to, formData.estimated_hours, tasks, isEditMode, selectedTask, resourceProfiles]);
+  }, [formData.assigned_to, formData.estimated_hours, bulkTasks, tasks, isEditMode, selectedTask, resourceProfiles]);
 
   const openCreateModal = () => {
     setIsEditMode(false);
     setSelectedTask(null);
     setCapacityWarning(null);
     const initialOpp = opportunities[0];
+    const defaultCategoryId = getOptions('work_category')[0]?.id || '';
+    const defaultAssignee = allUsers[3] || allUsers[0] || '';
+
     setFormData({
       opportunity_id: initialOpp?.id || '',
-      work_category_id: getOptions('work_category')[0]?.id || '',
+      work_category_id: defaultCategoryId,
       title: '',
       description: '',
       deliverable_type_id: initialOpp?.deliverable_type_id || getOptions('deliverable_type')[0]?.id || '',
-      assigned_to: allUsers[3] || allUsers[0] || '',
+      assigned_to: defaultAssignee,
       reviewer: allUsers[1] || '',
       collaborators: '',
       priority_id: getOptions('priority').find(o => o.option_name === 'Medium')?.id || '',
@@ -131,6 +181,21 @@ export default function WorkItemsTab() {
       deliverable_link: '',
       notes: ''
     });
+
+    setBulkTasks([
+      {
+        title: '',
+        work_category_id: defaultCategoryId,
+        assigned_to: defaultAssignee,
+        estimated_hours: 8,
+        start_date: new Date().toISOString().split('T')[0],
+        due_date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        reviewer: allUsers[1] || '',
+        collaborators: '',
+        description: ''
+      }
+    ]);
+
     setError(null);
     setIsModalOpen(true);
   };
@@ -193,34 +258,93 @@ export default function WorkItemsTab() {
     e.preventDefault();
     setError(null);
 
-    if (!formData.title || !formData.work_category_id || !formData.assigned_to) {
-      setError('Title, Work Category, and Assignee are required.');
-      return;
-    }
-
-    try {
-      const url = isEditMode ? `/api/workitems/${selectedTask.id}` : '/api/workitems';
-      const method = isEditMode ? 'PUT' : 'POST';
-
-      const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to save task');
+    if (isEditMode) {
+      if (!formData.title || !formData.work_category_id || !formData.assigned_to) {
+        setError('Title, Work Category, and Assignee are required.');
+        return;
       }
 
-      setIsModalOpen(false);
-      fetchData();
-      showToast(isEditMode ? 'Work item updated successfully' : 'Work item created successfully', 'success');
-      if (data.warning) {
-        showAlert(data.warning, 'Capacity Alert', 'warning');
+      try {
+        const res = await fetch(`/api/workitems/${selectedTask.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(formData)
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Failed to save task');
+        }
+
+        setIsModalOpen(false);
+        fetchData();
+        showToast('Work item updated successfully', 'success');
+        if (data.warning) {
+          showAlert(data.warning, 'Capacity Alert', 'warning');
+        }
+      } catch (err) {
+        setError(err.message);
       }
-    } catch (err) {
-      setError(err.message);
+    } else {
+      // Bulk submit mode
+      for (let i = 0; i < bulkTasks.length; i++) {
+        const t = bulkTasks[i];
+        if (!t.title || !t.work_category_id || !t.assigned_to || !t.start_date || !t.due_date) {
+          setError(`Task #${i + 1} is missing Title, Work Category, Assignee, Start Date, or Due Date.`);
+          return;
+        }
+      }
+
+      try {
+        const warnings = [];
+        const createdCount = bulkTasks.length;
+
+        for (const t of bulkTasks) {
+          const payload = {
+            opportunity_id: formData.opportunity_id || null,
+            priority_id: formData.priority_id || null,
+            deliverable_type_id: formData.deliverable_type_id || null,
+            status_id: formData.status_id || getOptions('task_status').find(o => o.option_name === 'Not Started')?.id || '',
+            title: t.title,
+            work_category_id: t.work_category_id,
+            assigned_to: t.assigned_to,
+            estimated_hours: parseFloat(t.estimated_hours) || 0,
+            start_date: t.start_date,
+            due_date: t.due_date,
+            reviewer: t.reviewer || '',
+            collaborators: t.collaborators || '',
+            description: t.description || '',
+            estimation_confidence_id: formData.estimation_confidence_id || getOptions('estimation_confidence')[0]?.id || '',
+            is_revision_work: formData.is_revision_work === true,
+            revision_number: formData.revision_number || '',
+            trigger_id: formData.trigger_id || ''
+          };
+
+          const res = await fetch('/api/workitems', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          const data = await res.json();
+          if (!res.ok) {
+            throw new Error(data.error || `Failed to save task: "${t.title}"`);
+          }
+
+          if (data.warning) {
+            warnings.push(data.warning);
+          }
+        }
+
+        setIsModalOpen(false);
+        fetchData();
+        showToast(`${createdCount} work items created successfully!`, 'success');
+        if (warnings.length > 0) {
+          showAlert(warnings.join('\n\n'), 'Capacity Alerts', 'warning');
+        }
+      } catch (err) {
+        setError(err.message);
+      }
     }
   };
 
@@ -367,7 +491,7 @@ export default function WorkItemsTab() {
       {/* CREATE / EDIT WORK ITEM OVERLAY MODAL */}
       {isModalOpen && (
         <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}>
-          <div className="modal-content paper-panel" style={{ maxWidth: '850px' }}>
+          <div className="modal-content paper-panel" style={{ maxWidth: '1400px', width: '95%' }}>
             <button className="modal-close" onClick={() => setIsModalOpen(false)}>×</button>
             <h3 style={{ fontSize: '1.35rem', marginBottom: '1.5rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
               {isEditMode ? 'Edit Work Item' : 'Create New Work Item'}
@@ -387,204 +511,523 @@ export default function WorkItemsTab() {
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
-              <div className="form-section">
-                <div className="form-section-header">
-                  <span className="form-section-title">
-                    <span>⚡</span> Work Item Specifications & Assignments
-                  </span>
-                </div>
-                <div className="form-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.25rem' }}>
+              {isEditMode ? (
+                <>
+                  {/* EDIT MODE: Single Work Item Edit Form */}
+                  <div className="form-section">
+                    <div className="form-section-header">
+                      <span className="form-section-title">
+                        <span>⚡</span> Work Item Specifications & Assignments
+                      </span>
+                    </div>
+                    <div className="form-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.25rem' }}>
 
-                  <div className="form-group">
-                    <label className="form-label">Linked Opportunity</label>
-                    <select
-                      name="opportunity_id"
-                      className="form-control form-select"
-                      value={formData.opportunity_id}
-                      onChange={handleInputChange}
-                    >
-                      <option value="">None (Non-Opportunity work)</option>
-                      {opportunities.map(opp => (
-                        <option key={opp.id} value={opp.id}>{opp.company} - {opp.opportunity_name}</option>
-                      ))}
-                    </select>
+                      <div className="form-group">
+                        <label className="form-label">Linked Opportunity</label>
+                        <select
+                          name="opportunity_id"
+                          className="form-control form-select"
+                          value={formData.opportunity_id}
+                          onChange={handleInputChange}
+                        >
+                          <option value="">None (Non-Opportunity work)</option>
+                          {opportunities.map(opp => (
+                            <option key={opp.id} value={opp.id}>{opp.company} - {opp.opportunity_name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">Work Category <span className="required">*</span></label>
+                        <select
+                          name="work_category_id"
+                          className="form-control form-select"
+                          value={formData.work_category_id}
+                          onChange={handleInputChange}
+                          required
+                        >
+                          {getOptions('work_category').map(opt => (
+                            <option key={opt.id} value={opt.id}>{opt.option_name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                        <label className="form-label">Task Title <span className="required">*</span></label>
+                        <input
+                          type="text"
+                          name="title"
+                          className="form-control"
+                          placeholder="e.g. Design Cloud Security Framework"
+                          value={formData.title}
+                          onChange={handleInputChange}
+                          required
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">Assigned To <span className="required">*</span></label>
+                        <select
+                          name="assigned_to"
+                          className="form-control form-select"
+                          value={formData.assigned_to}
+                          onChange={handleInputChange}
+                          required
+                        >
+                          <option value="">Select Assignee</option>
+                          {allUsers.map(u => (
+                            <option key={u} value={u}>@{u}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">Reviewer</label>
+                        <select
+                          name="reviewer"
+                          className="form-control form-select"
+                          value={formData.reviewer}
+                          onChange={handleInputChange}
+                        >
+                          <option value="">None</option>
+                          {allUsers.map(u => (
+                            <option key={u} value={u}>@{u}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                        <label className="form-label">Collaborators (Comma-separated)</label>
+                        <input
+                          type="text"
+                          name="collaborators"
+                          className="form-control"
+                          placeholder="e.g. bob_jones, jane_doe"
+                          value={formData.collaborators}
+                          onChange={handleInputChange}
+                        />
+                      </div>
+
+                    </div>
                   </div>
 
-                  <div className="form-group">
-                    <label className="form-label">Work Category <span className="required">*</span></label>
-                    <select
-                      name="work_category_id"
-                      className="form-control form-select"
-                      value={formData.work_category_id}
-                      onChange={handleInputChange}
-                      required
-                    >
-                      {getOptions('work_category').map(opt => (
-                        <option key={opt.id} value={opt.id}>{opt.option_name}</option>
-                      ))}
-                    </select>
+                  <div className="form-section">
+                    <div className="form-section-header">
+                      <span className="form-section-title">
+                        <span>⏱️</span> Estimates, Schedule & Deliverable Type
+                      </span>
+                    </div>
+                    <div className="form-grid-3">
+
+                      <div className="form-group">
+                        <label className="form-label">Priority</label>
+                        <select
+                          name="priority_id"
+                          className="form-control form-select"
+                          value={formData.priority_id}
+                          onChange={handleInputChange}
+                        >
+                          {getOptions('priority').map(opt => (
+                            <option key={opt.id} value={opt.id}>{opt.option_name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">
+                          Deliverable Type
+                          {formData.opportunity_id && (
+                            <span style={{ fontSize: '0.75rem', color: 'var(--accent-primary)', marginLeft: '0.5rem', fontWeight: 'normal' }}>
+                            </span>
+                          )}
+                        </label>
+                        <select
+                          name="deliverable_type_id"
+                          className="form-control form-select"
+                          value={formData.deliverable_type_id}
+                          onChange={handleInputChange}
+                          disabled={!!formData.opportunity_id}
+                        >
+                          <option value="">None</option>
+                          {getOptions('deliverable_type').map(opt => (
+                            <option key={opt.id} value={opt.id}>{opt.option_name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">Estimated Hours <span className="required">*</span></label>
+                        <input
+                          type="number"
+                          name="estimated_hours"
+                          className="form-control"
+                          min="0"
+                          step="0.5"
+                          placeholder="e.g. 16.0"
+                          value={formData.estimated_hours}
+                          onChange={handleInputChange}
+                          required
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">Start Date <span className="required">*</span></label>
+                        <input
+                          type="date"
+                          name="start_date"
+                          className="form-control"
+                          value={formData.start_date}
+                          onChange={handleInputChange}
+                          required
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">Due Date <span className="required">*</span></label>
+                        <input
+                          type="date"
+                          name="due_date"
+                          className="form-control"
+                          value={formData.due_date}
+                          onChange={handleInputChange}
+                          required
+                        />
+                      </div>
+
+                    </div>
                   </div>
 
-                  <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                    <label className="form-label">Task Title <span className="required">*</span></label>
-                    <input
-                      type="text"
-                      name="title"
-                      className="form-control"
-                      placeholder="e.g. Design Cloud Security Framework"
-                      value={formData.title}
-                      onChange={handleInputChange}
-                      required
-                    />
+                  <div className="form-section">
+                    <div className="form-section-header">
+                      <span className="form-section-title">
+                        <span>📝</span> Task Brief & Deliverable Requirements
+                      </span>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Task Description</label>
+                      <RichTextEditor
+                        value={formData.description}
+                        onChange={(val) => handleSwitchChange('description', val)}
+                        placeholder="Detail out the scope of this task..."
+                      />
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* CREATE MODE: Bulk / Multiple Work Items Form */}
+                  <div className="form-section">
+                    <div className="form-section-header">
+                      <span className="form-section-title">
+                        <span>⚙️</span> Shared Parameters (Applies to all tasks in this batch)
+                      </span>
+                    </div>
+                    <div className="form-grid-3">
+
+                      <div className="form-group">
+                        <label className="form-label">Linked Opportunity</label>
+                        <select
+                          name="opportunity_id"
+                          className="form-control form-select"
+                          value={formData.opportunity_id}
+                          onChange={handleInputChange}
+                        >
+                          <option value="">None (Non-Opportunity work)</option>
+                          {opportunities.map(opp => (
+                            <option key={opp.id} value={opp.id}>{opp.company} - {opp.opportunity_name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">Priority</label>
+                        <select
+                          name="priority_id"
+                          className="form-control form-select"
+                          value={formData.priority_id}
+                          onChange={handleInputChange}
+                        >
+                          {getOptions('priority').map(opt => (
+                            <option key={opt.id} value={opt.id}>{opt.option_name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">Deliverable Type</label>
+                        <select
+                          name="deliverable_type_id"
+                          className="form-control form-select"
+                          value={formData.deliverable_type_id}
+                          onChange={handleInputChange}
+                          disabled={!!formData.opportunity_id}
+                        >
+                          <option value="">None</option>
+                          {getOptions('deliverable_type').map(opt => (
+                            <option key={opt.id} value={opt.id}>{opt.option_name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                    </div>
                   </div>
 
-                  <div className="form-group">
-                    <label className="form-label">Assigned To <span className="required">*</span></label>
-                    <select
-                      name="assigned_to"
-                      className="form-control form-select"
-                      value={formData.assigned_to}
-                      onChange={handleInputChange}
-                      required
-                    >
-                      <option value="">Select Assignee</option>
-                      {allUsers.map(u => (
-                        <option key={u} value={u}>@{u}</option>
-                      ))}
-                    </select>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <h4 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                        Tasks in this Batch ({bulkTasks.length})
+                      </h4>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        onClick={() => {
+                          const defaultCategoryId = getOptions('work_category')[0]?.id || '';
+                          const defaultAssignee = allUsers[3] || allUsers[0] || '';
+                          setBulkTasks(prev => [
+                            ...prev,
+                            {
+                              title: '',
+                              work_category_id: defaultCategoryId,
+                              assigned_to: defaultAssignee,
+                              estimated_hours: 8,
+                              start_date: new Date().toISOString().split('T')[0],
+                              due_date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                              reviewer: allUsers[1] || '',
+                              collaborators: '',
+                              description: ''
+                            }
+                          ]);
+                        }}
+                      >
+                        + Add Another Task
+                      </button>
+                    </div>
+
+                    <div style={{ overflowX: 'auto', width: '100%', borderRadius: '12px', border: '1px solid var(--glass-border-strong, rgba(37, 99, 235, 0.25))', backgroundColor: 'rgba(255, 255, 255, 0.05)' }}>
+                      <div style={{ minWidth: '1600px', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        
+                        {/* Header Row */}
+                        <div style={{
+                          display: 'grid',
+                          gridTemplateColumns: '40px 2.2fr 1.5fr 1.5fr 1fr 1.5fr 1.5fr 1.5fr 1.8fr 3fr 40px',
+                          gap: '0.75rem',
+                          alignItems: 'center',
+                          paddingBottom: '0.5rem',
+                          borderBottom: '1px solid var(--glass-border-strong, rgba(37, 99, 235, 0.2))',
+                          fontWeight: 700,
+                          fontSize: '0.8rem',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          color: 'var(--text-secondary)'
+                        }}>
+                          <div style={{ textAlign: 'center' }}>#</div>
+                          <div>Task Title <span className="required">*</span></div>
+                          <div>Work Category <span className="required">*</span></div>
+                          <div>Assigned To <span className="required">*</span></div>
+                          <div>Est. Hours <span className="required">*</span></div>
+                          <div>Start Date <span className="required">*</span></div>
+                          <div>Due Date <span className="required">*</span></div>
+                          <div>Reviewer</div>
+                          <div>Collaborators</div>
+                          <div>Task Description</div>
+                          <div></div>
+                        </div>
+
+                        {/* Task Rows */}
+                        {bulkTasks.map((task, index) => (
+                          <div
+                            key={index}
+                            style={{
+                              display: 'grid',
+                              gridTemplateColumns: '40px 2.2fr 1.5fr 1.5fr 1fr 1.5fr 1.5fr 1.5fr 1.8fr 3fr 40px',
+                              gap: '0.75rem',
+                              alignItems: 'center',
+                              padding: '0.5rem 0',
+                              borderBottom: index === bulkTasks.length - 1 ? 'none' : '1px solid rgba(226, 232, 240, 0.4)'
+                            }}
+                          >
+                            <div style={{
+                              textAlign: 'center',
+                              fontWeight: 700,
+                              fontSize: '0.9rem',
+                              color: 'var(--accent-primary)'
+                            }}>
+                              {index + 1}
+                            </div>
+
+                            <div>
+                              <input
+                                type="text"
+                                className="form-control"
+                                placeholder="e.g. Design Proposal"
+                                value={task.title}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setBulkTasks(prev => prev.map((t, idx) => idx === index ? { ...t, title: val } : t));
+                                }}
+                                required
+                                style={{ padding: '0.45rem 0.6rem', fontSize: '0.85rem' }}
+                              />
+                            </div>
+
+                            <div>
+                              <select
+                                className="form-control form-select"
+                                value={task.work_category_id}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setBulkTasks(prev => prev.map((t, idx) => idx === index ? { ...t, work_category_id: val } : t));
+                                }}
+                                required
+                                style={{ padding: '0.45rem 0.6rem', fontSize: '0.85rem' }}
+                              >
+                                {getOptions('work_category').map(opt => (
+                                  <option key={opt.id} value={opt.id}>{opt.option_name}</option>
+                                ))}
+                              </select>
+                            </div>
+
+                            <div>
+                              <select
+                                className="form-control form-select"
+                                value={task.assigned_to}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setBulkTasks(prev => prev.map((t, idx) => idx === index ? { ...t, assigned_to: val } : t));
+                                }}
+                                required
+                                style={{ padding: '0.45rem 0.6rem', fontSize: '0.85rem' }}
+                              >
+                                <option value="">Select Assignee</option>
+                                {allUsers.map(u => (
+                                  <option key={u} value={u}>@{u}</option>
+                                ))}
+                              </select>
+                            </div>
+
+                            <div>
+                              <input
+                                type="number"
+                                className="form-control"
+                                min="0"
+                                step="0.5"
+                                placeholder="Hours"
+                                value={task.estimated_hours}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setBulkTasks(prev => prev.map((t, idx) => idx === index ? { ...t, estimated_hours: val } : t));
+                                }}
+                                required
+                                style={{ padding: '0.45rem 0.6rem', fontSize: '0.85rem' }}
+                              />
+                            </div>
+
+                            <div>
+                              <input
+                                type="date"
+                                className="form-control"
+                                value={task.start_date}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setBulkTasks(prev => prev.map((t, idx) => idx === index ? { ...t, start_date: val } : t));
+                                }}
+                                required
+                                style={{ padding: '0.45rem 0.6rem', fontSize: '0.85rem' }}
+                              />
+                            </div>
+
+                            <div>
+                              <input
+                                type="date"
+                                className="form-control"
+                                value={task.due_date}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setBulkTasks(prev => prev.map((t, idx) => idx === index ? { ...t, due_date: val } : t));
+                                }}
+                                required
+                                style={{ padding: '0.45rem 0.6rem', fontSize: '0.85rem' }}
+                              />
+                            </div>
+
+                            <div>
+                              <select
+                                className="form-control form-select"
+                                value={task.reviewer}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setBulkTasks(prev => prev.map((t, idx) => idx === index ? { ...t, reviewer: val } : t));
+                                }}
+                                style={{ padding: '0.45rem 0.6rem', fontSize: '0.85rem' }}
+                              >
+                                <option value="">None</option>
+                                {allUsers.map(u => (
+                                  <option key={u} value={u}>@{u}</option>
+                                ))}
+                              </select>
+                            </div>
+
+                            <div>
+                              <input
+                                type="text"
+                                className="form-control"
+                                placeholder="Collaborators"
+                                value={task.collaborators}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setBulkTasks(prev => prev.map((t, idx) => idx === index ? { ...t, collaborators: val } : t));
+                                }}
+                                style={{ padding: '0.45rem 0.6rem', fontSize: '0.85rem' }}
+                              />
+                            </div>
+
+                            <div>
+                              <input
+                                type="text"
+                                className="form-control"
+                                placeholder="Detail out the scope..."
+                                value={task.description}
+                                onChange={(e) => {
+                                  const val = e.target.value;
+                                  setBulkTasks(prev => prev.map((t, idx) => idx === index ? { ...t, description: val } : t));
+                                }}
+                                style={{ padding: '0.45rem 0.6rem', fontSize: '0.85rem' }}
+                              />
+                            </div>
+
+                            <div style={{ textAlign: 'center' }}>
+                              {bulkTasks.length > 1 && (
+                                <button
+                                  type="button"
+                                  style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: '#EF4444',
+                                    fontWeight: 'bold',
+                                    cursor: 'pointer',
+                                    fontSize: '1.1rem',
+                                    padding: '0.2rem',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                  }}
+                                  onClick={() => {
+                                    setBulkTasks(prev => prev.filter((_, idx) => idx !== index));
+                                  }}
+                                  title="Remove Task"
+                                >
+                                  ✕
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+
+                      </div>
+                    </div>
                   </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Reviewer</label>
-                    <select
-                      name="reviewer"
-                      className="form-control form-select"
-                      value={formData.reviewer}
-                      onChange={handleInputChange}
-                    >
-                      <option value="">None</option>
-                      {allUsers.map(u => (
-                        <option key={u} value={u}>@{u}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                    <label className="form-label">Collaborators (Comma-separated)</label>
-                    <input
-                      type="text"
-                      name="collaborators"
-                      className="form-control"
-                      placeholder="e.g. bob_jones, jane_doe"
-                      value={formData.collaborators}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-
-                </div>
-              </div>
-
-              <div className="form-section">
-                <div className="form-section-header">
-                  <span className="form-section-title">
-                    <span>⏱️</span> Estimates, Schedule & Deliverable Type
-                  </span>
-                </div>
-                <div className="form-grid-3">
-
-                  <div className="form-group">
-                    <label className="form-label">Priority</label>
-                    <select
-                      name="priority_id"
-                      className="form-control form-select"
-                      value={formData.priority_id}
-                      onChange={handleInputChange}
-                    >
-                      {getOptions('priority').map(opt => (
-                        <option key={opt.id} value={opt.id}>{opt.option_name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">
-                      Deliverable Type
-                      {formData.opportunity_id && (
-                        <span style={{ fontSize: '0.75rem', color: 'var(--accent-primary)', marginLeft: '0.5rem', fontWeight: 'normal' }}>
-                        </span>
-                      )}
-                    </label>
-                    <select
-                      name="deliverable_type_id"
-                      className="form-control form-select"
-                      value={formData.deliverable_type_id}
-                      onChange={handleInputChange}
-                      disabled={!!formData.opportunity_id}
-                    >
-                      <option value="">None</option>
-                      {getOptions('deliverable_type').map(opt => (
-                        <option key={opt.id} value={opt.id}>{opt.option_name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Estimated Hours <span className="required">*</span></label>
-                    <input
-                      type="number"
-                      name="estimated_hours"
-                      className="form-control"
-                      min="0"
-                      step="0.5"
-                      placeholder="e.g. 16.0"
-                      value={formData.estimated_hours}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Start Date <span className="required">*</span></label>
-                    <input
-                      type="date"
-                      name="start_date"
-                      className="form-control"
-                      value={formData.start_date}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Due Date <span className="required">*</span></label>
-                    <input
-                      type="date"
-                      name="due_date"
-                      className="form-control"
-                      value={formData.due_date}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-
-                </div>
-              </div>
-
-              <div className="form-section">
-                <div className="form-section-header">
-                  <span className="form-section-title">
-                    <span>📝</span> Task Brief & Deliverable Requirements
-                  </span>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Task Description</label>
-                  <RichTextEditor
-                    value={formData.description}
-                    onChange={(val) => handleSwitchChange('description', val)}
-                    placeholder="Detail out the scope of this task..."
-                  />
-                </div>
-              </div>
+                </>
+              )}
 
               {/* Action buttons */}
               <div className="form-actions">
@@ -592,7 +1035,7 @@ export default function WorkItemsTab() {
                   Cancel
                 </button>
                 <button type="submit" className="btn btn-pill-cobalt" style={{ padding: '0.65rem 1.75rem' }}>
-                  ⚡ {isEditMode ? 'Save Changes' : 'Create Work Item'}
+                  ⚡ {isEditMode ? 'Save Changes' : 'Create Work Items'}
                 </button>
               </div>
 

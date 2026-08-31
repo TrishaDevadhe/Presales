@@ -387,7 +387,7 @@ export default function EffortLogsTab() {
       {/* LOG EFFORT OVERLAY MODAL */}
       {isModalOpen && (
         <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}>
-          <div className="modal-content paper-panel" style={{ maxWidth: '600px' }}>
+          <div className="modal-content paper-panel" style={{ maxWidth: '1000px', width: '95%' }}>
             <button className="modal-close" onClick={() => setIsModalOpen(false)}>×</button>
             <h3 style={{ fontSize: '1.35rem', marginBottom: '1.5rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
               Log Effort Workload

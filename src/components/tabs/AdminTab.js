@@ -571,7 +571,7 @@ export default function AdminTab() {
       {/* --- DROPDOWN MODAL --- */}
       {isDropdownModalOpen && (
         <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsDropdownModalOpen(false); }}>
-          <div className="modal-content paper-panel" style={{ maxWidth: '500px' }}>
+          <div className="modal-content paper-panel" style={{ maxWidth: '800px', width: '95%' }}>
             <button className="modal-close" onClick={() => setIsDropdownModalOpen(false)}>×</button>
             <h3 style={{ fontSize: '1.3rem', marginBottom: '1.25rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.5rem' }}>
               {isDropdownEdit ? 'Modify Config Option' : 'Register Picklist Option'}
@@ -644,7 +644,7 @@ export default function AdminTab() {
       {/* --- TEMPLATE MODAL --- */}
       {isTemplateModalOpen && (
         <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsTemplateModalOpen(false); }}>
-          <div className="modal-content paper-panel" style={{ maxWidth: '550px' }}>
+          <div className="modal-content paper-panel" style={{ maxWidth: '850px', width: '95%' }}>
             <button className="modal-close" onClick={() => setIsTemplateModalOpen(false)}>×</button>
             <h3 style={{ fontSize: '1.3rem', marginBottom: '1.25rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.5rem' }}>
               {isTemplateEdit ? 'Modify Task Template' : 'Add Auto-Scaffold Task'}
