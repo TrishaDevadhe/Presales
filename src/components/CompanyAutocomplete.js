@@ -57,7 +57,11 @@ export default function CompanyAutocomplete({ label = 'Company Name', required =
   };
 
   return (
-    <div ref={containerRef} className="autocomplete-container">
+    <div
+      ref={containerRef}
+      className={`autocomplete-container ${showSuggestions ? 'active' : ''}`}
+      style={{ position: 'relative', zIndex: showSuggestions ? 9999 : 'auto' }}
+    >
       {label && (
         <label className="form-label">
           {label} {required && <span className="required">*</span>}
@@ -73,7 +77,7 @@ export default function CompanyAutocomplete({ label = 'Company Name', required =
         required={required}
       />
       {showSuggestions && (inputValue.trim() !== '' || companies.length > 0) && (
-        <div className="autocomplete-dropdown">
+        <div className="autocomplete-dropdown" style={{ zIndex: 99999 }}>
           {suggestions.map((comp, idx) => (
             <div
               key={idx}

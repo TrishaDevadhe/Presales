@@ -186,7 +186,7 @@ export default function ResourceProfilesTab() {
 
       {/* CREATE / EDIT PROFILE OVERLAY MODAL */}
       {isModalOpen && (
-        <div className="modal-overlay">
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}>
           <div className="modal-content paper-panel" style={{ maxWidth: '650px' }}>
             <button className="modal-close" onClick={() => setIsModalOpen(false)}>×</button>
             <h3 style={{ fontSize: '1.35rem', marginBottom: '1.5rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
@@ -201,114 +201,130 @@ export default function ResourceProfilesTab() {
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               
-              <div className="form-group">
-                <label className="form-label">Username / Handle <span className="required">*</span></label>
-                <input
-                  type="text"
-                  name="username"
-                  className="form-control"
-                  placeholder="e.g. david_miller"
-                  value={formData.username}
-                  onChange={handleInputChange}
-                  disabled={isEditMode}
-                  required
-                />
+              <div className="form-section">
+                <div className="form-section-header">
+                  <span className="form-section-title">
+                    <span>👥</span> User Identity & Workload Capacity
+                  </span>
+                </div>
+
+                <div className="form-grid-2">
+                  <div className="form-group">
+                    <label className="form-label">Username / Handle <span className="required">*</span></label>
+                    <input
+                      type="text"
+                      name="username"
+                      className="form-control"
+                      placeholder="e.g. david_miller"
+                      value={formData.username}
+                      onChange={handleInputChange}
+                      disabled={isEditMode}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Weekly Capacity (Hours) <span className="required">*</span></label>
+                    <input
+                      type="number"
+                      name="weekly_capacity_hours"
+                      className="form-control"
+                      min="1"
+                      max="168"
+                      placeholder="e.g. 40"
+                      value={formData.weekly_capacity_hours}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Role <span className="required">*</span></label>
+                    <select
+                      name="role_id"
+                      className="form-control form-select"
+                      value={formData.role_id}
+                      onChange={handleInputChange}
+                      required
+                    >
+                      {getOptions('role').map(opt => (
+                        <option key={opt.id} value={opt.id}>{opt.option_name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Seniority</label>
+                    <select
+                      name="seniority_id"
+                      className="form-control form-select"
+                      value={formData.seniority_id}
+                      onChange={handleInputChange}
+                    >
+                      <option value="">Select Seniority</option>
+                      {getOptions('seniority').map(opt => (
+                        <option key={opt.id} value={opt.id}>{opt.option_name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group col-span-full">
+                    <label className="form-label">Department</label>
+                    <select
+                      name="department_id"
+                      className="form-control form-select"
+                      value={formData.department_id}
+                      onChange={handleInputChange}
+                    >
+                      <option value="">Select Department</option>
+                      {getOptions('department').map(opt => (
+                        <option key={opt.id} value={opt.id}>{opt.option_name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                </div>
               </div>
 
-              <div className="form-grid">
-                
-                <div className="form-group">
-                  <label className="form-label">Role <span className="required">*</span></label>
-                  <select
-                    name="role_id"
-                    className="form-control form-select"
-                    value={formData.role_id}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    {getOptions('role').map(opt => (
-                      <option key={opt.id} value={opt.id}>{opt.option_name}</option>
-                    ))}
-                  </select>
+              <div className="form-section">
+                <div className="form-section-header">
+                  <span className="form-section-title">
+                    <span>⚡</span> Domain Focus & Core Skill Matrix
+                  </span>
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Seniority</label>
-                  <select
-                    name="seniority_id"
-                    className="form-control form-select"
-                    value={formData.seniority_id}
-                    onChange={handleInputChange}
-                  >
-                    <option value="">Select Seniority</option>
-                    {getOptions('seniority').map(opt => (
-                      <option key={opt.id} value={opt.id}>{opt.option_name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Department</label>
-                  <select
-                    name="department_id"
-                    className="form-control form-select"
-                    value={formData.department_id}
-                    onChange={handleInputChange}
-                  >
-                    <option value="">Select Department</option>
-                    {getOptions('department').map(opt => (
-                      <option key={opt.id} value={opt.id}>{opt.option_name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Weekly Capacity (Hours) <span className="required">*</span></label>
+                  <label className="form-label">Standard Focus Area</label>
                   <input
-                    type="number"
-                    name="weekly_capacity_hours"
+                    type="text"
+                    name="standard_focus_area"
                     className="form-control"
-                    min="1"
-                    max="168"
-                    value={formData.weekly_capacity_hours}
+                    placeholder="e.g. AWS & Azure Architecture, Security RFP Solutions"
+                    value={formData.standard_focus_area}
                     onChange={handleInputChange}
-                    required
                   />
                 </div>
 
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Standard Focus Area</label>
-                <input
-                  type="text"
-                  name="standard_focus_area"
-                  className="form-control"
-                  placeholder="e.g. AWS & Azure Architecture, Security RFP Solutions"
-                  value={formData.standard_focus_area}
-                  onChange={handleInputChange}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Skills & Technology Expertise (Comma-separated)</label>
-                <input
-                  type="text"
-                  name="skills"
-                  className="form-control"
-                  placeholder="e.g. AWS, React, Python, PostgreSQL, Security, RFPs"
-                  value={formData.skills}
-                  onChange={handleInputChange}
-                />
+                <div className="form-group">
+                  <label className="form-label">Skills & Technology Expertise (Comma-separated)</label>
+                  <input
+                    type="text"
+                    name="skills"
+                    className="form-control"
+                    placeholder="e.g. AWS, React, Python, PostgreSQL, Security, RFPs"
+                    value={formData.skills}
+                    onChange={handleInputChange}
+                  />
+                </div>
               </div>
 
               {/* Action buttons */}
-              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', borderTop: '1px solid var(--glass-border)', paddingTop: '1.25rem', marginTop: '0.5rem' }}>
+              <div className="form-actions">
                 <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary">
-                  Save Profile
+                <button type="submit" className="btn btn-pill-cobalt" style={{ padding: '0.65rem 1.75rem' }}>
+                  ⚡ {isEditMode ? 'Save Profile' : 'Register Profile'}
                 </button>
               </div>
 

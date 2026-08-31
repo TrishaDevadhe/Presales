@@ -278,7 +278,7 @@ export default function FeedbackTab() {
 
       {/* CREATE FEEDBACK OVERLAY MODAL */}
       {isModalOpen && (
-        <div className="modal-overlay">
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}>
           <div className="modal-content paper-panel" style={{ maxWidth: '800px' }}>
             <button className="modal-close" onClick={() => setIsModalOpen(false)}>×</button>
             <h3 style={{ fontSize: '1.35rem', marginBottom: '1.5rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
@@ -293,102 +293,115 @@ export default function FeedbackTab() {
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               
-              <div className="form-grid">
-                
-                <div className="form-group">
-                  <label className="form-label">Opportunity <span className="required">*</span></label>
-                  <select
-                    name="opportunity_id"
-                    className="form-control form-select"
-                    value={formData.opportunity_id}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="">Select Opportunity</option>
-                    {opportunities.map(opp => (
-                      <option key={opp.id} value={opp.id}>{opp.company} - {opp.opportunity_name}</option>
-                    ))}
-                  </select>
+              <div className="form-section">
+                <div className="form-section-header">
+                  <span className="form-section-title">
+                    <span>💬</span> Feedback Context & Classification
+                  </span>
                 </div>
+                <div className="form-grid-3">
+                  
+                  <div className="form-group">
+                    <label className="form-label">Opportunity <span className="required">*</span></label>
+                    <select
+                      name="opportunity_id"
+                      className="form-control form-select"
+                      value={formData.opportunity_id}
+                      onChange={handleInputChange}
+                      required
+                    >
+                      <option value="">Select Opportunity</option>
+                      {opportunities.map(opp => (
+                        <option key={opp.id} value={opp.id}>{opp.company} - {opp.opportunity_name}</option>
+                      ))}
+                    </select>
+                  </div>
 
-                <div className="form-group">
-                  <label className="form-label">Linked Proposal Version</label>
-                  <select
-                    name="version_id"
-                    className="form-control form-select"
-                    value={formData.version_id}
-                    onChange={handleInputChange}
-                  >
-                    <option value="">None / General Feedback</option>
-                    {versions.filter(v => v.opportunity_id === parseInt(formData.opportunity_id, 10)).map(ver => (
-                      <option key={ver.id} value={ver.id}>v{ver.version_number} ({ver.version_type_name})</option>
-                    ))}
-                  </select>
+                  <div className="form-group">
+                    <label className="form-label">Linked Proposal Version</label>
+                    <select
+                      name="version_id"
+                      className="form-control form-select"
+                      value={formData.version_id}
+                      onChange={handleInputChange}
+                    >
+                      <option value="">None / General Feedback</option>
+                      {versions.filter(v => v.opportunity_id === parseInt(formData.opportunity_id, 10)).map(ver => (
+                        <option key={ver.id} value={ver.id}>v{ver.version_number} ({ver.version_type_name})</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Feedback Source <span className="required">*</span></label>
+                    <select
+                      name="feedback_from_id"
+                      className="form-control form-select"
+                      value={formData.feedback_from_id}
+                      onChange={handleInputChange}
+                      required
+                    >
+                      {getOptions('feedback_from').map(opt => (
+                        <option key={opt.id} value={opt.id}>{opt.option_name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Feedback Type <span className="required">*</span></label>
+                    <select
+                      name="feedback_type_id"
+                      className="form-control form-select"
+                      value={formData.feedback_type_id}
+                      onChange={handleInputChange}
+                      required
+                    >
+                      {getOptions('feedback_type').map(opt => (
+                        <option key={opt.id} value={opt.id}>{opt.option_name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Severity</label>
+                    <select
+                      name="severity_id"
+                      className="form-control form-select"
+                      value={formData.severity_id}
+                      onChange={handleInputChange}
+                    >
+                      {getOptions('severity').map(opt => (
+                        <option key={opt.id} value={opt.id}>{opt.option_name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Feedback Status <span className="required">*</span></label>
+                    <select
+                      name="status_id"
+                      className="form-control form-select"
+                      value={formData.status_id}
+                      onChange={handleInputChange}
+                      required
+                    >
+                      {getOptions('feedback_status').map(opt => (
+                        <option key={opt.id} value={opt.id}>{opt.option_name}</option>
+                      ))}
+                    </select>
+                  </div>
+
                 </div>
-
-                <div className="form-group">
-                  <label className="form-label">Feedback Source <span className="required">*</span></label>
-                  <select
-                    name="feedback_from_id"
-                    className="form-control form-select"
-                    value={formData.feedback_from_id}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    {getOptions('feedback_from').map(opt => (
-                      <option key={opt.id} value={opt.id}>{opt.option_name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Feedback Type <span className="required">*</span></label>
-                  <select
-                    name="feedback_type_id"
-                    className="form-control form-select"
-                    value={formData.feedback_type_id}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    {getOptions('feedback_type').map(opt => (
-                      <option key={opt.id} value={opt.id}>{opt.option_name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Severity</label>
-                  <select
-                    name="severity_id"
-                    className="form-control form-select"
-                    value={formData.severity_id}
-                    onChange={handleInputChange}
-                  >
-                    {getOptions('severity').map(opt => (
-                      <option key={opt.id} value={opt.id}>{opt.option_name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Feedback Status <span className="required">*</span></label>
-                  <select
-                    name="status_id"
-                    className="form-control form-select"
-                    value={formData.status_id}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    {getOptions('feedback_status').map(opt => (
-                      <option key={opt.id} value={opt.id}>{opt.option_name}</option>
-                    ))}
-                  </select>
-                </div>
-
               </div>
 
               {/* Action Required toggle panel */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1.25rem', background: 'var(--bg-secondary)', borderLeft: '3px solid var(--accent-primary)', borderRadius: 'var(--radius-md)' }}>
+              <div className="form-section">
+                <div className="form-section-header">
+                  <span className="form-section-title">
+                    <span>⚡</span> Action Plan & Task Creation
+                  </span>
+                </div>
+
                 <div
                   className={`switch-container ${formData.action_required ? 'checked' : ''}`}
                   onClick={() => handleSwitchChange('action_required', !formData.action_required)}
@@ -398,7 +411,7 @@ export default function FeedbackTab() {
                 </div>
 
                 {formData.action_required && (
-                  <div className="form-grid" style={{ marginTop: '0.5rem' }}>
+                  <div className="form-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.25rem', marginTop: '0.5rem' }}>
                     <div className="form-group">
                       <label className="form-label">Task Owner <span className="required">*</span></label>
                       <select
@@ -430,22 +443,29 @@ export default function FeedbackTab() {
                 )}
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Feedback Details / Notes <span className="required">*</span></label>
-                <RichTextEditor
-                  value={formData.feedback_text}
-                  onChange={(val) => handleSwitchChange('feedback_text', val)}
-                  placeholder="Record the exact client comments, change requests, or clarification questions..."
-                />
+              <div className="form-section">
+                <div className="form-section-header">
+                  <span className="form-section-title">
+                    <span>📝</span> Feedback Notes & Client Instructions
+                  </span>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Feedback Details / Notes <span className="required">*</span></label>
+                  <RichTextEditor
+                    value={formData.feedback_text}
+                    onChange={(val) => handleSwitchChange('feedback_text', val)}
+                    placeholder="Record the exact client comments, change requests, or clarification questions..."
+                  />
+                </div>
               </div>
 
               {/* Submit Buttons */}
-              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', borderTop: '1px solid var(--glass-border)', paddingTop: '1.25rem', marginTop: '0.5rem' }}>
+              <div className="form-actions">
                 <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary">
-                  Record Feedback
+                <button type="submit" className="btn btn-pill-cobalt" style={{ padding: '0.65rem 1.75rem' }}>
+                  ⚡ Record Feedback
                 </button>
               </div>
 

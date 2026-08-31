@@ -386,7 +386,7 @@ export default function EffortLogsTab() {
 
       {/* LOG EFFORT OVERLAY MODAL */}
       {isModalOpen && (
-        <div className="modal-overlay">
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}>
           <div className="modal-content paper-panel" style={{ maxWidth: '600px' }}>
             <button className="modal-close" onClick={() => setIsModalOpen(false)}>×</button>
             <h3 style={{ fontSize: '1.35rem', marginBottom: '1.5rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
@@ -407,140 +407,157 @@ export default function EffortLogsTab() {
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               
-              {/* Opportunity Selector Field at Top */}
-              <div className="form-group">
-                <label className="form-label">Select Opportunity</label>
-                <select
-                  className="form-control form-select"
-                  value={selectedOppId}
-                  onChange={handleOppChange}
-                >
-                  <option value="">Show All Opportunities</option>
-                  {opportunities.map(opp => (
-                    <option key={opp.id} value={opp.id}>
-                      {opp.opportunity_name} ({opp.company})
-                    </option>
-                  ))}
-                </select>
+              <div className="form-section">
+                <div className="form-section-header">
+                  <span className="form-section-title">
+                    <span>⏱️</span> Workload Task Selection & Log Details
+                  </span>
+                </div>
+                
+                {/* Opportunity Selector Field at Top */}
+                <div className="form-group">
+                  <label className="form-label">Select Opportunity</label>
+                  <select
+                    className="form-control form-select"
+                    value={selectedOppId}
+                    onChange={handleOppChange}
+                  >
+                    <option value="">Show All Opportunities</option>
+                    {opportunities.map(opp => (
+                      <option key={opp.id} value={opp.id}>
+                        {opp.opportunity_name} ({opp.company})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Filtered Work Item Task Dropdown */}
+                <div className="form-group">
+                  <label className="form-label">Work Item Task <span className="required">*</span></label>
+                  <select
+                    name="work_item_id"
+                    className="form-control form-select"
+                    value={formData.work_item_id}
+                    onChange={handleTaskChange}
+                    required
+                  >
+                    {availableTasks.length === 0 ? (
+                      <option value="" disabled>No work items found for selected opportunity</option>
+                    ) : (
+                      <>
+                        <option value="">Select a task...</option>
+                        {availableTasks.map(t => (
+                          <option key={t.id} value={t.id}>
+                            {t.title} — Est: {t.estimated_hours}h
+                          </option>
+                        ))}
+                      </>
+                    )}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Logging Person</label>
+                  <input
+                    type="text"
+                    name="person"
+                    className="form-control"
+                    value={formData.person}
+                    disabled
+                    readOnly
+                  />
+                </div>
               </div>
 
-              {/* Filtered Work Item Task Dropdown */}
-              <div className="form-group">
-                <label className="form-label">Work Item Task <span className="required">*</span></label>
-                <select
-                  name="work_item_id"
-                  className="form-control form-select"
-                  value={formData.work_item_id}
-                  onChange={handleTaskChange}
-                  required
-                >
-                  {availableTasks.length === 0 ? (
-                    <option value="" disabled>No work items found for selected opportunity</option>
-                  ) : (
-                    <>
-                      <option value="">Select a task...</option>
-                      {availableTasks.map(t => (
-                        <option key={t.id} value={t.id}>
-                          {t.title} — Est: {t.estimated_hours}h
-                        </option>
+              <div className="form-section">
+                <div className="form-section-header">
+                  <span className="form-section-title">
+                    <span>📊</span> Date, Hours & Classification
+                  </span>
+                </div>
+
+                <div className="form-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.25rem' }}>
+                  <div className="form-group">
+                    <label className="form-label">Date Worked <span className="required">*</span></label>
+                    <input
+                      type="date"
+                      name="date"
+                      className="form-control"
+                      value={formData.date}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Hours Logged <span className="required">*</span></label>
+                    <input
+                      type="number"
+                      name="hours_logged"
+                      className="form-control"
+                      min="0.1"
+                      max="24"
+                      step="0.1"
+                      placeholder="e.g. 4.5"
+                      value={formData.hours_logged}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.25rem' }}>
+                  <div className="form-group">
+                    <label className="form-label">Activity Type</label>
+                    <select
+                      name="activity_type_id"
+                      className="form-control form-select"
+                      value={formData.activity_type_id}
+                      onChange={handleInputChange}
+                    >
+                      <option value="">Select Activity</option>
+                      {getOptions('work_category').map(opt => (
+                        <option key={opt.id} value={opt.id}>{opt.option_name}</option>
                       ))}
-                    </>
-                  )}
-                </select>
-              </div>
+                    </select>
+                  </div>
 
-              <div className="form-group">
-                <label className="form-label">Logging Person</label>
-                <input
-                  type="text"
-                  name="person"
-                  className="form-control"
-                  value={formData.person}
-                  disabled
-                  readOnly
-                />
-              </div>
+                  <div className="form-group">
+                    <label className="form-label">Effort Type</label>
+                    <select
+                      name="effort_type_id"
+                      className="form-control form-select"
+                      value={formData.effort_type_id}
+                      onChange={handleInputChange}
+                    >
+                      <option value="">Standard / Core</option>
+                      {getOptions('effort_type').map(opt => (
+                        <option key={opt.id} value={opt.id}>{opt.option_name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
 
-              <div className="form-grid">
                 <div className="form-group">
-                  <label className="form-label">Date Worked <span className="required">*</span></label>
+                  <label className="form-label">Activity Notes</label>
                   <input
-                    type="date"
-                    name="date"
+                    type="text"
+                    name="notes"
                     className="form-control"
-                    value={formData.date}
+                    placeholder="Summarize work done during these hours..."
+                    value={formData.notes}
                     onChange={handleInputChange}
-                    required
                   />
                 </div>
-
-                <div className="form-group">
-                  <label className="form-label">Hours Logged <span className="required">*</span></label>
-                  <input
-                    type="number"
-                    name="hours_logged"
-                    className="form-control"
-                    min="0.1"
-                    max="24"
-                    step="0.1"
-                    value={formData.hours_logged}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="form-grid">
-                <div className="form-group">
-                  <label className="form-label">Activity Type</label>
-                  <select
-                    name="activity_type_id"
-                    className="form-control form-select"
-                    value={formData.activity_type_id}
-                    onChange={handleInputChange}
-                  >
-                    <option value="">Select Activity</option>
-                    {getOptions('work_category').map(opt => (
-                      <option key={opt.id} value={opt.id}>{opt.option_name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Effort Type</label>
-                  <select
-                    name="effort_type_id"
-                    className="form-control form-select"
-                    value={formData.effort_type_id}
-                    onChange={handleInputChange}
-                  >
-                    <option value="">Standard / Core</option>
-                    {getOptions('effort_type').map(opt => (
-                      <option key={opt.id} value={opt.id}>{opt.option_name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Activity Notes</label>
-                <input
-                  type="text"
-                  name="notes"
-                  className="form-control"
-                  placeholder="Summarize work done during these hours..."
-                  value={formData.notes}
-                  onChange={handleInputChange}
-                />
               </div>
 
               {/* Action buttons */}
-              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', borderTop: '1px solid var(--glass-border)', paddingTop: '1.25rem', marginTop: '0.5rem' }}>
+              <div className="form-actions">
                 <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary" disabled={availableTasks.length === 0}>
-                  Log Effort Hours
+                <button type="submit" className="btn btn-pill-cobalt" style={{ padding: '0.65rem 1.75rem' }} disabled={availableTasks.length === 0}>
+                  ⚡ Log Effort Hours
                 </button>
               </div>
 

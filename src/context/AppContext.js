@@ -206,7 +206,7 @@ export function AppProvider({ children }) {
 
       {/* Global App-Themed Alert Modal */}
       {alertModal.isOpen && (
-        <div className="modal-overlay" style={{ zIndex: 10000 }}>
+        <div className="modal-overlay" style={{ zIndex: 10000 }} onClick={(e) => { if (e.target === e.currentTarget) alertModal.onClose(); }}>
           <div className="modal-content paper-panel" style={{ maxWidth: '420px', textAlign: 'center', padding: '1.75rem' }}>
             <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>
               {alertModal.type === 'warning' ? '⚠️' : alertModal.type === 'danger' ? '❌' : 'ℹ️'}
@@ -230,7 +230,7 @@ export function AppProvider({ children }) {
 
       {/* Global App-Themed Confirmation Modal */}
       {confirmModal.isOpen && (
-        <div className="modal-overlay" style={{ zIndex: 10000 }}>
+        <div className="modal-overlay" style={{ zIndex: 10000 }} onClick={(e) => { if (e.target === e.currentTarget) confirmModal.onCancel(); }}>
           <div className="modal-content paper-panel" style={{ maxWidth: '440px', padding: '1.75rem' }}>
             <h3 style={{ fontSize: '1.2rem', marginBottom: '0.75rem', color: 'var(--text-primary)', fontWeight: 700 }}>
               {confirmModal.title}
@@ -258,7 +258,7 @@ export function AppProvider({ children }) {
 
       {/* Global App-Themed Prompt Modal */}
       {promptModal.isOpen && (
-        <div className="modal-overlay" style={{ zIndex: 10000 }}>
+        <div className="modal-overlay" style={{ zIndex: 10000 }} onClick={(e) => { if (e.target === e.currentTarget) promptModal.onCancel(); }}>
           <div className="modal-content paper-panel" style={{ maxWidth: '440px', padding: '1.75rem' }}>
             <h3 style={{ fontSize: '1.2rem', marginBottom: '0.75rem', color: 'var(--text-primary)', fontWeight: 700 }}>
               {promptModal.title}

@@ -274,19 +274,19 @@ export default function AdminTab() {
           className={`tab-btn ${activeSubTab === 'dropdowns' ? 'active' : ''}`}
           onClick={() => setActiveSubTab('dropdowns')}
         >
-          Dropdown Manager
+          <span>📂</span> Dropdown Manager
         </button>
         <button 
           className={`tab-btn ${activeSubTab === 'templates' ? 'active' : ''}`}
           onClick={() => setActiveSubTab('templates')}
         >
-          Task Templates
+          <span>📋</span> Task Templates
         </button>
         <button 
           className={`tab-btn ${activeSubTab === 'automations' ? 'active' : ''}`}
           onClick={() => setActiveSubTab('automations')}
         >
-          Automation & Warnings
+          <span>⚡</span> Automation & Warnings
         </button>
       </div>
 
@@ -306,14 +306,15 @@ export default function AdminTab() {
                     display: 'block',
                     width: '100%',
                     textAlign: 'left',
-                    padding: '0.6rem 0.8rem',
-                    background: selectedCategory === cat.value ? 'var(--bg-secondary)' : 'transparent',
-                    border: selectedCategory === cat.value ? '1px solid var(--border-subtle)' : '1px solid transparent',
-                    color: selectedCategory === cat.value ? 'var(--text-primary)' : 'var(--text-secondary)',
+                    padding: '0.65rem 0.9rem',
+                    background: selectedCategory === cat.value ? 'linear-gradient(135deg, rgba(30, 58, 138, 0.08) 0%, rgba(37, 99, 235, 0.12) 100%)' : 'transparent',
+                    border: selectedCategory === cat.value ? '1px solid rgba(30, 58, 138, 0.25)' : '1px solid transparent',
+                    color: selectedCategory === cat.value ? 'var(--accent-primary)' : 'var(--text-secondary)',
                     borderRadius: 'var(--radius-md)',
                     cursor: 'pointer',
                     fontSize: '0.88rem',
-                    fontWeight: selectedCategory === cat.value ? 600 : 400
+                    fontWeight: selectedCategory === cat.value ? 700 : 500,
+                    transition: 'all 0.18s ease'
                   }}
                 >
                   {cat.label}
@@ -569,67 +570,70 @@ export default function AdminTab() {
 
       {/* --- DROPDOWN MODAL --- */}
       {isDropdownModalOpen && (
-        <div className="modal-overlay">
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsDropdownModalOpen(false); }}>
           <div className="modal-content paper-panel" style={{ maxWidth: '500px' }}>
             <button className="modal-close" onClick={() => setIsDropdownModalOpen(false)}>×</button>
             <h3 style={{ fontSize: '1.3rem', marginBottom: '1.25rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.5rem' }}>
               {isDropdownEdit ? 'Modify Config Option' : 'Register Picklist Option'}
             </h3>
 
-            <form onSubmit={handleDropdownSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <form onSubmit={handleDropdownSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               
-              <div className="form-group">
-                <label className="form-label">Category Name</label>
-                <input type="text" className="form-control" value={dropdownForm.category} disabled />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Option Name <span className="required">*</span></label>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={dropdownForm.option_name}
-                  onChange={(e) => setDropdownForm(prev => ({ ...prev, option_name: e.target.value }))}
-                  required
-                />
-              </div>
-
-              <div className="form-grid">
+              <div className="form-section">
                 <div className="form-group">
-                  <label className="form-label">Sort Order</label>
-                  <input
-                    type="number"
-                    className="form-control"
-                    value={dropdownForm.sort_order}
-                    onChange={(e) => setDropdownForm(prev => ({ ...prev, sort_order: parseInt(e.target.value, 10) || 0 }))}
-                  />
+                  <label className="form-label">Category Name</label>
+                  <input type="text" className="form-control" value={dropdownForm.category} disabled />
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Color Code Tag</label>
+                  <label className="form-label">Option Name <span className="required">*</span></label>
                   <input
                     type="text"
                     className="form-control"
-                    placeholder="e.g. #ef4444 or hsl(...)"
-                    value={dropdownForm.color}
-                    onChange={(e) => setDropdownForm(prev => ({ ...prev, color: e.target.value }))}
+                    placeholder="e.g. High Priority"
+                    value={dropdownForm.option_name}
+                    onChange={(e) => setDropdownForm(prev => ({ ...prev, option_name: e.target.value }))}
+                    required
                   />
                 </div>
-              </div>
 
-              <div className="form-group" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '1rem', marginTop: '0.5rem' }}>
-                <div
-                  className={`switch-container ${dropdownForm.active ? 'checked' : ''}`}
-                  onClick={() => setDropdownForm(prev => ({ ...prev, active: !prev.active }))}
-                >
-                  <div className="switch-track"><div className="switch-thumb"></div></div>
-                  <span className="form-label" style={{ margin: 0 }}>Active Option</span>
+                <div className="form-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+                  <div className="form-group">
+                    <label className="form-label">Sort Order</label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      value={dropdownForm.sort_order}
+                      onChange={(e) => setDropdownForm(prev => ({ ...prev, sort_order: parseInt(e.target.value, 10) || 0 }))}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Color Code Tag</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="e.g. #ef4444"
+                      value={dropdownForm.color}
+                      onChange={(e) => setDropdownForm(prev => ({ ...prev, color: e.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group" style={{ marginTop: '0.25rem' }}>
+                  <div
+                    className={`switch-container ${dropdownForm.active ? 'checked' : ''}`}
+                    onClick={() => setDropdownForm(prev => ({ ...prev, active: !prev.active }))}
+                  >
+                    <div className="switch-track"><div className="switch-thumb"></div></div>
+                    <span className="form-label" style={{ margin: 0 }}>Active Option</span>
+                  </div>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', borderTop: '1px solid var(--glass-border)', paddingTop: '1rem', marginTop: '0.5rem' }}>
+              <div className="form-actions">
                 <button type="button" className="btn btn-secondary" onClick={() => setIsDropdownModalOpen(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">Save Option</button>
+                <button type="submit" className="btn btn-pill-cobalt">⚡ Save Option</button>
               </div>
 
             </form>
@@ -639,96 +643,98 @@ export default function AdminTab() {
 
       {/* --- TEMPLATE MODAL --- */}
       {isTemplateModalOpen && (
-        <div className="modal-overlay">
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsTemplateModalOpen(false); }}>
           <div className="modal-content paper-panel" style={{ maxWidth: '550px' }}>
             <button className="modal-close" onClick={() => setIsTemplateModalOpen(false)}>×</button>
             <h3 style={{ fontSize: '1.3rem', marginBottom: '1.25rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.5rem' }}>
               {isTemplateEdit ? 'Modify Task Template' : 'Add Auto-Scaffold Task'}
             </h3>
 
-            <form onSubmit={handleTemplateSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <form onSubmit={handleTemplateSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               
-              <div className="form-group">
-                <label className="form-label">Target Deliverable Type <span className="required">*</span></label>
-                <select
-                  className="form-control form-select"
-                  value={templateForm.deliverable_type_id}
-                  onChange={(e) => setTemplateForm(prev => ({ ...prev, deliverable_type_id: e.target.value }))}
-                  required
-                >
-                  {getDeliverableOptions().map(opt => (
-                    <option key={opt.id} value={opt.id}>{opt.option_name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Task Scope Name <span className="required">*</span></label>
-                <input
-                  type="text"
-                  className="form-control"
-                  placeholder="e.g. RFP Scope Review"
-                  value={templateForm.task_name}
-                  onChange={(e) => setTemplateForm(prev => ({ ...prev, task_name: e.target.value }))}
-                  required
-                />
-              </div>
-
-              {/* Work Category Selector */}
-              <div className="form-group">
-                <label className="form-label">Work Category <span className="required">*</span></label>
-                <select
-                  className="form-control form-select"
-                  value={templateForm.work_category_id}
-                  onChange={(e) => setTemplateForm(prev => ({ ...prev, work_category_id: e.target.value }))}
-                  required
-                >
-                  <option value="">Select Work Category</option>
-                  {getOptions('work_category').map(opt => (
-                    <option key={opt.id} value={opt.id}>{opt.option_name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="form-grid">
+              <div className="form-section">
                 <div className="form-group">
-                  <label className="form-label">Default Est. Hours <span className="required">*</span></label>
+                  <label className="form-label">Target Deliverable Type <span className="required">*</span></label>
+                  <select
+                    className="form-control form-select"
+                    value={templateForm.deliverable_type_id}
+                    onChange={(e) => setTemplateForm(prev => ({ ...prev, deliverable_type_id: e.target.value }))}
+                    required
+                  >
+                    {getDeliverableOptions().map(opt => (
+                      <option key={opt.id} value={opt.id}>{opt.option_name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Task Scope Name <span className="required">*</span></label>
                   <input
-                    type="number"
+                    type="text"
                     className="form-control"
-                    value={templateForm.default_estimated_hours}
-                    onChange={(e) => setTemplateForm(prev => ({ ...prev, default_estimated_hours: parseFloat(e.target.value) || 0 }))}
+                    placeholder="e.g. RFP Scope Review"
+                    value={templateForm.task_name}
+                    onChange={(e) => setTemplateForm(prev => ({ ...prev, task_name: e.target.value }))}
                     required
                   />
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Default Assignee Role</label>
+                  <label className="form-label">Work Category <span className="required">*</span></label>
                   <select
                     className="form-control form-select"
-                    value={templateForm.default_role_id}
-                    onChange={(e) => setTemplateForm(prev => ({ ...prev, default_role_id: e.target.value }))}
+                    value={templateForm.work_category_id}
+                    onChange={(e) => setTemplateForm(prev => ({ ...prev, work_category_id: e.target.value }))}
+                    required
                   >
-                    {getOptions('role').map(opt => (
+                    <option value="">Select Work Category</option>
+                    {getOptions('work_category').map(opt => (
                       <option key={opt.id} value={opt.id}>{opt.option_name}</option>
                     ))}
                   </select>
                 </div>
+
+                <div className="form-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+                  <div className="form-group">
+                    <label className="form-label">Default Est. Hours <span className="required">*</span></label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      value={templateForm.default_estimated_hours}
+                      onChange={(e) => setTemplateForm(prev => ({ ...prev, default_estimated_hours: parseFloat(e.target.value) || 0 }))}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Default Assignee Role</label>
+                    <select
+                      className="form-control form-select"
+                      value={templateForm.default_role_id}
+                      onChange={(e) => setTemplateForm(prev => ({ ...prev, default_role_id: e.target.value }))}
+                    >
+                      <option value="">Select Default Role</option>
+                      {getOptions('role').map(opt => (
+                        <option key={opt.id} value={opt.id}>{opt.option_name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Sequence Order</label>
+                  <input
+                    type="number"
+                    className="form-control"
+                    value={templateForm.sequence_order}
+                    onChange={(e) => setTemplateForm(prev => ({ ...prev, sequence_order: parseInt(e.target.value, 10) || 1 }))}
+                  />
+                </div>
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Execution Sequence Order</label>
-                <input
-                  type="number"
-                  className="form-control"
-                  value={templateForm.sequence_order}
-                  onChange={(e) => setTemplateForm(prev => ({ ...prev, sequence_order: parseInt(e.target.value, 10) || 1 }))}
-                />
-              </div>
-
-              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', borderTop: '1px solid var(--glass-border)', paddingTop: '1rem', marginTop: '0.5rem' }}>
+              <div className="form-actions">
                 <button type="button" className="btn btn-secondary" onClick={() => setIsTemplateModalOpen(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">Save Template</button>
+                <button type="submit" className="btn btn-pill-cobalt">⚡ Save Template Task</button>
               </div>
 
             </form>

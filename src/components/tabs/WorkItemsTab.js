@@ -253,7 +253,7 @@ export default function WorkItemsTab() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      
+
       {/* Header section */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h2 style={{ fontSize: '1.5rem', color: 'var(--text-primary)', fontWeight: 700 }}>Work Items (Tasks)</h2>
@@ -366,7 +366,7 @@ export default function WorkItemsTab() {
 
       {/* CREATE / EDIT WORK ITEM OVERLAY MODAL */}
       {isModalOpen && (
-        <div className="modal-overlay">
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}>
           <div className="modal-content paper-panel" style={{ maxWidth: '850px' }}>
             <button className="modal-close" onClick={() => setIsModalOpen(false)}>×</button>
             <h3 style={{ fontSize: '1.35rem', marginBottom: '1.5rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
@@ -386,188 +386,213 @@ export default function WorkItemsTab() {
             )}
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-              
-              <div className="form-grid">
-                
-                <div className="form-group">
-                  <label className="form-label">Linked Opportunity</label>
-                  <select
-                    name="opportunity_id"
-                    className="form-control form-select"
-                    value={formData.opportunity_id}
-                    onChange={handleInputChange}
-                  >
-                    <option value="">None (Non-Opportunity work)</option>
-                    {opportunities.map(opp => (
-                      <option key={opp.id} value={opp.id}>{opp.company} - {opp.opportunity_name}</option>
-                    ))}
-                  </select>
-                </div>
 
-                <div className="form-group">
-                  <label className="form-label">Work Category <span className="required">*</span></label>
-                  <select
-                    name="work_category_id"
-                    className="form-control form-select"
-                    value={formData.work_category_id}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    {getOptions('work_category').map(opt => (
-                      <option key={opt.id} value={opt.id}>{opt.option_name}</option>
-                    ))}
-                  </select>
+              <div className="form-section">
+                <div className="form-section-header">
+                  <span className="form-section-title">
+                    <span>⚡</span> Work Item Specifications & Assignments
+                  </span>
                 </div>
+                <div className="form-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.25rem' }}>
 
-                <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                  <label className="form-label">Task Title <span className="required">*</span></label>
-                  <input
-                    type="text"
-                    name="title"
-                    className="form-control"
-                    placeholder="e.g. Design Cloud Security Framework"
-                    value={formData.title}
-                    onChange={handleInputChange}
-                    required
-                  />
+                  <div className="form-group">
+                    <label className="form-label">Linked Opportunity</label>
+                    <select
+                      name="opportunity_id"
+                      className="form-control form-select"
+                      value={formData.opportunity_id}
+                      onChange={handleInputChange}
+                    >
+                      <option value="">None (Non-Opportunity work)</option>
+                      {opportunities.map(opp => (
+                        <option key={opp.id} value={opp.id}>{opp.company} - {opp.opportunity_name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Work Category <span className="required">*</span></label>
+                    <select
+                      name="work_category_id"
+                      className="form-control form-select"
+                      value={formData.work_category_id}
+                      onChange={handleInputChange}
+                      required
+                    >
+                      {getOptions('work_category').map(opt => (
+                        <option key={opt.id} value={opt.id}>{opt.option_name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                    <label className="form-label">Task Title <span className="required">*</span></label>
+                    <input
+                      type="text"
+                      name="title"
+                      className="form-control"
+                      placeholder="e.g. Design Cloud Security Framework"
+                      value={formData.title}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Assigned To <span className="required">*</span></label>
+                    <select
+                      name="assigned_to"
+                      className="form-control form-select"
+                      value={formData.assigned_to}
+                      onChange={handleInputChange}
+                      required
+                    >
+                      <option value="">Select Assignee</option>
+                      {allUsers.map(u => (
+                        <option key={u} value={u}>@{u}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Reviewer</label>
+                    <select
+                      name="reviewer"
+                      className="form-control form-select"
+                      value={formData.reviewer}
+                      onChange={handleInputChange}
+                    >
+                      <option value="">None</option>
+                      {allUsers.map(u => (
+                        <option key={u} value={u}>@{u}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                    <label className="form-label">Collaborators (Comma-separated)</label>
+                    <input
+                      type="text"
+                      name="collaborators"
+                      className="form-control"
+                      placeholder="e.g. bob_jones, jane_doe"
+                      value={formData.collaborators}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+
                 </div>
-
-                <div className="form-group">
-                  <label className="form-label">Assigned To <span className="required">*</span></label>
-                  <select
-                    name="assigned_to"
-                    className="form-control form-select"
-                    value={formData.assigned_to}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="">Select Assignee</option>
-                    {allUsers.map(u => (
-                      <option key={u} value={u}>@{u}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Reviewer</label>
-                  <select
-                    name="reviewer"
-                    className="form-control form-select"
-                    value={formData.reviewer}
-                    onChange={handleInputChange}
-                  >
-                    <option value="">None</option>
-                    {allUsers.map(u => (
-                      <option key={u} value={u}>@{u}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                  <label className="form-label">Collaborators (Comma-separated)</label>
-                  <input
-                    type="text"
-                    name="collaborators"
-                    className="form-control"
-                    placeholder="e.g. bob_jones, jane_doe"
-                    value={formData.collaborators}
-                    onChange={handleInputChange}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Priority</label>
-                  <select
-                    name="priority_id"
-                    className="form-control form-select"
-                    value={formData.priority_id}
-                    onChange={handleInputChange}
-                  >
-                    {getOptions('priority').map(opt => (
-                      <option key={opt.id} value={opt.id}>{opt.option_name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">
-                    Deliverable Type
-                    {formData.opportunity_id && (
-                      <span style={{ fontSize: '0.75rem', color: 'var(--accent-primary)', marginLeft: '0.5rem', fontWeight: 'normal' }}>
-                        (Inherited from Opportunity)
-                      </span>
-                    )}
-                  </label>
-                  <select
-                    name="deliverable_type_id"
-                    className="form-control form-select"
-                    value={formData.deliverable_type_id}
-                    onChange={handleInputChange}
-                    disabled={!!formData.opportunity_id}
-                  >
-                    <option value="">None</option>
-                    {getOptions('deliverable_type').map(opt => (
-                      <option key={opt.id} value={opt.id}>{opt.option_name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Start Date <span className="required">*</span></label>
-                  <input
-                    type="date"
-                    name="start_date"
-                    className="form-control"
-                    value={formData.start_date}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Due Date <span className="required">*</span></label>
-                  <input
-                    type="date"
-                    name="due_date"
-                    className="form-control"
-                    value={formData.due_date}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Estimated Hours <span className="required">*</span></label>
-                  <input
-                    type="number"
-                    name="estimated_hours"
-                    className="form-control"
-                    min="0"
-                    step="0.5"
-                    value={formData.estimated_hours}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Task Description</label>
-                <RichTextEditor
-                  value={formData.description}
-                  onChange={(val) => handleSwitchChange('description', val)}
-                  placeholder="Detail out the scope of this task..."
-                />
+              <div className="form-section">
+                <div className="form-section-header">
+                  <span className="form-section-title">
+                    <span>⏱️</span> Estimates, Schedule & Deliverable Type
+                  </span>
+                </div>
+                <div className="form-grid-3">
+
+                  <div className="form-group">
+                    <label className="form-label">Priority</label>
+                    <select
+                      name="priority_id"
+                      className="form-control form-select"
+                      value={formData.priority_id}
+                      onChange={handleInputChange}
+                    >
+                      {getOptions('priority').map(opt => (
+                        <option key={opt.id} value={opt.id}>{opt.option_name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">
+                      Deliverable Type
+                      {formData.opportunity_id && (
+                        <span style={{ fontSize: '0.75rem', color: 'var(--accent-primary)', marginLeft: '0.5rem', fontWeight: 'normal' }}>
+                        </span>
+                      )}
+                    </label>
+                    <select
+                      name="deliverable_type_id"
+                      className="form-control form-select"
+                      value={formData.deliverable_type_id}
+                      onChange={handleInputChange}
+                      disabled={!!formData.opportunity_id}
+                    >
+                      <option value="">None</option>
+                      {getOptions('deliverable_type').map(opt => (
+                        <option key={opt.id} value={opt.id}>{opt.option_name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Estimated Hours <span className="required">*</span></label>
+                    <input
+                      type="number"
+                      name="estimated_hours"
+                      className="form-control"
+                      min="0"
+                      step="0.5"
+                      placeholder="e.g. 16.0"
+                      value={formData.estimated_hours}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Start Date <span className="required">*</span></label>
+                    <input
+                      type="date"
+                      name="start_date"
+                      className="form-control"
+                      value={formData.start_date}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Due Date <span className="required">*</span></label>
+                    <input
+                      type="date"
+                      name="due_date"
+                      className="form-control"
+                      value={formData.due_date}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  </div>
+
+                </div>
+              </div>
+
+              <div className="form-section">
+                <div className="form-section-header">
+                  <span className="form-section-title">
+                    <span>📝</span> Task Brief & Deliverable Requirements
+                  </span>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Task Description</label>
+                  <RichTextEditor
+                    value={formData.description}
+                    onChange={(val) => handleSwitchChange('description', val)}
+                    placeholder="Detail out the scope of this task..."
+                  />
+                </div>
               </div>
 
               {/* Action buttons */}
-              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', borderTop: '1px solid var(--glass-border)', paddingTop: '1.25rem', marginTop: '0.5rem' }}>
+              <div className="form-actions">
                 <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary">
-                  {isEditMode ? 'Save Changes' : 'Create Work Item'}
+                <button type="submit" className="btn btn-pill-cobalt" style={{ padding: '0.65rem 1.75rem' }}>
+                  ⚡ {isEditMode ? 'Save Changes' : 'Create Work Item'}
                 </button>
               </div>
 

@@ -50,7 +50,11 @@ export default function StaffMultiSelect({
   }, []);
 
   return (
-    <div className="form-group" ref={containerRef} style={{ position: 'relative' }}>
+    <div
+      className={`form-group staff-multiselect-container ${isOpen ? 'is-open' : ''}`}
+      ref={containerRef}
+      style={{ position: 'relative', zIndex: isOpen ? 9999 : 'auto' }}
+    >
       {label && <label className="form-label">{label}</label>}
       
       {/* Selected Items Box / Trigger */}
@@ -58,7 +62,7 @@ export default function StaffMultiSelect({
         className="form-control"
         onClick={() => setIsOpen(!isOpen)}
         style={{
-          minHeight: '42px',
+          minHeight: '44px',
           height: 'auto',
           display: 'flex',
           flexWrap: 'wrap',
@@ -108,17 +112,17 @@ export default function StaffMultiSelect({
       {/* Popover Dropdown List */}
       {isOpen && (
         <div
-          className="paper-panel"
+          className="staff-multiselect-dropdown paper-panel"
           style={{
             position: 'absolute',
-            top: 'calc(100% + 4px)',
+            top: 'calc(100% + 6px)',
             left: 0,
             right: 0,
-            zIndex: 1000,
-            maxHeight: '200px',
+            zIndex: 99999,
+            maxHeight: '220px',
             overflowY: 'auto',
             padding: '0.5rem',
-            boxShadow: 'var(--shadow-lg)',
+            boxShadow: '0 20px 45px rgba(0, 0, 0, 0.3)',
             border: '1px solid var(--border-subtle)',
             background: 'var(--paper-panel)'
           }}

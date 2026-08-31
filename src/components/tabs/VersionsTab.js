@@ -214,7 +214,7 @@ export default function VersionsTab() {
 
       {/* CREATE VERSION REVISION MODAL */}
       {isModalOpen && (
-        <div className="modal-overlay">
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}>
           <div className="modal-content paper-panel" style={{ maxWidth: '850px' }}>
             <button className="modal-close" onClick={() => setIsModalOpen(false)}>×</button>
             <h3 style={{ fontSize: '1.35rem', marginBottom: '1.5rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
@@ -229,199 +229,232 @@ export default function VersionsTab() {
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               
-              <div className="form-grid">
-                
-                <div className="form-group">
-                  <label className="form-label">Opportunity <span className="required">*</span></label>
-                  <select
-                    name="opportunity_id"
-                    className="form-control form-select"
-                    value={formData.opportunity_id}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="">Select Opportunity</option>
-                    {opportunities.map(opp => (
-                      <option key={opp.id} value={opp.id}>{opp.company} - {opp.opportunity_name}</option>
-                    ))}
-                  </select>
+              <div className="form-section">
+                <div className="form-section-header">
+                  <span className="form-section-title">
+                    <span>🔄</span> Revision Overview & Trigger Classification
+                  </span>
                 </div>
 
-                <div className="form-group">
-                  <label className="form-label">Version Type <span className="required">*</span></label>
-                  <select
-                    name="version_type_id"
-                    className="form-control form-select"
-                    value={formData.version_type_id}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    {getOptions('version_type').map(opt => (
-                      <option key={opt.id} value={opt.id}>{opt.option_name}</option>
-                    ))}
-                  </select>
-                </div>
+                <div className="form-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.25rem' }}>
+                  
+                  <div className="form-group">
+                    <label className="form-label">Opportunity <span className="required">*</span></label>
+                    <select
+                      name="opportunity_id"
+                      className="form-control form-select"
+                      value={formData.opportunity_id}
+                      onChange={handleInputChange}
+                      required
+                    >
+                      <option value="">Select Opportunity</option>
+                      {opportunities.map(opp => (
+                        <option key={opp.id} value={opp.id}>{opp.company} - {opp.opportunity_name}</option>
+                      ))}
+                    </select>
+                  </div>
 
-                <div className="form-group">
-                  <label className="form-label">Trigger Source <span className="required">*</span></label>
-                  <select
-                    name="trigger_source_id"
-                    className="form-control form-select"
-                    value={formData.trigger_source_id}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    {getOptions('trigger_source').map(opt => (
-                      <option key={opt.id} value={opt.id}>{opt.option_name}</option>
-                    ))}
-                  </select>
-                </div>
+                  <div className="form-group">
+                    <label className="form-label">Version Type <span className="required">*</span></label>
+                    <select
+                      name="version_type_id"
+                      className="form-control form-select"
+                      value={formData.version_type_id}
+                      onChange={handleInputChange}
+                      required
+                    >
+                      {getOptions('version_type').map(opt => (
+                        <option key={opt.id} value={opt.id}>{opt.option_name}</option>
+                      ))}
+                    </select>
+                  </div>
 
-                <div className="form-group">
-                  <label className="form-label">Reason Category</label>
-                  <select
-                    name="reason_category_id"
-                    className="form-control form-select"
-                    value={formData.reason_category_id}
-                    onChange={handleInputChange}
-                  >
-                    <option value="">Select Reason</option>
-                    {getOptions('reason_category').map(opt => (
-                      <option key={opt.id} value={opt.id}>{opt.option_name}</option>
-                    ))}
-                  </select>
-                </div>
+                  <div className="form-group">
+                    <label className="form-label">Trigger Source <span className="required">*</span></label>
+                    <select
+                      name="trigger_source_id"
+                      className="form-control form-select"
+                      value={formData.trigger_source_id}
+                      onChange={handleInputChange}
+                      required
+                    >
+                      {getOptions('trigger_source').map(opt => (
+                        <option key={opt.id} value={opt.id}>{opt.option_name}</option>
+                      ))}
+                    </select>
+                  </div>
 
-              </div>
+                  <div className="form-group">
+                    <label className="form-label">Reason Category</label>
+                    <select
+                      name="reason_category_id"
+                      className="form-control form-select"
+                      value={formData.reason_category_id}
+                      onChange={handleInputChange}
+                    >
+                      <option value="">Select Reason</option>
+                      {getOptions('reason_category').map(opt => (
+                        <option key={opt.id} value={opt.id}>{opt.option_name}</option>
+                      ))}
+                    </select>
+                  </div>
 
-              {/* Scope Toggles Row */}
-              <div style={{ display: 'flex', gap: '2rem', padding: '1rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)' }}>
-                <div
-                  className={`switch-container ${formData.commercial_changed ? 'checked' : ''}`}
-                  onClick={() => handleSwitchChange('commercial_changed', !formData.commercial_changed)}
-                >
-                  <div className="switch-track"><div className="switch-thumb"></div></div>
-                  <span className="form-label" style={{ margin: 0 }}>Commercial Changed</span>
-                </div>
-
-                <div
-                  className={`switch-container ${formData.scope_changed ? 'checked' : ''}`}
-                  onClick={() => handleSwitchChange('scope_changed', !formData.scope_changed)}
-                >
-                  <div className="switch-track"><div className="switch-thumb"></div></div>
-                  <span className="form-label" style={{ margin: 0 }}>Scope Changed</span>
-                </div>
-
-                <div
-                  className={`switch-container ${formData.timeline_changed ? 'checked' : ''}`}
-                  onClick={() => handleSwitchChange('timeline_changed', !formData.timeline_changed)}
-                >
-                  <div className="switch-track"><div className="switch-thumb"></div></div>
-                  <span className="form-label" style={{ margin: 0 }}>Timeline Changed</span>
                 </div>
               </div>
 
-              <div className="form-grid">
-                
-                <div className="form-group">
-                  <label className="form-label">Estimated Rework Hours</label>
-                  <input
-                    type="number"
-                    name="estimated_rework_hours"
-                    className="form-control"
-                    min="0"
-                    value={formData.estimated_rework_hours}
-                    onChange={handleInputChange}
-                  />
+              {/* Scope Toggles Card */}
+              <div className="form-section">
+                <div className="form-section-header">
+                  <span className="form-section-title">
+                    <span>⚡</span> Scope Change Flags
+                  </span>
                 </div>
-
-                <div className="form-group">
-                  <label className="form-label">Deadline Impact</label>
-                  <select
-                    name="deadline_impact_id"
-                    className="form-control form-select"
-                    value={formData.deadline_impact_id}
-                    onChange={handleInputChange}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem' }}>
+                  <div
+                    className={`switch-container ${formData.commercial_changed ? 'checked' : ''}`}
+                    onClick={() => handleSwitchChange('commercial_changed', !formData.commercial_changed)}
                   >
-                    <option value="">Select Impact</option>
-                    {getOptions('deadline_impact').map(opt => (
-                      <option key={opt.id} value={opt.id}>{opt.option_name}</option>
-                    ))}
-                  </select>
-                </div>
+                    <div className="switch-track"><div className="switch-thumb"></div></div>
+                    <span className="form-label" style={{ margin: 0 }}>Commercial Changed</span>
+                  </div>
 
-                <div className="form-group">
-                  <label className="form-label">Reviewed By</label>
-                  <select
-                    name="reviewed_by"
-                    className="form-control form-select"
-                    value={formData.reviewed_by}
-                    onChange={handleInputChange}
+                  <div
+                    className={`switch-container ${formData.scope_changed ? 'checked' : ''}`}
+                    onClick={() => handleSwitchChange('scope_changed', !formData.scope_changed)}
                   >
-                    <option value="">Select Reviewer</option>
-                    {allUsers.map(u => (
-                      <option key={u} value={u}>@{u}</option>
-                    ))}
-                  </select>
-                </div>
+                    <div className="switch-track"><div className="switch-thumb"></div></div>
+                    <span className="form-label" style={{ margin: 0 }}>Scope Changed</span>
+                  </div>
 
-                <div className="form-group">
-                  <label className="form-label">Approved By</label>
-                  <select
-                    name="approved_by"
-                    className="form-control form-select"
-                    value={formData.approved_by}
-                    onChange={handleInputChange}
+                  <div
+                    className={`switch-container ${formData.timeline_changed ? 'checked' : ''}`}
+                    onClick={() => handleSwitchChange('timeline_changed', !formData.timeline_changed)}
                   >
-                    <option value="">Select Approver</option>
-                    {allUsers.map(u => (
-                      <option key={u} value={u}>@{u}</option>
-                    ))}
-                  </select>
+                    <div className="switch-track"><div className="switch-thumb"></div></div>
+                    <span className="form-label" style={{ margin: 0 }}>Timeline Changed</span>
+                  </div>
                 </div>
-
-                <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                  <label className="form-label">Proposal Link (URL)</label>
-                  <input
-                    type="url"
-                    name="proposal_link"
-                    className="form-control"
-                    placeholder="https://..."
-                    value={formData.proposal_link}
-                    onChange={handleInputChange}
-                  />
-                </div>
-
-                <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                  <label className="form-label">Pricing Template Link (URL)</label>
-                  <input
-                    type="url"
-                    name="pricing_link"
-                    className="form-control"
-                    placeholder="https://..."
-                    value={formData.pricing_link}
-                    onChange={handleInputChange}
-                  />
-                </div>
-
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Change Summary <span className="required">*</span></label>
-                <RichTextEditor
-                  value={formData.change_summary}
-                  onChange={(val) => handleSwitchChange('change_summary', val)}
-                  placeholder="Detail the scope additions, pricing reductions, or core modifications made in this version..."
-                />
+              <div className="form-section">
+                <div className="form-section-header">
+                  <span className="form-section-title">
+                    <span>📊</span> Impact, Governance & Attachments
+                  </span>
+                </div>
+
+                <div className="form-grid-4">
+                  
+                  <div className="form-group">
+                    <label className="form-label">Estimated Rework Hours</label>
+                    <input
+                      type="number"
+                      name="estimated_rework_hours"
+                      className="form-control"
+                      min="0"
+                      placeholder="e.g. 12.0"
+                      value={formData.estimated_rework_hours}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Deadline Impact</label>
+                    <select
+                      name="deadline_impact_id"
+                      className="form-control form-select"
+                      value={formData.deadline_impact_id}
+                      onChange={handleInputChange}
+                    >
+                      <option value="">Select Impact</option>
+                      {getOptions('deadline_impact').map(opt => (
+                        <option key={opt.id} value={opt.id}>{opt.option_name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Reviewed By</label>
+                    <select
+                      name="reviewed_by"
+                      className="form-control form-select"
+                      value={formData.reviewed_by}
+                      onChange={handleInputChange}
+                    >
+                      <option value="">Select Reviewer</option>
+                      {allUsers.map(u => (
+                        <option key={u} value={u}>@{u}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Approved By</label>
+                    <select
+                      name="approved_by"
+                      className="form-control form-select"
+                      value={formData.approved_by}
+                      onChange={handleInputChange}
+                    >
+                      <option value="">Select Approver</option>
+                      {allUsers.map(u => (
+                        <option key={u} value={u}>@{u}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-grid-2">
+                  <div className="form-group">
+                    <label className="form-label">Proposal Link (URL)</label>
+                    <input
+                      type="url"
+                      name="proposal_link"
+                      className="form-control"
+                      placeholder="https://..."
+                      value={formData.proposal_link}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Pricing Template Link (URL)</label>
+                    <input
+                      type="url"
+                      name="pricing_link"
+                      className="form-control"
+                      placeholder="https://..."
+                      value={formData.pricing_link}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="form-section">
+                <div className="form-section-header">
+                  <span className="form-section-title">
+                    <span>📝</span> Delta Scope & Revision Summary
+                  </span>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Change Summary <span className="required">*</span></label>
+                  <RichTextEditor
+                    value={formData.change_summary}
+                    onChange={(val) => handleSwitchChange('change_summary', val)}
+                    placeholder="Detail the scope additions, pricing reductions, or core modifications made in this version..."
+                  />
+                </div>
               </div>
 
               {/* Action buttons */}
-              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', borderTop: '1px solid var(--glass-border)', paddingTop: '1.25rem', marginTop: '0.5rem' }}>
+              <div className="form-actions">
                 <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary">
-                  Save Proposal Version
+                <button type="submit" className="btn btn-pill-cobalt" style={{ padding: '0.65rem 1.75rem' }}>
+                  ⚡ Save Proposal Version
                 </button>
               </div>
 
