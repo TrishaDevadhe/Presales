@@ -29,18 +29,29 @@ export default function EffortLogsTab() {
   const [lockedTask, setLockedTask] = useState(null);
   const [liveVarianceWarning, setLiveVarianceWarning] = useState(null);
 
-  // Minimum selectable date for calendar (yesterday)
-  const getMinDate = () => {
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    return yesterday.toISOString().split('T')[0];
+  // Local date helpers (enforces Today & Yesterday only, avoids UTC offset shifting)
+  const getTodayDateString = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const getYesterdayDateString = () => {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
   // Form state
   const [formData, setFormData] = useState({
     work_item_id: '',
     person: currentUser,
-    date: new Date().toISOString().split('T')[0],
+    date: getTodayDateString(),
     hours_logged: 2,
     effort_type_id: '',
     activity_type_id: '',
@@ -124,7 +135,7 @@ export default function EffortLogsTab() {
     setFormData({
       work_item_id: task.id,
       person: currentUser,
-      date: new Date().toISOString().split('T')[0],
+      date: getTodayDateString(),
       hours_logged: 4,
       effort_type_id: getOptions('effort_type')[0]?.id || '',
       activity_type_id: task.work_category_id || getOptions('work_category')[0]?.id || '',
@@ -174,6 +185,13 @@ export default function EffortLogsTab() {
 
     if (!formData.work_item_id) {
       setError('Please select a Work Item Task.');
+      return;
+    }
+
+    const todayStr = getTodayDateString();
+    const yesterdayStr = getYesterdayDateString();
+    if (formData.date < yesterdayStr || formData.date > todayStr) {
+      setError(`Date must be either Today (${todayStr}) or Yesterday (${yesterdayStr}). Future or older dates are not allowed.`);
       return;
     }
 
@@ -263,7 +281,7 @@ export default function EffortLogsTab() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       
-      {/* Header bar (Main effort log button removed as requested) */}
+      {/* Header bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h2 style={{ fontSize: '1.5rem', color: 'var(--text-primary)', fontWeight: 700 }}>Workload Effort Logging</h2>
@@ -524,7 +542,7 @@ export default function EffortLogsTab() {
                 <tbody>
                   {filteredEffortLogs.map((log) => (
                     <tr key={log.id}>
-                      <td><strong style={{ color: 'var(--text-primary)' }}>{log.date ? log.date.split('T')[0] : ''}</strong></td>
+                      <td><strong style={{ color: 'var(--text-primary)' }}>{log.date ? (typeof log.date === 'string' ? log.date.split('T')[0] : log.date) : ''}</strong></td>
                       <td>
                         <span className="badge badge-neutral">
                           @{log.person}
@@ -636,12 +654,13 @@ export default function EffortLogsTab() {
                       name="date"
                       className="form-control"
                       value={formData.date}
-                      min={getMinDate()}
+                      min={getYesterdayDateString()}
+                      max={getTodayDateString()}
                       onChange={handleInputChange}
                       required
                     />
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                      Allowed dates: Yesterday, Today, and Future dates.
+                      Allowed dates: Today ({getTodayDateString()}) and Yesterday ({getYesterdayDateString()}) only.
                     </div>
                   </div>
 
