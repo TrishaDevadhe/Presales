@@ -428,6 +428,51 @@ p, body, input, select, textarea, button {
   color: #BAE6FD;
 }
 
+/* Segmented Control Component */
+.tab-group {
+  display: inline-flex;
+  padding: 4px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  gap: 4px;
+  margin: 0;
+  width: fit-content;
+}
+
+.tab-item {
+  padding: 8px 18px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-title);
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 180ms ease;
+  border: none;
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.tab-item:hover:not(.active) {
+  color: var(--text-primary);
+  background: rgba(30, 58, 138, 0.05);
+}
+
+.tab-item.active {
+  background: var(--paper-panel);
+  color: var(--accent-primary);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-subtle);
+}
+
+[data-theme="dark"] .tab-item.active {
+  background: var(--bg-tertiary);
+  color: var(--accent-primary);
+}
+
 /* ==========================================================================
    BUTTON SYSTEM — ROUNDED PILL-SHAPED ELECTRIC COBALT CTAs
    ========================================================================== */

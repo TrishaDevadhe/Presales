@@ -12,7 +12,10 @@ export default function EffortLogsTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Table filter states
+  // Active view tab state: 'work-items' (default) or 'hours-logged'
+  const [activeTab, setActiveTab] = useState('work-items');
+
+  // Table filter states (shared across both tabs)
   const [filterOpportunity, setFilterOpportunity] = useState('');
   const [filterDeliverableType, setFilterDeliverableType] = useState('');
   const [filterPerson, setFilterPerson] = useState('');
@@ -20,8 +23,10 @@ export default function EffortLogsTab() {
   // Selected Opportunity state for filtering tasks inside the modal form
   const [selectedOppId, setSelectedOppId] = useState('');
 
-  // Modal state
+  // Modal mode states
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLockedTaskMode, setIsLockedTaskMode] = useState(false);
+  const [lockedTask, setLockedTask] = useState(null);
   const [liveVarianceWarning, setLiveVarianceWarning] = useState(null);
 
   // Form state
@@ -100,9 +105,12 @@ export default function EffortLogsTab() {
     }
   }, [formData.work_item_id, formData.hours_logged, tasks, effortLogs, settings]);
 
+  // Generic open create modal (top-right button)
   const openCreateModal = () => {
     setError(null);
     setLiveVarianceWarning(null);
+    setIsLockedTaskMode(false);
+    setLockedTask(null);
 
     const firstOppId = opportunities[0]?.id ? String(opportunities[0].id) : '';
     setSelectedOppId(firstOppId);
@@ -118,6 +126,26 @@ export default function EffortLogsTab() {
       hours_logged: 4,
       effort_type_id: getOptions('effort_type')[0]?.id || '',
       activity_type_id: getOptions('work_category')[0]?.id || '',
+      notes: ''
+    });
+    setIsModalOpen(true);
+  };
+
+  // Open modal pre-filled and locked for a specific task row
+  const openLogModalForTask = (task) => {
+    setError(null);
+    setLiveVarianceWarning(null);
+    setIsLockedTaskMode(true);
+    setLockedTask(task);
+    setSelectedOppId(task.opportunity_id ? String(task.opportunity_id) : '');
+
+    setFormData({
+      work_item_id: task.id,
+      person: currentUser,
+      date: new Date().toISOString().split('T')[0],
+      hours_logged: 4,
+      effort_type_id: getOptions('effort_type')[0]?.id || '',
+      activity_type_id: task.work_category_id || getOptions('work_category')[0]?.id || '',
       notes: ''
     });
     setIsModalOpen(true);
@@ -141,7 +169,6 @@ export default function EffortLogsTab() {
     const taskId = e.target.value;
     setFormData(prev => ({ ...prev, work_item_id: taskId }));
 
-    // Auto-sync selected opportunity dropdown if task is changed directly
     if (taskId) {
       const task = tasks.find(t => t.id === parseInt(taskId, 10));
       if (task && task.opportunity_id) {
@@ -222,7 +249,21 @@ export default function EffortLogsTab() {
     ? tasks.filter(t => t.opportunity_id === parseInt(selectedOppId, 10))
     : tasks;
 
-  // Filter effort logs based on table filters
+  // Filter work items list for "Work Items" tab
+  const filteredWorkItems = tasks.filter(task => {
+    if (filterOpportunity && String(task.opportunity_id) !== String(filterOpportunity)) {
+      return false;
+    }
+    if (filterDeliverableType && String(task.deliverable_type_id) !== String(filterDeliverableType)) {
+      return false;
+    }
+    if (filterPerson && String(task.assigned_to) !== String(filterPerson)) {
+      return false;
+    }
+    return true;
+  });
+
+  // Filter effort logs list for "Hours Logged" tab
   const filteredEffortLogs = effortLogs.filter(log => {
     if (filterOpportunity && String(log.opportunity_id) !== String(filterOpportunity)) {
       return false;
@@ -241,16 +282,21 @@ export default function EffortLogsTab() {
       
       {/* Header bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ fontSize: '1.5rem', color: 'var(--text-primary)', fontWeight: 700 }}>Effort Tracking Log</h2>
+        <div>
+          <h2 style={{ fontSize: '1.5rem', color: 'var(--text-primary)', fontWeight: 700 }}>Workload Effort Logging</h2>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+            Log hours against tasks, monitor burn rates, and track historical time allocations.
+          </p>
+        </div>
         <button className="btn btn-primary" onClick={openCreateModal} disabled={tasks.length === 0}>
-          {tasks.length === 0 ? 'No active tasks to log' : 'Log Effort Hours'}
+          {tasks.length === 0 ? 'No active tasks to log' : '⚡ Log Effort Hours'}
         </button>
       </div>
 
       {/* Filter Bar */}
       <div className="paper-panel" style={{ padding: '1rem 1.25rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
         <div style={{ fontWeight: 600, fontSize: '0.88rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.4rem', minWidth: '100px' }}>
-          <span>🔍</span> Filter Logs:
+          <span>🔍</span> Filter Views:
         </div>
 
         {/* Filter by Opportunity */}
@@ -287,7 +333,7 @@ export default function EffortLogsTab() {
           </select>
         </div>
 
-        {/* Filter by Logging Person */}
+        {/* Filter by Team Member */}
         <div style={{ flex: '1', minWidth: '200px' }}>
           <select
             className="form-control form-select"
@@ -319,70 +365,221 @@ export default function EffortLogsTab() {
         )}
       </div>
 
-      {/* Main Table Panel */}
-      <div className="paper-panel" style={{ overflow: 'hidden' }}>
-        {loading ? (
-          <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>Loading effort logs...</p>
-        ) : filteredEffortLogs.length === 0 ? (
-          <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
-            {effortLogs.length === 0
-              ? 'No hours logged yet. Click "Log Effort Hours" to submit workload details.'
-              : 'No effort logs match the selected filter criteria.'}
-          </p>
-        ) : (
-          <div className="table-container">
-            <table className="custom-table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Person</th>
-                  <th>Work Item / Opportunity</th>
-                  <th>Deliverable</th>
-                  <th>Hours Logged</th>
-                  <th>Activity Type</th>
-                  <th>Effort Type</th>
-                  <th>Notes</th>
-                  <th style={{ textAlign: 'right' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredEffortLogs.map((log) => (
-                  <tr key={log.id}>
-                    <td><strong style={{ color: 'var(--text-primary)' }}>{log.date ? log.date.split('T')[0] : ''}</strong></td>
-                    <td>
-                      <span className="badge badge-neutral">
-                        @{log.person}
-                      </span>
-                    </td>
-                    <td>
-                      <div style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{log.work_item_title}</div>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                        {log.opportunity_name ? `${log.company} - ${log.opportunity_name}` : 'General Work'}
-                      </div>
-                    </td>
-                    <td>
-                      <span className="badge" style={getOptionBadgeStyle('deliverable_type', log.deliverable_type_name)}>
-                        {log.deliverable_type_name || 'N/A'}
-                      </span>
-                    </td>
-                    <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{log.hours_logged} hrs</td>
-                    <td><span className="badge" style={getOptionBadgeStyle('work_category', log.activity_type_name)}>{log.activity_type_name || 'General'}</span></td>
-                    <td><span className="badge" style={getOptionBadgeStyle('effort_type', log.effort_type_name)}>{log.effort_type_name || 'Standard'}</span></td>
-                    <td style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={log.notes}>
-                      {log.notes || '-'}
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <button className="btn btn-danger" style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem' }} onClick={() => handleDelete(log.id)}>
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+      {/* Segmented Tab Control */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div className="tab-group">
+          <button
+            type="button"
+            className={`tab-item ${activeTab === 'work-items' ? 'active' : ''}`}
+            onClick={() => setActiveTab('work-items')}
+          >
+            <span>📋</span> Work Items ({filteredWorkItems.length})
+          </button>
+          <button
+            type="button"
+            className={`tab-item ${activeTab === 'hours-logged' ? 'active' : ''}`}
+            onClick={() => setActiveTab('hours-logged')}
+          >
+            <span>⏱️</span> Hours Logged ({filteredEffortLogs.length})
+          </button>
+        </div>
       </div>
+
+      {/* TAB 1: WORK ITEMS LIST VIEW */}
+      {activeTab === 'work-items' && (
+        <div className="paper-panel" style={{ overflow: 'hidden' }}>
+          {loading ? (
+            <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>Loading work items...</p>
+          ) : filteredWorkItems.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '3.5rem 1.5rem', color: 'var(--text-secondary)' }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>📋</div>
+              <h4 style={{ fontSize: '1.1rem', color: 'var(--text-primary)', marginBottom: '0.4rem' }}>No Work Items Match Filters</h4>
+              <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
+                {tasks.length === 0
+                  ? 'No active work items available. Register work items in the Work Items tab first.'
+                  : 'Try adjusting or resetting your selected filters above to view matching tasks.'}
+              </p>
+            </div>
+          ) : (
+            <div className="table-container">
+              <table className="custom-table">
+                <thead>
+                  <tr>
+                    <th>Task Title</th>
+                    <th>Linked Opportunity</th>
+                    <th>Work Category</th>
+                    <th>Assignee</th>
+                    <th>Due Date</th>
+                    <th>Est. Hours</th>
+                    <th>Hours Logged So Far</th>
+                    <th style={{ minWidth: '140px' }}>Burn Progress</th>
+                    <th>Status</th>
+                    <th style={{ textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredWorkItems.map((task) => {
+                    const loggedHours = effortLogs
+                      .filter(l => l.work_item_id === task.id)
+                      .reduce((sum, l) => sum + (parseFloat(l.hours_logged) || 0), 0);
+                    const estHours = parseFloat(task.estimated_hours) || 0;
+                    const pct = estHours > 0 ? Math.round((loggedHours / estHours) * 100) : 0;
+
+                    let progressColor = 'var(--color-success)';
+                    let badgeClass = 'badge-success';
+                    if (pct > 100) {
+                      progressColor = 'var(--color-danger)';
+                      badgeClass = 'badge-danger';
+                    } else if (pct > 90) {
+                      progressColor = 'var(--color-warning)';
+                      badgeClass = 'badge-warning';
+                    }
+
+                    return (
+                      <tr key={task.id}>
+                        <td>
+                          <strong style={{ color: 'var(--text-primary)', fontSize: '0.92rem' }}>{task.title}</strong>
+                        </td>
+                        <td>
+                          <div style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
+                            {task.opportunity_name ? task.opportunity_name : 'General Work'}
+                          </div>
+                          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                            {task.company || '-'}
+                          </div>
+                        </td>
+                        <td>
+                          <span className="badge" style={getOptionBadgeStyle('work_category', task.work_category_name)}>
+                            {task.work_category_name || 'General'}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="badge badge-neutral">
+                            @{task.assigned_to}
+                          </span>
+                        </td>
+                        <td style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                          {task.due_date ? task.due_date.split('T')[0] : '-'}
+                        </td>
+                        <td style={{ fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
+                          {estHours > 0 ? `${estHours} hrs` : '-'}
+                        </td>
+                        <td style={{ fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
+                          {loggedHours} hrs
+                        </td>
+                        <td>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', minWidth: '130px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.78rem' }}>
+                              <span style={{ fontWeight: 700, color: pct > 100 ? 'var(--color-danger-text)' : pct > 90 ? 'var(--color-warning-text)' : 'var(--text-primary)' }}>
+                                {loggedHours} / {estHours}h
+                              </span>
+                              <span className={`badge ${badgeClass}`} style={{ fontSize: '0.7rem', padding: '0.15rem 0.45rem' }}>
+                                {pct}%
+                              </span>
+                            </div>
+                            <div style={{ width: '100%', height: '6px', background: 'rgba(226, 232, 240, 0.6)', borderRadius: '999px', overflow: 'hidden' }}>
+                              <div
+                                style={{
+                                  height: '100%',
+                                  width: `${Math.min(pct, 100)}%`,
+                                  backgroundColor: progressColor,
+                                  borderRadius: '999px',
+                                  transition: 'width 0.3s ease'
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <span className="badge" style={getOptionBadgeStyle('task_status', task.status_name)}>
+                            {task.status_name || 'Not Started'}
+                          </span>
+                        </td>
+                        <td style={{ textAlign: 'right' }}>
+                          <button
+                            className="btn btn-primary btn-sm"
+                            style={{ padding: '0.35rem 0.8rem', fontSize: '0.82rem', whiteSpace: 'nowrap' }}
+                            onClick={() => openLogModalForTask(task)}
+                          >
+                            + Add Log
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TAB 2: HOURS LOGGED LOG HISTORY VIEW */}
+      {activeTab === 'hours-logged' && (
+        <div className="paper-panel" style={{ overflow: 'hidden' }}>
+          {loading ? (
+            <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>Loading effort logs...</p>
+          ) : filteredEffortLogs.length === 0 ? (
+            <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
+              {effortLogs.length === 0
+                ? 'No hours logged yet. Click "Log Effort Hours" to submit workload details.'
+                : 'No effort logs match the selected filter criteria.'}
+            </p>
+          ) : (
+            <div className="table-container">
+              <table className="custom-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Person</th>
+                    <th>Work Item / Opportunity</th>
+                    <th>Deliverable</th>
+                    <th>Hours Logged</th>
+                    <th>Activity Type</th>
+                    <th>Effort Type</th>
+                    <th>Notes</th>
+                    <th style={{ textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredEffortLogs.map((log) => (
+                    <tr key={log.id}>
+                      <td><strong style={{ color: 'var(--text-primary)' }}>{log.date ? log.date.split('T')[0] : ''}</strong></td>
+                      <td>
+                        <span className="badge badge-neutral">
+                          @{log.person}
+                        </span>
+                      </td>
+                      <td>
+                        <div style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{log.work_item_title}</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                          {log.opportunity_name ? `${log.company} - ${log.opportunity_name}` : 'General Work'}
+                        </div>
+                      </td>
+                      <td>
+                        <span className="badge" style={getOptionBadgeStyle('deliverable_type', log.deliverable_type_name)}>
+                          {log.deliverable_type_name || 'N/A'}
+                        </span>
+                      </td>
+                      <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{log.hours_logged} hrs</td>
+                      <td><span className="badge" style={getOptionBadgeStyle('work_category', log.activity_type_name)}>{log.activity_type_name || 'General'}</span></td>
+                      <td><span className="badge" style={getOptionBadgeStyle('effort_type', log.effort_type_name)}>{log.effort_type_name || 'Standard'}</span></td>
+                      <td style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={log.notes}>
+                        {log.notes || '-'}
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        <button className="btn btn-danger" style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem' }} onClick={() => handleDelete(log.id)}>
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* LOG EFFORT OVERLAY MODAL */}
       {isModalOpen && (
@@ -390,7 +587,7 @@ export default function EffortLogsTab() {
           <div className="modal-content paper-panel" style={{ maxWidth: '1000px', width: '95%' }}>
             <button className="modal-close" onClick={() => setIsModalOpen(false)}>×</button>
             <h3 style={{ fontSize: '1.35rem', marginBottom: '1.5rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
-              Log Effort Workload
+              {isLockedTaskMode ? 'Log Hours for Task' : 'Log Effort Workload'}
             </h3>
 
             {error && (
@@ -414,49 +611,71 @@ export default function EffortLogsTab() {
                   </span>
                 </div>
                 
-                {/* Opportunity Selector Field at Top */}
-                <div className="form-group">
-                  <label className="form-label">Select Opportunity</label>
-                  <select
-                    className="form-control form-select"
-                    value={selectedOppId}
-                    onChange={handleOppChange}
-                  >
-                    <option value="">Show All Opportunities</option>
-                    {opportunities.map(opp => (
-                      <option key={opp.id} value={opp.id}>
-                        {opp.opportunity_name} ({opp.company})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Filtered Work Item Task Dropdown */}
-                <div className="form-group">
-                  <label className="form-label">Work Item Task <span className="required">*</span></label>
-                  <select
-                    name="work_item_id"
-                    className="form-control form-select"
-                    value={formData.work_item_id}
-                    onChange={handleTaskChange}
-                    required
-                  >
-                    {availableTasks.length === 0 ? (
-                      <option value="" disabled>No work items found for selected opportunity</option>
-                    ) : (
-                      <>
-                        <option value="">Select a task...</option>
-                        {availableTasks.map(t => (
-                          <option key={t.id} value={t.id}>
-                            {t.title} — Est: {t.estimated_hours}h
+                {isLockedTaskMode ? (
+                  /* Locked Task Card when launched from row-level Add Log button */
+                  <div style={{ background: 'var(--bg-secondary)', padding: '1rem 1.25rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)', marginBottom: '0.5rem' }}>
+                    <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.35rem' }}>
+                      Selected Work Item Task (Locked Context)
+                    </div>
+                    <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)' }}>
+                      {lockedTask?.title}
+                    </div>
+                    <div style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginTop: '0.35rem', display: 'flex', gap: '0.85rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                      <span>Opportunity: <strong style={{ color: 'var(--text-primary)' }}>{lockedTask?.opportunity_name ? `${lockedTask.company} - ${lockedTask.opportunity_name}` : 'General Work'}</strong></span>
+                      <span>•</span>
+                      <span>Assignee: <strong style={{ color: 'var(--text-primary)' }}>@{lockedTask?.assigned_to}</strong></span>
+                      <span>•</span>
+                      <span>Estimated: <strong style={{ color: 'var(--text-primary)' }}>{lockedTask?.estimated_hours || 0} hrs</strong></span>
+                    </div>
+                  </div>
+                ) : (
+                  /* Searchable Opportunity & Task Dropdowns when launched from generic top-right CTA */
+                  <>
+                    {/* Opportunity Selector Field */}
+                    <div className="form-group">
+                      <label className="form-label">Select Opportunity</label>
+                      <select
+                        className="form-control form-select"
+                        value={selectedOppId}
+                        onChange={handleOppChange}
+                      >
+                        <option value="">Show All Opportunities</option>
+                        {opportunities.map(opp => (
+                          <option key={opp.id} value={opp.id}>
+                            {opp.opportunity_name} ({opp.company})
                           </option>
                         ))}
-                      </>
-                    )}
-                  </select>
-                </div>
+                      </select>
+                    </div>
 
-                <div className="form-group">
+                    {/* Filtered Work Item Task Dropdown */}
+                    <div className="form-group">
+                      <label className="form-label">Work Item Task <span className="required">*</span></label>
+                      <select
+                        name="work_item_id"
+                        className="form-control form-select"
+                        value={formData.work_item_id}
+                        onChange={handleTaskChange}
+                        required
+                      >
+                        {availableTasks.length === 0 ? (
+                          <option value="" disabled>No work items found for selected opportunity</option>
+                        ) : (
+                          <>
+                            <option value="">Select a task...</option>
+                            {availableTasks.map(t => (
+                              <option key={t.id} value={t.id}>
+                                {t.title} — Est: {t.estimated_hours}h
+                              </option>
+                            ))}
+                          </>
+                        )}
+                      </select>
+                    </div>
+                  </>
+                )}
+
+                <div className="form-group" style={{ marginTop: isLockedTaskMode ? '0.5rem' : '0' }}>
                   <label className="form-label">Logging Person</label>
                   <input
                     type="text"
@@ -556,7 +775,7 @@ export default function EffortLogsTab() {
                 <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-pill-cobalt" style={{ padding: '0.65rem 1.75rem' }} disabled={availableTasks.length === 0}>
+                <button type="submit" className="btn btn-pill-cobalt" style={{ padding: '0.65rem 1.75rem' }}>
                   ⚡ Log Effort Hours
                 </button>
               </div>
