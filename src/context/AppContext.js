@@ -197,7 +197,13 @@ export function AppProvider({ children }) {
     return {
       backgroundColor: hexToRgba(color, 0.14) || 'rgba(59, 130, 246, 0.14)',
       color: color,
-      border: `1px solid ${hexToRgba(color, 0.35) || 'rgba(59, 130, 246, 0.35)'}`
+      border: `1px solid ${hexToRgba(color, 0.35) || 'rgba(59, 130, 246, 0.35)'}`,
+      whiteSpace: 'nowrap',
+      wordBreak: 'keep-all',
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0
     };
   };
 
