@@ -130,7 +130,12 @@ export default function ResourceProfilesTab() {
       
       {/* Header section */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ fontSize: '1.5rem', color: 'var(--text-primary)', fontWeight: 700 }}>Team Resource Profiles</h2>
+        <div>
+          <h2 style={{ fontSize: '1.5rem', color: 'var(--text-primary)', fontWeight: 700 }}>Team Resource Profiles</h2>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+            Manage team members, roles, skill matrices, weekly capacity limits, and system access passcodes.
+          </p>
+        </div>
         <button className="btn btn-primary" onClick={openCreateModal}>
           + Register Resource
         </button>
@@ -141,7 +146,13 @@ export default function ResourceProfilesTab() {
         {loading ? (
           <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>Loading profiles...</p>
         ) : profiles.length === 0 ? (
-          <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>No resource profiles registered.</p>
+          <div style={{ textAlign: 'center', padding: '3.5rem 1.5rem', color: 'var(--text-secondary)' }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>👥</div>
+            <h4 style={{ fontSize: '1.1rem', color: 'var(--text-primary)', marginBottom: '0.4rem' }}>No Resource Profiles Registered</h4>
+            <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
+              Click &quot;+ Register Resource&quot; above to add team members and assign capacity limits.
+            </p>
+          </div>
         ) : (
           <div className="table-container">
             <table className="custom-table">
@@ -149,7 +160,7 @@ export default function ResourceProfilesTab() {
                 <tr>
                   <th>Username</th>
                   <th>Role</th>
-                  <th>Password Passcode</th>
+                  <th>Passcode</th>
                   <th>Seniority</th>
                   <th>Department</th>
                   <th>Weekly Capacity</th>
@@ -162,7 +173,7 @@ export default function ResourceProfilesTab() {
                 {profiles.map((prof) => (
                   <tr key={prof.id}>
                     <td>
-                      <strong style={{ color: 'var(--text-primary)', fontSize: '0.98rem' }}>@{prof.username}</strong>
+                      <strong style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>@{prof.username}</strong>
                     </td>
                     <td>
                       <span className="badge" style={getOptionBadgeStyle('role', prof.role_name)}>
@@ -183,12 +194,12 @@ export default function ResourceProfilesTab() {
                     </td>
                     <td><span className="badge" style={getOptionBadgeStyle('seniority', prof.seniority_name)}>{prof.seniority_name}</span></td>
                     <td><span className="badge" style={getOptionBadgeStyle('department', prof.department_name)}>{prof.department_name}</span></td>
-                    <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{prof.weekly_capacity_hours} hrs</td>
-                    <td>{prof.standard_focus_area || 'Core Presales'}</td>
+                    <td style={{ fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>{prof.weekly_capacity_hours} hrs</td>
+                    <td style={{ fontSize: '0.88rem', color: 'var(--text-primary)' }}>{prof.standard_focus_area || 'Core Presales'}</td>
                     <td>
-                      <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap', maxWidth: '300px' }}>
+                      <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap', maxWidth: '280px' }}>
                         {prof.skills ? prof.skills.split(',').map((skill, idx) => (
-                          <span key={idx} className="badge badge-neutral" style={{ fontSize: '0.72rem' }}>
+                          <span key={idx} className="badge badge-neutral" style={{ fontSize: '0.72rem', padding: '0.15rem 0.45rem' }}>
                             {skill.trim()}
                           </span>
                         )) : <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>None</span>}

@@ -34,7 +34,7 @@ export default function DashboardTab() {
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', padding: '4rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-        Initializing Isometric Stage Metrics...
+        Initializing Stage Metrics...
       </div>
     );
   }
@@ -55,26 +55,14 @@ export default function DashboardTab() {
 
   if (!data) return null;
 
-  const { summary = {}, opps_by_stage = [], tasks_by_status = [], overdue_tasks = [], workload = [], timeline_alerts = [], rework_hotspots = [] } = data;
-
-  const formatCurrency = (val) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val || 0);
-  };
+  const { summary = {}, tasks_by_status = [], overdue_tasks = [], workload = [], timeline_alerts = [], rework_hotspots = [] } = data;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       
       {/* Top Level Metrics Cards — Floating Glass Panel */}
-      <div className="dashboard-grid">
+      <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
         
-        <div className="paper-panel metrics-card">
-          <div className="metric-icon-wrapper">💼</div>
-          <div className="metric-info">
-            <span className="metric-label">Pipeline Value</span>
-            <span className="metric-value">{formatCurrency(summary.pipeline_value || 0)}</span>
-          </div>
-        </div>
-
         <div className="paper-panel metrics-card">
           <div className="metric-icon-wrapper" style={{ background: 'rgba(37, 99, 235, 0.15)', color: 'var(--accent-secondary)' }}>📈</div>
           <div className="metric-info">
@@ -93,7 +81,7 @@ export default function DashboardTab() {
 
       </div>
 
-      {/* Critical Warnings Block (Overdue Tasks & Capacity Overloads) */}
+      {/* Critical Warnings Block (Target Submissions & Capacity Overloads) */}
       <div className="dashboard-grid-auto">
         
         {/* Timeline Alerts (Target Dates Approaching) */}
@@ -171,66 +159,26 @@ export default function DashboardTab() {
         </div>
       )}
 
-      {/* Middle Block: Opportunities by Stage & Task Status */}
-      <div className="dashboard-split-grid">
-        
-        {/* Opps by Stage */}
-        <div className="paper-panel" style={{ padding: '1.5rem' }}>
-          <h3 style={{ fontSize: '1.15rem', marginBottom: '1.25rem', color: 'var(--text-primary)' }}>Pipeline Stage Distribution</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {opps_by_stage.map((stage, idx) => {
-              const stageColor = stage.stage_color || getOptionColor('deal_stage', stage.stage_name) || '#2563EB';
-              return (
-                <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-primary)', fontWeight: 600 }}>
-                      <span style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: stageColor, boxShadow: `0 0 6px ${stageColor}` }}></span>
-                      {stage.stage_name} ({stage.count})
-                    </span>
-                    <span style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{formatCurrency(stage.total_value)}</span>
-                  </div>
-                  <div style={{ width: '100%', height: '8px', background: 'rgba(226, 232, 240, 0.6)', borderRadius: '999px', overflow: 'hidden' }}>
-                    <div
-                      style={{
-                        height: '100%',
-                        width: `${summary.pipeline_value > 0 ? (stage.total_value / summary.pipeline_value) * 100 : 0}%`,
-                        backgroundColor: stageColor,
-                        borderRadius: '999px',
-                        boxShadow: `0 0 8px ${stageColor}`
-                      }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-            {opps_by_stage.length === 0 && (
-              <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '1.5rem 0' }}>No opportunities in pipeline.</p>
-            )}
-          </div>
+      {/* Task Status Distribution Card */}
+      <div className="paper-panel" style={{ padding: '1.5rem' }}>
+        <h3 style={{ fontSize: '1.15rem', marginBottom: '1.25rem', color: 'var(--text-primary)' }}>Task Status Distribution</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+          {tasks_by_status.map((st, idx) => {
+            const statusColor = st.status_color || getOptionColor('task_status', st.status_name) || '#3B82F6';
+            return (
+              <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', background: 'rgba(226, 232, 240, 0.35)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: 600 }}>
+                  <span style={{ width: '10px', height: '10px', borderRadius: '3px', backgroundColor: statusColor }}></span>
+                  {st.status_name}
+                </span>
+                <span className="badge" style={getOptionBadgeStyle('task_status', st.status_name)}>{st.count}</span>
+              </div>
+            );
+          })}
+          {tasks_by_status.length === 0 && (
+            <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '1.5rem 0' }}>No tasks found.</p>
+          )}
         </div>
-
-        {/* Tasks by Status */}
-        <div className="paper-panel" style={{ padding: '1.5rem' }}>
-          <h3 style={{ fontSize: '1.15rem', marginBottom: '1.25rem', color: 'var(--text-primary)' }}>Task Status Distribution</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-            {tasks_by_status.map((st, idx) => {
-              const statusColor = st.status_color || getOptionColor('task_status', st.status_name) || '#3B82F6';
-              return (
-                <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.65rem 0.85rem', background: 'rgba(226, 232, 240, 0.35)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: 600 }}>
-                    <span style={{ width: '10px', height: '10px', borderRadius: '3px', backgroundColor: statusColor }}></span>
-                    {st.status_name}
-                  </span>
-                  <span className="badge" style={getOptionBadgeStyle('task_status', st.status_name)}>{st.count}</span>
-                </div>
-              );
-            })}
-            {tasks_by_status.length === 0 && (
-              <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '1.5rem 0' }}>No tasks found.</p>
-            )}
-          </div>
-        </div>
-
       </div>
 
       {/* Rework Hotspots and Team Capacity Table */}
