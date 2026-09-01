@@ -495,6 +495,15 @@ p, body, input, select, textarea, button {
   overflow: hidden;
 }
 
+.btn:disabled,
+.btn[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed !important;
+  pointer-events: none;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
 /* Tactile Pill Button (CTA) */
 .btn-pill-cobalt,
 .btn-primary {
@@ -968,42 +977,90 @@ p, body, input, select, textarea, button {
 }
 
 /* Table Design */
+/* ==========================================================================
+   UNIFORM TABLE TYPOGRAPHY & LAYOUT SYSTEM
+   ========================================================================== */
 .table-container {
   width: 100%;
   overflow-x: auto;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-md, 14px);
 }
 
 .custom-table {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
+  font-size: 0.88rem !important; /* Uniform base font size across all tables */
+  line-height: 1.45;
 }
 
 .custom-table th {
   padding: 0.85rem 1rem;
-  background: rgba(226, 232, 240, 0.4);
+  background: rgba(226, 232, 240, 0.45);
   color: var(--text-secondary);
   font-family: var(--font-title);
   font-weight: 700;
-  font-size: 0.78rem;
+  font-size: 0.82rem !important; /* Uniform uppercase column header size */
   text-transform: uppercase;
   letter-spacing: 0.05em;
   border-bottom: 1px solid var(--border-subtle);
+  vertical-align: middle;
+  white-space: nowrap;
 }
 
 [data-theme="dark"] .custom-table th {
-  background: rgba(31, 41, 55, 0.5);
+  background: rgba(31, 41, 55, 0.55);
 }
 
 .custom-table td {
   padding: 0.9rem 1rem;
   border-bottom: 1px solid var(--border-subtle);
   color: var(--text-primary);
+  font-size: 0.88rem !important; /* Uniform cell font size */
+  vertical-align: middle;
+}
+
+/* Enforce uniform font size across all text, links, code tags, and buttons inside table cells */
+.custom-table td *,
+.custom-table td div,
+.custom-table td span,
+.custom-table td strong,
+.custom-table td a,
+.custom-table td p,
+.custom-table td code {
+  font-size: 0.88rem !important;
+}
+
+.custom-table td div.text-muted,
+.custom-table td span.text-muted,
+.custom-table td .sub-text,
+.custom-table td small {
+  font-size: 0.82rem !important;
+  opacity: 0.82;
+}
+
+/* Table badges */
+.custom-table .badge {
+  font-size: 0.82rem !important;
+  padding: 0.3rem 0.65rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+}
+
+/* Table buttons */
+.custom-table .btn {
+  font-size: 0.82rem !important;
+  padding: 0.35rem 0.75rem;
+  font-weight: 600;
 }
 
 .custom-table tr:hover td {
   background: rgba(30, 58, 138, 0.03);
+}
+
+[data-theme="dark"] .custom-table tr:hover td {
+  background: rgba(59, 130, 246, 0.05);
 }
 
 /* ==========================================================================

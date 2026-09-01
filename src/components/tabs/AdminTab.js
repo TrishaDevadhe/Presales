@@ -338,7 +338,7 @@ export default function AdminTab() {
             </div>
 
             <div className="table-container">
-              <table className="custom-table" style={{ fontSize: '0.88rem' }}>
+              <table className="custom-table">
                 <thead>
                   <tr>
                     <th>Order</th>
@@ -428,7 +428,7 @@ export default function AdminTab() {
             </div>
 
             <div className="table-container">
-              <table className="custom-table" style={{ fontSize: '0.85rem' }}>
+              <table className="custom-table">
                 <thead>
                   <tr>
                     <th>Seq Order</th>

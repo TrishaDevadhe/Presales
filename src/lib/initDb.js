@@ -189,14 +189,14 @@ export async function initDb() {
     ['complexity', 'High', 3, '#f97316'],
     ['complexity', 'Complex', 4, '#ef4444'],
     ['work_category', 'Proposal Writing', 1, '#3b82f6'],
-    ['work_category', 'Product demo', 2, '#ec4899'],
-    ['work_category', 'technical scoping', 3, '#8b5cf6'],
+    ['work_category', 'Product Demo', 2, '#ec4899'],
+    ['work_category', 'Technical Scoping', 3, '#8b5cf6'],
     ['work_category', 'Pricing', 4, '#06b6d4'],
     ['work_category', 'Documentation', 5, '#10b981'],
     ['deliverable_type', 'RFP', 1, '#ef4444'],
     ['deliverable_type', 'Proposal', 2, '#f97316'],
-    ['deliverable_type', 'presentation deck', 3, '#22c55e'],
-    ['deliverable_type', 'brochure', 4, '#2563eb'],
+    ['deliverable_type', 'Presentation Deck', 3, '#22c55e'],
+    ['deliverable_type', 'Brochure', 4, '#2563eb'],
     ['estimation_confidence', 'High', 1, '#22c55e'],
     ['estimation_confidence', 'Medium', 2, '#eab308'],
     ['estimation_confidence', 'Low', 3, '#ef4444'],
@@ -239,15 +239,7 @@ export async function initDb() {
     ['role', 'Admin', 1, '#ef4444'],
     ['role', 'Presales Owner', 2, '#8b5cf6'],
     ['role', 'Sales Owner', 3, '#3b82f6'],
-    ['role', 'Team Member', 4, '#10b981'],
-    ['seniority', 'Associate', 1, '#6b7280'],
-    ['seniority', 'Consultant', 2, '#3b82f6'],
-    ['seniority', 'Senior Consultant', 3, '#8b5cf6'],
-    ['seniority', 'Principal Consultant', 4, '#ec4899'],
-    ['department', 'Presales Solutions', 1, '#8b5cf6'],
-    ['department', 'Enterprise Sales', 2, '#3b82f6'],
-    ['department', 'Delivery / Consulting', 3, '#10b981'],
-    ['department', 'Product Management', 4, '#ec4899']
+    ['role', 'Team Member', 4, '#10b981']
   ];
 
   const valuesPlaceholders = defaultOptions.map((_, i) => 

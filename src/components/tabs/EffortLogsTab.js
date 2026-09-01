@@ -127,6 +127,9 @@ export default function EffortLogsTab() {
 
   // Open modal pre-filled and locked for a specific task row
   const openLogModalForTask = (task) => {
+    if (task?.status_name?.toLowerCase() === 'completed') {
+      return;
+    }
     setError(null);
     setLiveVarianceWarning(null);
     setIsLockedTaskMode(true);
@@ -423,6 +426,7 @@ export default function EffortLogsTab() {
                 </thead>
                 <tbody>
                   {filteredWorkItems.map((task) => {
+                    const isCompleted = task.status_name?.toLowerCase() === 'completed';
                     const loggedHours = effortLogs
                       .filter(l => l.work_item_id === task.id)
                       .reduce((sum, l) => sum + (parseFloat(l.hours_logged) || 0), 0);
@@ -501,6 +505,8 @@ export default function EffortLogsTab() {
                             className="btn btn-primary btn-sm"
                             style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem', whiteSpace: 'nowrap' }}
                             onClick={() => openLogModalForTask(task)}
+                            disabled={isCompleted}
+                            title={isCompleted ? 'Cannot log effort on completed work items' : 'Add effort log'}
                           >
                             + Add Log
                           </button>

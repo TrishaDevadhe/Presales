@@ -545,31 +545,45 @@ export default function OpportunitiesTab() {
                   </span>
                 </div>
 
-                <div className="form-group">
-                  <RichTextEditor
-                    label="Executive Summary & Scope Description"
-                    value={formData.summary}
-                    onChange={(val) => handleRichTextChange('summary', val)}
-                    placeholder="Provide a high-level summary of the solution..."
-                  />
-                </div>
+                <div className="form-grid-3" style={{ alignItems: 'stretch' }}>
+                  <div className="form-group" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                    <label className="form-label" style={{ minHeight: '2.2rem', display: 'flex', alignItems: 'flex-end', marginBottom: '0.5rem', fontWeight: 600 }}>
+                      Executive Summary & Scope Description
+                    </label>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                      <RichTextEditor
+                        value={formData.summary}
+                        onChange={(val) => handleRichTextChange('summary', val)}
+                        placeholder="Provide a high-level summary of the solution..."
+                      />
+                    </div>
+                  </div>
 
-                <div className="form-group">
-                  <RichTextEditor
-                    label="Identified Solution Risks & Dependencies"
-                    value={formData.risks}
-                    onChange={(val) => handleRichTextChange('risks', val)}
-                    placeholder="Detail key risks, dependencies..."
-                  />
-                </div>
+                  <div className="form-group" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                    <label className="form-label" style={{ minHeight: '2.2rem', display: 'flex', alignItems: 'flex-end', marginBottom: '0.5rem', fontWeight: 600 }}>
+                      Identified Solution Risks & Dependencies
+                    </label>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                      <RichTextEditor
+                        value={formData.risks}
+                        onChange={(val) => handleRichTextChange('risks', val)}
+                        placeholder="Detail key risks, dependencies..."
+                      />
+                    </div>
+                  </div>
 
-                <div className="form-group">
-                  <RichTextEditor
-                    label="Special Instructions & Customer Preferences"
-                    value={formData.special_instructions}
-                    onChange={(val) => handleRichTextChange('special_instructions', val)}
-                    placeholder="Special RFP formatting requirements..."
-                  />
+                  <div className="form-group" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                    <label className="form-label" style={{ minHeight: '2.2rem', display: 'flex', alignItems: 'flex-end', marginBottom: '0.5rem', fontWeight: 600 }}>
+                      Special Instructions & Customer Preferences
+                    </label>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                      <RichTextEditor
+                        value={formData.special_instructions}
+                        onChange={(val) => handleRichTextChange('special_instructions', val)}
+                        placeholder="Special RFP formatting requirements..."
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 

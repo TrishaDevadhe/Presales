@@ -65,11 +65,22 @@ export async function POST(request) {
     }
 
     // 1. Fetch work item details
-    const wiRes = await query('SELECT estimated_hours, title FROM work_items WHERE id = $1', [work_item_id]);
+    const wiRes = await query(
+      `SELECT wi.estimated_hours, wi.title, opt.option_name AS status_name
+       FROM work_items wi
+       LEFT JOIN dropdown_options opt ON wi.status_id = opt.id
+       WHERE wi.id = $1`,
+      [work_item_id]
+    );
     if (wiRes.rows.length === 0) {
       return NextResponse.json({ error: 'Work Item not found' }, { status: 404 });
     }
-    const estHours = parseFloat(wiRes.rows[0].estimated_hours);
+
+    if (wiRes.rows[0].status_name?.toLowerCase() === 'completed') {
+      return NextResponse.json({ error: 'Cannot log effort on a completed work item' }, { status: 400 });
+    }
+
+    const estHours = parseFloat(wiRes.rows[0].estimated_hours || 0);
 
     // 2. Fetch cumulative hours logged for this work item (including new log)
     const cumRes = await query('SELECT SUM(hours_logged) AS total FROM effort_logs WHERE work_item_id = $1', [work_item_id]);
@@ -80,8 +91,8 @@ export async function POST(request) {
     const settingsRes = await query('SELECT effort_variance_threshold FROM automation_settings LIMIT 1');
     const thresholdPct = parseFloat(settingsRes.rows[0]?.effort_variance_threshold || 20.0);
 
-    const varianceLimit = estHours * (1 + thresholdPct / 100);
-    const isVarianceExceeded = newCumulative > varianceLimit;
+    const varianceLimit = estHours > 0 ? estHours * (1 + thresholdPct / 100) : Infinity;
+    const isVarianceExceeded = estHours > 0 && newCumulative > varianceLimit;
 
     // Insert Effort Log
     const result = await query(

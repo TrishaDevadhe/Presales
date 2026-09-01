@@ -28,12 +28,25 @@ export function AppProvider({ children }) {
     { username: 'alice_williams', role: 'Team Member' }
   ];
 
+  const capitalizeOptionName = (str) => {
+    if (!str) return '';
+    return str.split(' ').map(word => {
+      if (!word) return '';
+      if (word === word.toUpperCase() && word.length > 1) return word;
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    }).join(' ');
+  };
+
   // Fetch dropdowns
   const fetchDropdowns = async () => {
     try {
       const res = await fetch('/api/dropdowns?activeOnly=false');
       const data = await res.json();
-      setDropdownOptions(data);
+      const formatted = (data || []).map(opt => ({
+        ...opt,
+        option_name: capitalizeOptionName(opt.option_name)
+      }));
+      setDropdownOptions(formatted);
     } catch (error) {
       console.error('Error fetching dropdowns:', error);
     }

@@ -235,7 +235,7 @@ export default function DashboardTab() {
             {userRole === 'Admin' ? 'Resource Capacity & Allocation' : 'Your Workload & Capacity'}
           </h3>
           <div className="table-container">
-            <table className="custom-table" style={{ fontSize: '0.88rem' }}>
+            <table className="custom-table">
               <thead>
                 <tr>
                   <th>Resource</th>
