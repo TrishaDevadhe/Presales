@@ -112,11 +112,7 @@ export default function ResourceProfilesTab() {
       refreshProfiles();
 
       if (!isEditMode) {
-        showAlert(
-          'Resource Registered Successfully',
-          `A secure passcode has been generated for @${formData.username.toLowerCase().trim()}:\n\nPasscode: ${data.password}\n\nPlease share this passcode with the employee.`,
-          'info'
-        );
+        showToast('Resource profile registered successfully!', 'success');
       } else {
         showToast('Resource profile updated successfully!', 'success');
       }
@@ -154,7 +150,6 @@ export default function ResourceProfilesTab() {
                 <tr>
                   <th>Username</th>
                   <th>Role</th>
-                  <th>Passcode</th>
                   <th>Seniority</th>
                   <th>Department</th>
                   <th>Weekly Capacity</th>
@@ -173,18 +168,6 @@ export default function ResourceProfilesTab() {
                       <span className="badge" style={getOptionBadgeStyle('role', prof.role_name)}>
                         {prof.role_name}
                       </span>
-                    </td>
-                    <td>
-                      <code style={{ 
-                        background: 'rgba(37, 99, 235, 0.08)', 
-                        color: 'var(--accent-secondary)', 
-                        padding: '0.2rem 0.55rem', 
-                        borderRadius: 'var(--radius-sm)',
-                        fontSize: '0.82rem',
-                        fontWeight: 700
-                      }}>
-                        {prof.password || 'N/A'}
-                      </code>
                     </td>
                     <td><span className="badge" style={getOptionBadgeStyle('seniority', prof.seniority_name)}>{prof.seniority_name}</span></td>
                     <td><span className="badge" style={getOptionBadgeStyle('department', prof.department_name)}>{prof.department_name}</span></td>

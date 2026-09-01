@@ -129,6 +129,18 @@ export async function PUT(request, { params }) {
     // Capacity Check (excluding current task id from assignee's current workload sum)
     const capCheck = await runCapacityCheck(assigned_to, hours, id);
 
+    let finalStatusId = status_id;
+    if (statusName === 'Not Started') {
+      const effortCheck = await query('SELECT SUM(hours_logged) AS total FROM effort_logs WHERE work_item_id = $1', [id]);
+      const totalLogged = parseFloat(effortCheck.rows[0]?.total || 0);
+      if (totalLogged > 0) {
+        const inProgressRes = await query("SELECT id FROM dropdown_options WHERE category = 'task_status' AND option_name = 'In Progress'");
+        if (inProgressRes.rows.length > 0) {
+          finalStatusId = inProgressRes.rows[0].id;
+        }
+      }
+    }
+
     // Update
     const result = await query(
       `UPDATE work_items
@@ -171,7 +183,7 @@ export async function PUT(request, { params }) {
         is_revision_work === true,
         parseInt(revision_number, 10) || null,
         trigger_id || null,
-        status_id,
+        finalStatusId,
         blocker_reason || '',
         deliverable_link || '',
         notes || '',

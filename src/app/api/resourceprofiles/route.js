@@ -37,26 +37,29 @@ function generateRandomPassword() {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { username, role_id, seniority_id, skills, department_id, weekly_capacity_hours } = body;
+    const { username, role_id, seniority_id, skills, department_id, weekly_capacity_hours, original_username, name } = body;
     const standard_focus = body.standard_focus || body.standard_focus_area || '';
     const passwordInput = body.password;
+    const nameInput = name || username;
 
     if (!username) {
-      return NextResponse.json({ error: 'Username is required' }, { status: 400 });
+      return NextResponse.json({ error: 'Username/ID is required' }, { status: 400 });
     }
 
-    const check = await query('SELECT id, password FROM resource_profiles WHERE username = $1', [username.toLowerCase().trim()]);
+    const targetUser = (original_username || username).toLowerCase().trim();
+    const check = await query('SELECT id, password, name FROM resource_profiles WHERE username = $1', [targetUser]);
 
     let result;
     if (check.rows.length === 0) {
       const generatedPassword = passwordInput || generateRandomPassword();
       result = await query(
         `INSERT INTO resource_profiles 
-         (username, role_id, seniority_id, skills, department_id, weekly_capacity_hours, standard_focus, password)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         (username, name, role_id, seniority_id, skills, department_id, weekly_capacity_hours, standard_focus, password)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
          RETURNING *`,
         [
           username.toLowerCase().trim(),
+          nameInput,
           role_id || null,
           seniority_id || null,
           skills || '',
@@ -68,29 +71,45 @@ export async function POST(request) {
       );
     } else {
       const existingPassword = check.rows[0].password || generateRandomPassword();
-      const finalPassword = passwordInput || existingPassword;
+      const finalPassword = passwordInput !== undefined && passwordInput !== '' ? passwordInput : existingPassword;
+      const newUsername = username.toLowerCase().trim();
+      const oldUsername = targetUser;
+
       result = await query(
         `UPDATE resource_profiles
-         SET role_id = $1,
-             seniority_id = $2,
-             skills = $3,
-             department_id = $4,
-             weekly_capacity_hours = $5,
-             standard_focus = $6,
-             password = $7
-         WHERE username = $8
+         SET username = $1,
+             name = $2,
+             role_id = COALESCE($3, role_id),
+             seniority_id = COALESCE($4, seniority_id),
+             skills = COALESCE($5, skills),
+             department_id = COALESCE($6, department_id),
+             weekly_capacity_hours = COALESCE($7, weekly_capacity_hours),
+             standard_focus = COALESCE($8, standard_focus),
+             password = $9
+         WHERE id = $10
          RETURNING *`,
         [
+          newUsername,
+          nameInput,
           role_id || null,
           seniority_id || null,
-          skills || '',
+          skills !== undefined ? skills : null,
           department_id || null,
-          parseFloat(weekly_capacity_hours) || 40.0,
-          standard_focus,
+          weekly_capacity_hours ? parseFloat(weekly_capacity_hours) : null,
+          standard_focus || null,
           finalPassword,
-          username.toLowerCase().trim()
+          check.rows[0].id
         ]
       );
+
+      // If username changed, update dependent references across tables
+      if (newUsername !== oldUsername) {
+        await query('UPDATE work_items SET assigned_to = $1 WHERE assigned_to = $2', [newUsername, oldUsername]);
+        await query('UPDATE work_items SET reviewer = $1 WHERE reviewer = $2', [newUsername, oldUsername]);
+        await query('UPDATE opportunities SET presales_owner = $1 WHERE presales_owner = $2', [newUsername, oldUsername]);
+        await query('UPDATE opportunities SET primary_sales_owner = $1 WHERE primary_sales_owner = $2', [newUsername, oldUsername]);
+        await query('UPDATE effort_logs SET person = $1 WHERE person = $2', [newUsername, oldUsername]);
+      }
     }
 
     const returnedRow = {

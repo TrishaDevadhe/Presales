@@ -16,10 +16,17 @@ export default function WorkItemsTab() {
   const [filterOpp, setFilterOpp] = useState('');
   const [filterUser, setFilterUser] = useState('');
 
+  // Active View Tab: 'active' or 'archives'
+  const [activeViewTab, setActiveViewTab] = useState('active');
+
   // Modals state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
+
+  // Read-only Details Modal state for archived tasks
+  const [isViewDetailsModalOpen, setIsViewDetailsModalOpen] = useState(false);
+  const [viewDetailsTask, setViewDetailsTask] = useState(null);
 
   // Live Capacity Warning State
   const [capacityWarning, setCapacityWarning] = useState(null);
@@ -370,18 +377,48 @@ export default function WorkItemsTab() {
     }
   };
 
-  const filteredTasks = tasks.filter(t => {
+  const handleRestoreTask = async (task) => {
+    const inProgressOpt = getOptions('task_status').find(o => o.option_name === 'In Progress') || getOptions('task_status')[0];
+    if (!inProgressOpt) return;
+
+    try {
+      const res = await fetch(`/api/workitems/${task.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...task,
+          status_id: inProgressOpt.id,
+          start_date: task.start_date ? task.start_date.split('T')[0] : new Date().toISOString().split('T')[0],
+          due_date: task.due_date ? task.due_date.split('T')[0] : new Date().toISOString().split('T')[0]
+        })
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to restore work item');
+      }
+      showToast(`✓ Work item "${task.title}" restored to Active Work Items!`, 'success');
+      fetchData();
+    } catch (err) {
+      showAlert(err.message, 'Error', 'danger');
+    }
+  };
+
+  const allFilteredTasks = tasks.filter(t => {
     if (userRole !== 'Admin' && !isUserAssociatedWithTask(t, currentUser, opportunities)) return false;
     if (filterOpp && t.opportunity_id !== parseInt(filterOpp, 10)) return false;
     if (filterUser && t.assigned_to !== filterUser) return false;
     return true;
   });
 
+  const activeTasks = allFilteredTasks.filter(t => t.status_name !== 'Cancelled' && t.status_name !== 'Terminated' && t.status_name !== 'Blocked');
+  const archivedTasks = allFilteredTasks.filter(t => t.status_name === 'Cancelled' || t.status_name === 'Terminated' || t.status_name === 'Blocked');
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
       {/* Header section */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h2 style={{ fontSize: '1.5rem', color: 'var(--text-primary)', fontWeight: 700 }}>Work Items & Task Management</h2>
         <button className="btn btn-primary" onClick={openCreateModal}>
           + Create Work Item
         </button>
@@ -420,74 +457,191 @@ export default function WorkItemsTab() {
         </div>
       </div>
 
-      {/* Tasks Grid List */}
-      <div className="paper-panel" style={{ overflow: 'hidden' }}>
-        {loading ? (
-          <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>Loading tasks...</p>
-        ) : filteredTasks.length === 0 ? (
-          <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>No tasks found for the selected filters.</p>
-        ) : (
-          <div className="table-container">
-            <table className="custom-table">
-              <thead>
-                <tr>
-                  <th>Task Title & Opportunity</th>
-                  <th>Category</th>
-                  <th>Assignee</th>
-                  <th>Due Date</th>
-                  <th>Estimate</th>
-                  <th>Priority</th>
-                  <th style={{ textAlign: 'right' }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredTasks.map((task) => (
-                  <tr key={task.id}>
-                    <td>
-                      <div>
-                        <strong style={{ color: 'var(--text-primary)', fontSize: '0.95rem' }}>{task.title}</strong>
-                      </div>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
-                        {task.opportunity_id ? `${task.company} - ${task.opportunity_name}` : 'Non-Opportunity Task'}
-                        {task.is_revision_work && (
-                          <span className="badge badge-danger" style={{ marginLeft: '0.5rem', padding: '0.1rem 0.4rem', fontSize: '0.7rem' }}>
-                            Revision #{task.revision_number}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td>
-                      <span className="badge" style={getOptionBadgeStyle('work_category', task.work_category_name)}>
-                        {task.work_category_name}
-                      </span>
-                    </td>
-                    <td>
-                      <strong style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>@{task.assigned_to}</strong>
-                    </td>
-                    <td>{task.due_date ? task.due_date.split('T')[0] : 'N/A'}</td>
-                    <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{task.estimated_hours} hrs</td>
-                    <td>
-                      <span className="badge" style={getOptionBadgeStyle('priority', task.priority_name || 'Medium')}>
-                        {task.priority_name || 'Medium'}
-                      </span>
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
-                        <button className="btn btn-secondary" style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem' }} onClick={() => openEditModal(task)}>
-                          Edit
-                        </button>
-                        <button className="btn btn-danger" style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem' }} onClick={() => handleDelete(task.id)}>
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+      {/* Segmented Tab Control */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div className="tab-group">
+          <button
+            type="button"
+            className={`tab-item ${activeViewTab === 'active' ? 'active' : ''}`}
+            onClick={() => setActiveViewTab('active')}
+          >
+            <span>📋</span> Active Work Items ({activeTasks.length})
+          </button>
+          <button
+            type="button"
+            className={`tab-item ${activeViewTab === 'archives' ? 'active' : ''}`}
+            onClick={() => setActiveViewTab('archives')}
+          >
+            <span>📦</span> Archives ({archivedTasks.length})
+          </button>
+        </div>
       </div>
+
+      {/* TAB 1: ACTIVE WORK ITEMS GRID */}
+      {activeViewTab === 'active' && (
+        <div className="paper-panel" style={{ overflow: 'hidden' }}>
+          {loading ? (
+            <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>Loading active tasks...</p>
+          ) : activeTasks.length === 0 ? (
+            <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>No active tasks found matching the selected filters.</p>
+          ) : (
+            <div className="table-container">
+              <table className="custom-table">
+                <thead>
+                  <tr>
+                    <th>Task Title & Opportunity</th>
+                    <th>Category</th>
+                    <th>Assignee</th>
+                    <th>Status</th>
+                    <th>Due Date</th>
+                    <th>Estimate</th>
+                    <th style={{ textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {activeTasks.map((task) => (
+                    <tr key={task.id}>
+                      <td>
+                        <div>
+                          <strong style={{ color: 'var(--text-primary)', fontSize: '0.95rem' }}>{task.title}</strong>
+                        </div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
+                          {task.opportunity_id ? `${task.company} - ${task.opportunity_name}` : 'Non-Opportunity Task'}
+                          {task.is_revision_work && (
+                            <span className="badge badge-danger" style={{ marginLeft: '0.5rem', padding: '0.1rem 0.4rem', fontSize: '0.7rem' }}>
+                              Revision #{task.revision_number}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td>
+                        <span className="badge" style={getOptionBadgeStyle('work_category', task.work_category_name)}>
+                          {task.work_category_name}
+                        </span>
+                      </td>
+                      <td>
+                        <strong style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>@{task.assigned_to}</strong>
+                      </td>
+                      <td>
+                        <span className="badge" style={getOptionBadgeStyle('task_status', task.status_name)}>
+                          {task.status_name || 'Not Started'}
+                        </span>
+                      </td>
+                      <td>{task.due_date ? task.due_date.split('T')[0] : 'N/A'}</td>
+                      <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{task.estimated_hours} hrs</td>
+                      <td style={{ textAlign: 'right' }}>
+                        <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
+                          <button className="btn btn-secondary" style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem' }} onClick={() => openEditModal(task)}>
+                            Edit
+                          </button>
+                          <button className="btn btn-danger" style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem' }} onClick={() => handleDelete(task.id)}>
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TAB 2: ARCHIVED WORK ITEMS GRID */}
+      {activeViewTab === 'archives' && (
+        <div className="paper-panel" style={{ overflow: 'hidden' }}>
+          {loading ? (
+            <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>Loading archived tasks...</p>
+          ) : archivedTasks.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '3.5rem 1.5rem', color: 'var(--text-secondary)' }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>📦</div>
+              <h4 style={{ fontSize: '1.1rem', color: 'var(--text-primary)', marginBottom: '0.4rem' }}>No Archived Work Items</h4>
+              <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
+                Work items cancelled or terminated by reviewers are stored in the archives.
+              </p>
+            </div>
+          ) : (
+            <div className="table-container">
+              <table className="custom-table">
+                <thead>
+                  <tr>
+                    <th>Work Item & Opportunity</th>
+                    <th>Category</th>
+                    <th>Assignee & Reviewer</th>
+                    <th>Status</th>
+                    <th>Cancellation / Blocker Reason</th>
+                    <th>Due Date</th>
+                    <th style={{ textAlign: 'right' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {archivedTasks.map((task) => (
+                    <tr key={task.id}>
+                      <td>
+                        <div>
+                          <strong style={{ color: 'var(--text-primary)', fontSize: '0.95rem' }}>{task.title}</strong>
+                        </div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
+                          {task.opportunity_id ? `${task.company} - ${task.opportunity_name}` : 'Direct Work'}
+                        </div>
+                      </td>
+                      <td>
+                        <span className="badge" style={getOptionBadgeStyle('work_category', task.work_category_name)}>
+                          {task.work_category_name}
+                        </span>
+                      </td>
+                      <td>
+                        <div><strong style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>@{task.assigned_to}</strong></div>
+                        {task.reviewer && <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Reviewer: @{task.reviewer}</div>}
+                      </td>
+                      <td>
+                        <span className={`badge ${task.status_name === 'Terminated' ? 'badge-danger' : 'badge-neutral'}`} style={{ fontWeight: 700 }}>
+                          {task.status_name}
+                        </span>
+                      </td>
+                      <td style={{ maxWidth: '280px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                        {task.blocker_reason || task.notes || 'No reason recorded'}
+                      </td>
+                      <td>{task.due_date ? task.due_date.split('T')[0] : 'N/A'}</td>
+                      <td style={{ textAlign: 'right' }}>
+                        <div style={{ display: 'inline-flex', gap: '0.4rem' }}>
+                          <button
+                            className="btn btn-pill-cobalt"
+                            style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem' }}
+                            onClick={() => {
+                              setViewDetailsTask(task);
+                              setIsViewDetailsModalOpen(true);
+                            }}
+                            title="Read termination details and metadata"
+                          >
+                            👁️ View Details
+                          </button>
+                          <button
+                            className="btn btn-secondary"
+                            style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem' }}
+                            onClick={() => handleRestoreTask(task)}
+                            title="Restore work item back to Active Work Items"
+                          >
+                            🔄 Restore
+                          </button>
+                          <button
+                            className="btn btn-danger"
+                            style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem' }}
+                            onClick={() => handleDelete(task.id)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* CREATE / EDIT WORK ITEM OVERLAY MODAL */}
       {isModalOpen && (
@@ -1042,6 +1196,103 @@ export default function WorkItemsTab() {
               </div>
 
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* READ-ONLY ARCHIVED TASK DETAILS MODAL */}
+      {isViewDetailsModalOpen && viewDetailsTask && (
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsViewDetailsModalOpen(false); }}>
+          <div className="modal-content paper-panel" style={{ maxWidth: '700px', width: '95%', maxHeight: '90vh', overflowY: 'auto' }}>
+            <button className="modal-close" onClick={() => setIsViewDetailsModalOpen(false)}>×</button>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.85rem', marginBottom: '1.25rem' }}>
+              <h3 style={{ fontSize: '1.3rem', color: 'var(--text-primary)', fontWeight: 700, margin: 0 }}>
+                📦 Archived Task Details
+              </h3>
+              <span className={`badge ${viewDetailsTask.status_name === 'Terminated' ? 'badge-danger' : 'badge-neutral'}`} style={{ fontWeight: 700, fontSize: '0.85rem' }}>
+                {viewDetailsTask.status_name}
+              </span>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginLeft: 'auto', fontWeight: 600, background: 'rgba(100, 116, 139, 0.1)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
+                🔒 Read Only
+              </span>
+            </div>
+
+            {/* Termination / Cancellation Details Card */}
+            <div style={{ background: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: 'var(--radius-md)', padding: '1rem', marginBottom: '1.25rem' }}>
+              <div style={{ fontSize: '0.78rem', color: 'var(--accent-danger, #ef4444)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 700, marginBottom: '0.25rem' }}>
+                Termination / Cancellation Details
+              </div>
+              <div style={{ fontSize: '0.92rem', color: 'var(--text-primary)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
+                {viewDetailsTask.blocker_reason || viewDetailsTask.notes || 'No termination reason recorded.'}
+              </div>
+              {viewDetailsTask.reviewer && (
+                <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.5rem', fontWeight: 600 }}>
+                  Recorded by Reviewer: <span style={{ color: 'var(--text-primary)' }}>@{viewDetailsTask.reviewer}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Readonly Grid Details */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem', marginBottom: '1.25rem' }}>
+              <div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Work Item Title</div>
+                <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: '0.15rem' }}>{viewDetailsTask.title}</div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Opportunity</div>
+                <div style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)', marginTop: '0.15rem' }}>
+                  {viewDetailsTask.opportunity_id ? `${viewDetailsTask.company} - ${viewDetailsTask.opportunity_name}` : 'Direct Work'}
+                </div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Assigned To</div>
+                <div style={{ fontSize: '0.9rem', color: 'var(--text-primary)', marginTop: '0.15rem' }}>@{viewDetailsTask.assigned_to}</div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Work Category</div>
+                <div style={{ marginTop: '0.15rem' }}>
+                  <span className="badge" style={getOptionBadgeStyle('work_category', viewDetailsTask.work_category_name)}>
+                    {viewDetailsTask.work_category_name || 'N/A'}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Start & Due Date</div>
+                <div style={{ fontSize: '0.88rem', color: 'var(--text-primary)', marginTop: '0.15rem' }}>
+                  {viewDetailsTask.start_date ? viewDetailsTask.start_date.split('T')[0] : 'N/A'} to {viewDetailsTask.due_date ? viewDetailsTask.due_date.split('T')[0] : 'N/A'}
+                </div>
+              </div>
+
+              <div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Estimated Hours</div>
+                <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: '0.15rem' }}>
+                  {viewDetailsTask.estimated_hours || 0} hrs
+                </div>
+              </div>
+            </div>
+
+            {/* Description */}
+            {viewDetailsTask.description && (
+              <div style={{ marginBottom: '1.25rem' }}>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600, marginBottom: '0.35rem' }}>Original Description</div>
+                <div style={{ background: 'rgba(241, 245, 249, 0.6)', padding: '0.85rem', borderRadius: 'var(--radius-sm)', fontSize: '0.88rem', color: 'var(--text-primary)', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
+                  {viewDetailsTask.description}
+                </div>
+              </div>
+            )}
+
+            {/* Read-Only Close Action */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--glass-border)', paddingTop: '1rem' }}>
+              <button className="btn btn-secondary" onClick={() => setIsViewDetailsModalOpen(false)} style={{ padding: '0.5rem 1.5rem' }}>
+                Close
+              </button>
+            </div>
+
           </div>
         </div>
       )}

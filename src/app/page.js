@@ -14,14 +14,15 @@ import OpportunitiesTab from '@/components/tabs/OpportunitiesTab';
 import WorkItemsTab from '@/components/tabs/WorkItemsTab';
 import EffortLogsTab from '@/components/tabs/EffortLogsTab';
 import VersionsTab from '@/components/tabs/VersionsTab';
-import FeedbackTab from '@/components/tabs/FeedbackTab';
 import SettingsTab from '@/components/tabs/SettingsTab';
+import EditProfileModal from '@/components/EditProfileModal';
 
 export default function Home() {
   const { currentUser, userRole, isLoggedIn, logout, handleUserChange, loading, allUsers } = useApp();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [theme, setTheme] = useState('glass-light');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
 
   // Inactivity session timeout: 30 minutes warning, 60 seconds countdown
   const [showTimeoutWarning, setShowTimeoutWarning] = useState(false);
@@ -118,11 +119,25 @@ export default function Home() {
         return <EffortLogsTab />;
       case 'versions':
         return <VersionsTab />;
-      case 'feedback':
-        return <FeedbackTab />;
       case 'settings':
       case 'profiles':
       case 'admin':
+        if (userRole !== 'Admin') {
+          return (
+            <div className="paper-panel" style={{ textAlign: 'center', padding: '4rem 2rem', marginTop: '2rem' }}>
+              <div style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>🔒</div>
+              <h3 style={{ fontSize: '1.4rem', color: 'var(--text-primary)', marginBottom: '0.5rem', fontWeight: 700 }}>
+                Access Restricted (Admin Only)
+              </h3>
+              <p style={{ color: 'var(--text-secondary)', maxWidth: '480px', margin: '0 auto 1.5rem auto', lineHeight: 1.5 }}>
+                The Settings section is restricted exclusively to Admin role accounts. Non-admin users cannot access or modify system options.
+              </p>
+              <button className="btn btn-pill-cobalt" onClick={() => setActiveTab('dashboard')}>
+                Return to Dashboard
+              </button>
+            </div>
+          );
+        }
         return <SettingsTab />;
       default:
         return <DashboardTab />;
@@ -179,7 +194,7 @@ export default function Home() {
 
         {/* Logo Brand Panel */}
         <div className="sidebar-brand-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: isSidebarCollapsed ? '0.25rem' : '0.85rem', flexShrink: 0 }}>
             <div className="brand-logo-icon">N</div>
             {!isSidebarCollapsed && (
               <div className="brand-details">
@@ -254,28 +269,19 @@ export default function Home() {
               {!isSidebarCollapsed && <span className="nav-item-text">Revision Logs</span>}
             </button>
           </li>
-          <li>
-            <button
-              onClick={() => setActiveTab('feedback')}
-              className={`nav-item-link ${activeTab === 'feedback' ? 'active' : ''}`}
-              title="Client Feedback"
-              style={{ width: '100%', background: 'transparent', textAlign: 'left', cursor: 'pointer' }}
-            >
-              <span className="nav-item-icon">💬</span>
-              {!isSidebarCollapsed && <span className="nav-item-text">Client Feedback</span>}
-            </button>
-          </li>
-          <li>
-            <button
-              onClick={() => setActiveTab('settings')}
-              className={`nav-item-link ${activeTab === 'settings' || activeTab === 'profiles' || activeTab === 'admin' ? 'active' : ''}`}
-              title="Settings"
-              style={{ width: '100%', background: 'transparent', textAlign: 'left', cursor: 'pointer' }}
-            >
-              <span className="nav-item-icon">⚙️</span>
-              {!isSidebarCollapsed && <span className="nav-item-text">Settings</span>}
-            </button>
-          </li>
+          {userRole === 'Admin' && (
+            <li>
+              <button
+                onClick={() => setActiveTab('settings')}
+                className={`nav-item-link ${activeTab === 'settings' || activeTab === 'profiles' || activeTab === 'admin' ? 'active' : ''}`}
+                title="Settings"
+                style={{ width: '100%', background: 'transparent', textAlign: 'left', cursor: 'pointer' }}
+              >
+                <span className="nav-item-icon">⚙️</span>
+                {!isSidebarCollapsed && <span className="nav-item-text">Settings</span>}
+              </button>
+            </li>
+          )}
         </ul>
 
         {/* Theme Switcher & User Footer */}
@@ -300,7 +306,12 @@ export default function Home() {
           </div>
 
           {/* Minimalistic Active User Profile Section */}
-          <div className="minimal-user-card" title={`Logged in as @${currentUser} (${userRole})`}>
+          <div
+            className="minimal-user-card"
+            onClick={() => setIsEditProfileOpen(true)}
+            style={{ cursor: 'pointer' }}
+            title={`Click to Edit Profile (Name, ID, Password) - Logged in as @${currentUser}`}
+          >
             <div className="user-avatar-badge">
               <span>{currentUser ? currentUser.charAt(0).toUpperCase() : 'U'}</span>
               <span className={`status-dot ${userRole === 'Admin' ? 'admin' : 'user'}`} />
@@ -312,7 +323,10 @@ export default function Home() {
               </div>
             )}
             <button
-              onClick={logout}
+              onClick={(e) => {
+                e.stopPropagation();
+                logout();
+              }}
               className="btn-logout-minimal"
               title="Sign Out Session"
             >
@@ -415,6 +429,12 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* Edit Profile Modal for Avatar Click */}
+      <EditProfileModal
+        isOpen={isEditProfileOpen}
+        onClose={() => setIsEditProfileOpen(false)}
+      />
 
     </div>
   );

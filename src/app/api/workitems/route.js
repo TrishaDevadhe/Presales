@@ -4,6 +4,19 @@ import { NextResponse } from 'next/server';
 // GET all work items
 export async function GET(request) {
   try {
+    // Auto-update any work item with logged effort (> 0 hours) from 'Not Started' to 'In Progress'
+    await query(`
+      UPDATE work_items
+      SET status_id = (SELECT id FROM dropdown_options WHERE category = 'task_status' AND option_name = 'In Progress' LIMIT 1)
+      WHERE status_id IN (SELECT id FROM dropdown_options WHERE category = 'task_status' AND option_name = 'Not Started')
+        AND id IN (
+          SELECT work_item_id
+          FROM effort_logs
+          GROUP BY work_item_id
+          HAVING SUM(hours_logged) > 0
+        )
+    `);
+
     const { searchParams } = new URL(request.url);
     const opportunityId = searchParams.get('opportunity_id');
     const assignedTo = searchParams.get('assigned_to');

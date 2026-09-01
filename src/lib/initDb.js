@@ -20,6 +20,7 @@ export async function initDb() {
     CREATE TABLE IF NOT EXISTS resource_profiles (
       id SERIAL PRIMARY KEY,
       username VARCHAR(100) UNIQUE NOT NULL,
+      name VARCHAR(255),
       role_id INTEGER REFERENCES dropdown_options(id) ON DELETE SET NULL,
       seniority_id INTEGER REFERENCES dropdown_options(id) ON DELETE SET NULL,
       skills TEXT,
@@ -28,6 +29,7 @@ export async function initDb() {
       standard_focus TEXT,
       password VARCHAR(255)
     );
+    ALTER TABLE resource_profiles ADD COLUMN IF NOT EXISTS name VARCHAR(255);
 
     CREATE TABLE IF NOT EXISTS opportunities (
       id SERIAL PRIMARY KEY,
@@ -205,6 +207,8 @@ export async function initDb() {
     ['task_status', 'Review', 3, '#a855f7'],
     ['task_status', 'Blocked', 4, '#ef4444'],
     ['task_status', 'Completed', 5, '#10b981'],
+    ['task_status', 'Cancelled', 6, '#64748b'],
+    ['task_status', 'Terminated', 7, '#ef4444'],
     ['trigger_source', 'Client Feedback', 1, '#3b82f6'],
     ['trigger_source', 'Scope Expansion', 2, '#10b981'],
     ['trigger_source', 'Internal QA Review', 3, '#f59e0b'],
@@ -308,8 +312,20 @@ export async function initDb() {
       ('brochure', 'Collateral Review & Export', 2.0, 'Presales Owner', 3)
     ) AS t(deliv_name, task_name, hours, role_name, seq)
     JOIN dropdown_options d ON d.category = 'deliverable_type' AND LOWER(d.option_name) = LOWER(t.deliv_name)
-    LEFT JOIN dropdown_options r ON r.category = 'role' AND r.option_name = t.role_name
     WHERE NOT EXISTS (SELECT 1 FROM task_templates);
+  `);
+
+  // 6. Update status of work items with burn progress > 0% (logged effort > 0) to 'In Progress' if currently 'Not Started'
+  await query(`
+    UPDATE work_items
+    SET status_id = (SELECT id FROM dropdown_options WHERE category = 'task_status' AND option_name = 'In Progress' LIMIT 1)
+    WHERE status_id IN (SELECT id FROM dropdown_options WHERE category = 'task_status' AND option_name = 'Not Started')
+      AND id IN (
+        SELECT work_item_id
+        FROM effort_logs
+        GROUP BY work_item_id
+        HAVING SUM(hours_logged) > 0
+      );
   `);
 
   console.log('Database schema and seed data initialized successfully!');

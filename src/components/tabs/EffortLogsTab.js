@@ -249,13 +249,14 @@ export default function EffortLogsTab() {
     }
   };
 
-  // Filter tasks based on selected opportunity for modal form
-  const availableTasks = selectedOppId
+  // Filter tasks based on selected opportunity for modal form (exclude terminated/cancelled)
+  const availableTasks = (selectedOppId
     ? tasks.filter(t => t.opportunity_id === parseInt(selectedOppId, 10))
-    : tasks;
+    : tasks).filter(t => t.status_name !== 'Cancelled' && t.status_name !== 'Terminated');
 
   // Filter work items list for "Work Items" tab
   const filteredWorkItems = tasks.filter(task => {
+    if (task.status_name === 'Cancelled' || task.status_name === 'Terminated') return false;
     if (userRole !== 'Admin' && !isUserAssociatedWithTask(task, currentUser, opportunities)) {
       return false;
     }
