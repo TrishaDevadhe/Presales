@@ -421,7 +421,6 @@ export default function EffortLogsTab() {
                     <th>Logged Hours</th>
                     <th style={{ minWidth: '140px' }}>Burn Progress</th>
                     <th>Status</th>
-                    <th style={{ textAlign: 'right' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -470,7 +469,18 @@ export default function EffortLogsTab() {
                           {estHours > 0 ? `${estHours} hrs` : '-'}
                         </td>
                         <td style={{ fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
-                          {loggedHours} hrs
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', minWidth: '150px' }}>
+                            <span style={{ minWidth: '65px', display: 'inline-block' }}>{loggedHours} hrs</span>
+                            <button
+                              className="btn btn-primary btn-sm"
+                              style={{ padding: '0.25rem 0.6rem', fontSize: '0.78rem', whiteSpace: 'nowrap' }}
+                              onClick={() => openLogModalForTask(task)}
+                              disabled={isCompleted}
+                              title={isCompleted ? 'Cannot log effort on completed work items' : 'Add effort log'}
+                            >
+                              + Add Log
+                            </button>
+                          </div>
                         </td>
                         <td>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', minWidth: '130px' }}>
@@ -499,17 +509,6 @@ export default function EffortLogsTab() {
                           <span className="badge" style={getOptionBadgeStyle('task_status', task.status_name)}>
                             {task.status_name || 'Not Started'}
                           </span>
-                        </td>
-                        <td style={{ textAlign: 'right' }}>
-                          <button
-                            className="btn btn-primary btn-sm"
-                            style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem', whiteSpace: 'nowrap' }}
-                            onClick={() => openLogModalForTask(task)}
-                            disabled={isCompleted}
-                            title={isCompleted ? 'Cannot log effort on completed work items' : 'Add effort log'}
-                          >
-                            + Add Log
-                          </button>
                         </td>
                       </tr>
                     );
@@ -542,8 +541,6 @@ export default function EffortLogsTab() {
                     <th>Work Item & Opportunity</th>
                     <th>Deliverable</th>
                     <th>Hours Logged</th>
-                    <th>Activity Type</th>
-                    <th>Effort Type</th>
                     <th>Notes</th>
                     <th style={{ textAlign: 'right' }}>Actions</th>
                   </tr>
@@ -577,16 +574,6 @@ export default function EffortLogsTab() {
                       <td style={{ fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
                         {log.hours_logged} hrs
                       </td>
-                      <td>
-                        <span className="badge" style={getOptionBadgeStyle('work_category', log.activity_type_name)}>
-                          {log.activity_type_name || 'General'}
-                        </span>
-                      </td>
-                      <td>
-                        <span className="badge" style={getOptionBadgeStyle('effort_type', log.effort_type_name)}>
-                          {log.effort_type_name || 'Standard'}
-                        </span>
-                      </td>
                       <td style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={log.notes}>
                         {log.notes || '-'}
                       </td>
@@ -611,7 +598,7 @@ export default function EffortLogsTab() {
       {/* LOG EFFORT OVERLAY MODAL */}
       {isModalOpen && (
         <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}>
-          <div className="modal-content paper-panel" style={{ maxWidth: '1000px', width: '95%' }}>
+          <div className="modal-content paper-panel" style={{ maxWidth: '800px', width: '95%' }}>
             <button className="modal-close" onClick={() => setIsModalOpen(false)}>×</button>
             <h3 style={{ fontSize: '1.35rem', marginBottom: '1.5rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
               Log Workload Hours
@@ -631,148 +618,89 @@ export default function EffortLogsTab() {
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               
-              <div className="form-section">
-                <div className="form-section-header">
-                  <span className="form-section-title">
-                    <span>⏱️</span> Workload Task Selection & Log Details
-                  </span>
+              {/* Locked Task Card */}
+              <div style={{ background: 'var(--bg-secondary)', padding: '1rem 1.25rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+                <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.35rem' }}>
+                  Selected Work Item Task
                 </div>
-                
-                {/* Locked Task Card */}
-                <div style={{ background: 'var(--bg-secondary)', padding: '1rem 1.25rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)', marginBottom: '0.5rem' }}>
-                  <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.35rem' }}>
-                    Selected Work Item Task
-                  </div>
-                  <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)' }}>
-                    {lockedTask?.title}
-                  </div>
-                  <div style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginTop: '0.35rem', display: 'flex', gap: '0.85rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                    <span>Opportunity: <strong style={{ color: 'var(--text-primary)' }}>{lockedTask?.opportunity_name ? `${lockedTask.company} - ${lockedTask.opportunity_name}` : 'General Work'}</strong></span>
-                    <span>•</span>
-                    <span>Assignee: <strong style={{ color: 'var(--text-primary)' }}>@{lockedTask?.assigned_to}</strong></span>
-                    <span>•</span>
-                    <span>Estimated: <strong style={{ color: 'var(--text-primary)' }}>{lockedTask?.estimated_hours || 0} hrs</strong></span>
-                  </div>
+                <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)' }}>
+                  {lockedTask?.title}
                 </div>
-
-                <div className="form-group" style={{ marginTop: '0.5rem' }}>
-                  <label className="form-label">Logging Person</label>
-                  <input
-                    type="text"
-                    name="person"
-                    className="form-control"
-                    value={formData.person}
-                    disabled
-                    readOnly
-                  />
+                <div style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginTop: '0.35rem', display: 'flex', gap: '0.85rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                  <span>Opportunity: <strong style={{ color: 'var(--text-primary)' }}>{lockedTask?.opportunity_name ? `${lockedTask.company} - ${lockedTask.opportunity_name}` : 'General Work'}</strong></span>
+                  <span>•</span>
+                  <span>Assignee: <strong style={{ color: 'var(--text-primary)' }}>@{lockedTask?.assigned_to}</strong></span>
+                  <span>•</span>
+                  <span>Logging Person: <strong style={{ color: 'var(--text-primary)' }}>@{formData.person}</strong></span>
+                  <span>•</span>
+                  <span>Estimated: <strong style={{ color: 'var(--text-primary)' }}>{lockedTask?.estimated_hours || 0} hrs</strong></span>
                 </div>
               </div>
 
-              <div className="form-section">
-                <div className="form-section-header">
-                  <span className="form-section-title">
-                    <span>📊</span> Date, Hours & Classification
-                  </span>
-                </div>
-
-                <div className="form-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.25rem' }}>
-                  <div className="form-group">
-                    <label className="form-label">Date Worked <span className="required">*</span></label>
-                    <input
-                      type="date"
-                      name="date"
-                      className="form-control"
-                      value={formData.date}
-                      min={getYesterdayDateString()}
-                      max={getTodayDateString()}
-                      onChange={handleInputChange}
-                      required
-                    />
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                      Allowed dates: Today ({getTodayDateString()}) and Yesterday ({getYesterdayDateString()}) only.
-                    </div>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Hours Logged <span className="required">*</span></label>
-                    <input
-                      type="number"
-                      name="hours_logged"
-                      className="form-control"
-                      min="0.1"
-                      max="24"
-                      step="0.1"
-                      placeholder="e.g. 4.5"
-                      value={formData.hours_logged}
-                      onChange={handleInputChange}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="form-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.25rem' }}>
-                  <div className="form-group">
-                    <label className="form-label">Activity Type</label>
-                    <select
-                      name="activity_type_id"
-                      className="form-control form-select"
-                      value={formData.activity_type_id}
-                      onChange={handleInputChange}
-                    >
-                      <option value="">Select Activity</option>
-                      {getOptions('work_category').map(opt => (
-                        <option key={opt.id} value={opt.id}>{opt.option_name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Effort Type</label>
-                    <select
-                      name="effort_type_id"
-                      className="form-control form-select"
-                      value={formData.effort_type_id}
-                      onChange={handleInputChange}
-                    >
-                      <option value="">Standard / Core</option>
-                      {getOptions('effort_type').map(opt => (
-                        <option key={opt.id} value={opt.id}>{opt.option_name}</option>
-                      ))}
-                    </select>
+              <div className="form-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.25rem' }}>
+                <div className="form-group">
+                  <label className="form-label">Date Worked <span className="required">*</span></label>
+                  <input
+                    type="date"
+                    name="date"
+                    className="form-control"
+                    value={formData.date}
+                    min={getYesterdayDateString()}
+                    max={getTodayDateString()}
+                    onChange={handleInputChange}
+                    required
+                  />
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                    Allowed dates: Today ({getTodayDateString()}) and Yesterday ({getYesterdayDateString()}) only.
                   </div>
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Activity Notes</label>
+                  <label className="form-label">Hours Logged <span className="required">*</span></label>
                   <input
-                    type="text"
-                    name="notes"
+                    type="number"
+                    name="hours_logged"
                     className="form-control"
-                    placeholder="Summarize work done during these hours..."
-                    value={formData.notes}
+                    min="0.1"
+                    max="24"
+                    step="0.1"
+                    placeholder="e.g. 4.5"
+                    value={formData.hours_logged}
                     onChange={handleInputChange}
+                    required
                   />
                 </div>
+              </div>
 
-                {/* Explicit Completion Checkbox */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', background: 'var(--bg-secondary)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)', marginTop: '0.5rem' }}>
-                  <input
-                    type="checkbox"
-                    id="mark_completed_checkbox"
-                    name="mark_completed"
-                    checked={formData.mark_completed}
-                    onChange={handleInputChange}
-                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--accent-primary)' }}
-                  />
-                  <label htmlFor="mark_completed_checkbox" style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer', userSelect: 'none' }}>
-                    Mark Task as Completed upon logging these hours
-                  </label>
-                </div>
+              <div className="form-group">
+                <label className="form-label">Activity Notes</label>
+                <input
+                  type="text"
+                  name="notes"
+                  className="form-control"
+                  placeholder="Summarize work done during these hours..."
+                  value={formData.notes}
+                  onChange={handleInputChange}
+                />
+              </div>
 
+              {/* Explicit Completion Checkbox */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', background: 'var(--bg-secondary)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+                <input
+                  type="checkbox"
+                  id="mark_completed_checkbox"
+                  name="mark_completed"
+                  checked={formData.mark_completed}
+                  onChange={handleInputChange}
+                  style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--accent-primary)' }}
+                />
+                <label htmlFor="mark_completed_checkbox" style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer', userSelect: 'none' }}>
+                  Mark Task as Completed upon logging these hours
+                </label>
               </div>
 
               {/* Action buttons */}
-              <div className="form-actions">
+              <div className="form-actions" style={{ marginTop: '0.5rem' }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>
                   Cancel
                 </button>

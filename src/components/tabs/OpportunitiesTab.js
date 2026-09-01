@@ -332,15 +332,13 @@ export default function OpportunitiesTab() {
                     />
                   </div>
 
-                  <div className="form-group">
-                    <CompanyAutocomplete
-                      label="Company Name"
-                      value={formData.company}
-                      onChange={(val) => setFormData(prev => ({ ...prev, company: val }))}
-                      opportunities={opportunities}
-                      required={true}
-                    />
-                  </div>
+                  <CompanyAutocomplete
+                    label="Company Name"
+                    value={formData.company}
+                    onChange={(val) => setFormData(prev => ({ ...prev, company: val }))}
+                    opportunities={opportunities}
+                    required={true}
+                  />
 
                   <div className="form-group">
                     <label className="form-label">Opportunity Type <span className="required">*</span></label>
@@ -352,22 +350,6 @@ export default function OpportunitiesTab() {
                       required
                     >
                       {allowedOpportunityTypes.map(opt => (
-                        <option key={opt.id} value={opt.id}>{opt.option_name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Lead Source dropdown */}
-                  <div className="form-group">
-                    <label className="form-label">Lead Source</label>
-                    <select
-                      name="lead_source_id"
-                      className="form-control form-select"
-                      value={formData.lead_source_id}
-                      onChange={handleInputChange}
-                    >
-                      <option value="">Select Lead Source</option>
-                      {getOptions('lead_source').map(opt => (
                         <option key={opt.id} value={opt.id}>{opt.option_name}</option>
                       ))}
                     </select>

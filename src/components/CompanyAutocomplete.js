@@ -59,7 +59,7 @@ export default function CompanyAutocomplete({ label = 'Company Name', required =
   return (
     <div
       ref={containerRef}
-      className={`autocomplete-container ${showSuggestions ? 'active' : ''}`}
+      className={`form-group autocomplete-container ${showSuggestions ? 'active' : ''}`}
       style={{ position: 'relative', zIndex: showSuggestions ? 9999 : 'auto' }}
     >
       {label && (

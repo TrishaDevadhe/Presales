@@ -6,7 +6,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
 import LoaderSpinner from '@/components/LoaderSpinner';
 import LoginPage from '@/components/LoginPage';
-import { Sun, Moon, LogOut } from 'lucide-react';
+import { Sun, Moon, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
 
 // Import Tabs
 import DashboardTab from '@/components/tabs/DashboardTab';
@@ -22,6 +22,7 @@ export default function Home() {
   const { currentUser, userRole, isLoggedIn, logout, handleUserChange, loading, allUsers } = useApp();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [theme, setTheme] = useState('glass-light');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // Inactivity session timeout: 30 minutes warning, 60 seconds countdown
   const [showTimeoutWarning, setShowTimeoutWarning] = useState(false);
@@ -186,36 +187,26 @@ export default function Home() {
     <div className="app-container">
 
       {/* Sidebar Navigation */}
-      <aside className="sidebar">
+      <aside className={`sidebar ${isSidebarCollapsed ? 'collapsed' : ''}`}>
 
         {/* Logo Brand Panel */}
-        <div style={{
-          padding: '1.75rem 1.5rem 1.25rem',
-          borderBottom: '1px solid var(--border-subtle)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.85rem'
-        }}>
-          <div style={{
-            width: '38px',
-            height: '38px',
-            borderRadius: '10px',
-            background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 60%, #06B6D4 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontWeight: '900',
-            color: '#fff',
-            fontSize: '1.3rem',
-            fontFamily: 'var(--font-title)',
-            boxShadow: '0 8px 16px rgba(30, 58, 138, 0.3), inset 0 1px 1px rgba(255,255,255,0.6)'
-          }}>
-            N
+        <div className="sidebar-brand-header">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', overflow: 'hidden' }}>
+            <div className="brand-logo-icon">N</div>
+            {!isSidebarCollapsed && (
+              <div className="brand-details">
+                <h1 className="brand-title">NetSales</h1>
+                <span className="brand-subtitle">NetSales</span>
+              </div>
+            )}
           </div>
-          <div>
-            <h1 style={{ fontSize: '1.3rem', color: 'var(--text-primary)', fontWeight: 800, fontFamily: 'var(--font-title)', letterSpacing: '-0.02em' }}>NetSales</h1>
-            <span style={{ fontSize: '0.7rem', color: 'var(--accent-primary)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 800 }}>NetSales</span>
-          </div>
+          <button
+            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            className="sidebar-toggle-btn"
+            title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          >
+            {isSidebarCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          </button>
         </div>
 
         {/* Navigation Menu */}
@@ -224,69 +215,84 @@ export default function Home() {
             <button
               onClick={() => setActiveTab('dashboard')}
               className={`nav-item-link ${activeTab === 'dashboard' ? 'active' : ''}`}
+              title="Dashboard Stage"
               style={{ width: '100%', background: 'transparent', textAlign: 'left', cursor: 'pointer' }}
             >
-              <span>📐</span> Dashboard Stage
+              <span className="nav-item-icon">📐</span>
+              {!isSidebarCollapsed && <span className="nav-item-text">Dashboard Stage</span>}
             </button>
           </li>
           <li>
             <button
               onClick={() => setActiveTab('opportunities')}
               className={`nav-item-link ${activeTab === 'opportunities' ? 'active' : ''}`}
+              title="Opportunities"
               style={{ width: '100%', background: 'transparent', textAlign: 'left', cursor: 'pointer' }}
             >
-              <span>💼</span> Opportunities
+              <span className="nav-item-icon">💼</span>
+              {!isSidebarCollapsed && <span className="nav-item-text">Opportunities</span>}
             </button>
           </li>
           <li>
             <button
               onClick={() => setActiveTab('workitems')}
               className={`nav-item-link ${activeTab === 'workitems' ? 'active' : ''}`}
+              title="Work Items"
               style={{ width: '100%', background: 'transparent', textAlign: 'left', cursor: 'pointer' }}
             >
-              <span>⚡</span> Work Items
+              <span className="nav-item-icon">⚡</span>
+              {!isSidebarCollapsed && <span className="nav-item-text">Work Items</span>}
             </button>
           </li>
           <li>
             <button
               onClick={() => setActiveTab('efforts')}
               className={`nav-item-link ${activeTab === 'efforts' ? 'active' : ''}`}
+              title="Effort Logging"
               style={{ width: '100%', background: 'transparent', textAlign: 'left', cursor: 'pointer' }}
             >
-              <span>⏱️</span> Effort Logging
+              <span className="nav-item-icon">⏱️</span>
+              {!isSidebarCollapsed && <span className="nav-item-text">Effort Logging</span>}
             </button>
           </li>
           <li>
             <button
               onClick={() => setActiveTab('versions')}
               className={`nav-item-link ${activeTab === 'versions' ? 'active' : ''}`}
+              title="Revision Logs"
               style={{ width: '100%', background: 'transparent', textAlign: 'left', cursor: 'pointer' }}
             >
-              <span>🔄</span> Revision Logs
+              <span className="nav-item-icon">🔄</span>
+              {!isSidebarCollapsed && <span className="nav-item-text">Revision Logs</span>}
             </button>
           </li>
           <li>
             <button
               onClick={() => setActiveTab('feedback')}
               className={`nav-item-link ${activeTab === 'feedback' ? 'active' : ''}`}
+              title="Client Feedback"
               style={{ width: '100%', background: 'transparent', textAlign: 'left', cursor: 'pointer' }}
             >
-              <span>💬</span> Client Feedback
+              <span className="nav-item-icon">💬</span>
+              {!isSidebarCollapsed && <span className="nav-item-text">Client Feedback</span>}
             </button>
           </li>
           <li>
             <button
               onClick={() => setActiveTab('profiles')}
               className={`nav-item-link ${activeTab === 'profiles' ? 'active' : ''}`}
+              title="Resource Profiles"
               style={{ width: '100%', background: 'transparent', textAlign: 'left', cursor: 'pointer' }}
             >
-              <span>👥</span> Resource Profiles
+              <span className="nav-item-icon">👥</span>
+              {!isSidebarCollapsed && <span className="nav-item-text">Resource Profiles</span>}
             </button>
           </li>
           <li>
             <button
               onClick={() => setActiveTab('admin')}
               className={`nav-item-link ${activeTab === 'admin' ? 'active' : ''}`}
+              title="Admin Console"
               style={{
                 width: '100%',
                 background: 'transparent',
@@ -295,7 +301,12 @@ export default function Home() {
                 opacity: userRole !== 'Admin' ? 0.65 : 1
               }}
             >
-              <span>⚙️</span> Admin Console {userRole !== 'Admin' && '🔒'}
+              <span className="nav-item-icon">⚙️</span>
+              {!isSidebarCollapsed && (
+                <span className="nav-item-text">
+                  Admin Console {userRole !== 'Admin' && '🔒'}
+                </span>
+              )}
             </button>
           </li>
         </ul>
@@ -303,26 +314,36 @@ export default function Home() {
         {/* Theme Switcher & User Footer */}
         <div className="sidebar-footer">
           {/* Minimalistic Theme Switch Toggle */}
-          <div className="minimal-theme-toggle" onClick={toggleTheme} title="Switch Theme">
+          <div
+            className="minimal-theme-toggle"
+            onClick={toggleTheme}
+            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          >
             <div className="toggle-info">
               {theme === 'dark' ? <Moon size={15} className="toggle-icon" /> : <Sun size={15} className="toggle-icon" />}
-              <span className="toggle-text">{theme === 'dark' ? 'Dark Mode' : 'Light Mode'}</span>
+              {!isSidebarCollapsed && (
+                <span className="toggle-text">{theme === 'dark' ? 'Dark Mode' : 'Light Mode'}</span>
+              )}
             </div>
-            <div className={`minimal-switch-track ${theme === 'dark' ? 'checked' : ''}`}>
-              <div className="minimal-switch-thumb" />
-            </div>
+            {!isSidebarCollapsed && (
+              <div className={`minimal-switch-track ${theme === 'dark' ? 'checked' : ''}`}>
+                <div className="minimal-switch-thumb" />
+              </div>
+            )}
           </div>
 
           {/* Minimalistic Active User Profile Section */}
-          <div className="minimal-user-card">
+          <div className="minimal-user-card" title={`Logged in as @${currentUser} (${userRole})`}>
             <div className="user-avatar-badge">
               <span>{currentUser ? currentUser.charAt(0).toUpperCase() : 'U'}</span>
               <span className={`status-dot ${userRole === 'Admin' ? 'admin' : 'user'}`} />
             </div>
-            <div className="user-details">
-              <div className="user-name">@{currentUser}</div>
-              <div className="user-role">{userRole}</div>
-            </div>
+            {!isSidebarCollapsed && (
+              <div className="user-details">
+                <div className="user-name">@{currentUser}</div>
+                <div className="user-role">{userRole}</div>
+              </div>
+            )}
             <button
               onClick={logout}
               className="btn-logout-minimal"
@@ -335,7 +356,7 @@ export default function Home() {
       </aside>
 
       {/* Main Workspace Workspace */}
-      <main className="main-content">
+      <main className={`main-content ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
 
         {/* Header navigation bar */}
         <header className="app-header">
@@ -350,16 +371,6 @@ export default function Home() {
               {activeTab === 'profiles' && 'Team Resource Profiles'}
               {activeTab === 'admin' && 'Configuration Console'}
             </h2>
-            <p className="header-subtitle">
-              {activeTab === 'dashboard' && 'Modular AI prototype engine, isometric workload capacities, and revision alarms.'}
-              {activeTab === 'opportunities' && 'Track deals, assign presales support, and auto-initialize workflows.'}
-              {activeTab === 'workitems' && 'Assign scope items, set estimates, and resolve roadblocks.'}
-              {activeTab === 'efforts' && 'Submit hours against tasks and analyze project burn rate variance.'}
-              {activeTab === 'versions' && 'Manage drafts, pricing structures, and track delta scopes.'}
-              {activeTab === 'feedback' && 'Record client requests and automatically trigger action-plan tasks.'}
-              {activeTab === 'profiles' && 'Map team seniority, focus areas, weekly capacities, and core skills.'}
-              {activeTab === 'admin' && 'Modify picklist choices, predefined task lists, and warning thresholds.'}
-            </p>
           </div>
         </header>
 
