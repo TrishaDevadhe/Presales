@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
+import { isUserAssociatedWithTask } from '@/lib/userAssociation';
 import RichTextEditor from '../RichTextEditor';
 
 export default function WorkItemsTab() {
-  const { allUsers, getOptions, resourceProfiles, getOptionBadgeStyle, showToast, showAlert, showConfirm } = useApp();
+  const { currentUser, userRole, allUsers, getOptions, resourceProfiles, getOptionBadgeStyle, showToast, showAlert, showConfirm } = useApp();
   const [tasks, setTasks] = useState([]);
   const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -370,6 +371,7 @@ export default function WorkItemsTab() {
   };
 
   const filteredTasks = tasks.filter(t => {
+    if (userRole !== 'Admin' && !isUserAssociatedWithTask(t, currentUser, opportunities)) return false;
     if (filterOpp && t.opportunity_id !== parseInt(filterOpp, 10)) return false;
     if (filterUser && t.assigned_to !== filterUser) return false;
     return true;

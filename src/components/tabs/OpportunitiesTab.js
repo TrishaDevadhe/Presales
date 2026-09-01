@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
+import { isUserAssociatedWithOpp } from '@/lib/userAssociation';
 import RichTextEditor from '../RichTextEditor';
 import CompanyAutocomplete from '../CompanyAutocomplete';
 import StaffMultiSelect from '../StaffMultiSelect';
 
 export default function OpportunitiesTab() {
-  const { allUsers, getOptions, getOptionBadgeStyle, showToast, showAlert, showConfirm } = useApp();
+  const { currentUser, userRole, allUsers, getOptions, getOptionBadgeStyle, showToast, showAlert, showConfirm } = useApp();
   const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -28,7 +29,6 @@ export default function OpportunitiesTab() {
     source_id: '',
     deal_stage_id: '',
     priority_id: '',
-    estimated_deal_value: 0,
     contract_tenure: 0,
     win_probability: 0,
     complexity_id: '',
@@ -80,7 +80,6 @@ export default function OpportunitiesTab() {
       source_id: '',
       deal_stage_id: getOptions('deal_stage').find(o => o.option_name === 'Proposal')?.id || getOptions('deal_stage')[0]?.id || '',
       priority_id: getOptions('priority').find(o => o.option_name === 'Medium')?.id || '',
-      estimated_deal_value: 0,
       contract_tenure: 12,
       win_probability: 50,
       complexity_id: getOptions('complexity')[1]?.id || '',
@@ -109,7 +108,6 @@ export default function OpportunitiesTab() {
       source_id: opp.source_id || '',
       deal_stage_id: opp.deal_stage_id || '',
       priority_id: opp.priority_id || '',
-      estimated_deal_value: parseFloat(opp.estimated_deal_value) || 0,
       contract_tenure: opp.contract_tenure || 0,
       win_probability: opp.win_probability || 0,
       complexity_id: opp.complexity_id || '',
@@ -194,16 +192,24 @@ export default function OpportunitiesTab() {
     }
   };
 
-  const formatCurrency = (val) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(val);
-  };
+  // Filter opportunities for non-admin users based on association
+  const displayOpportunities = userRole === 'Admin'
+    ? opportunities
+    : opportunities.filter(opp => isUserAssociatedWithOpp(opp, currentUser));
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       
       {/* Header bar with controls */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ fontSize: '1.5rem', color: 'var(--text-primary)', fontWeight: 700 }}>Opportunities Pipeline</h2>
+        <div>
+          <h2 style={{ fontSize: '1.5rem', color: 'var(--text-primary)', fontWeight: 700 }}>Opportunities Pipeline</h2>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
+            {userRole === 'Admin'
+              ? 'Showing all organization opportunities.'
+              : `Showing opportunities associated with @${currentUser}.`}
+          </p>
+        </div>
         <button className="btn btn-primary" onClick={openCreateModal}>
           + Add Opportunity
         </button>
@@ -213,8 +219,16 @@ export default function OpportunitiesTab() {
       <div className="paper-panel" style={{ overflow: 'hidden' }}>
         {loading ? (
           <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>Loading opportunities...</p>
-        ) : opportunities.length === 0 ? (
-          <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>No opportunities found. Click &quot;+ Add Opportunity&quot; to create one.</p>
+        ) : displayOpportunities.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '3.5rem 1.5rem', color: 'var(--text-secondary)' }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>💼</div>
+            <h4 style={{ fontSize: '1.1rem', color: 'var(--text-primary)', marginBottom: '0.4rem' }}>No Associated Opportunities Found</h4>
+            <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
+              {userRole === 'Admin'
+                ? 'No opportunities found. Click "+ Add Opportunity" to create one.'
+                : `You are currently not listed as a sales owner or presales member on any active opportunity.`}
+            </p>
+          </div>
         ) : (
           <div className="table-container">
             <table className="custom-table">
@@ -224,14 +238,13 @@ export default function OpportunitiesTab() {
                   <th>Type</th>
                   <th>Deliverable Type</th>
                   <th>Stage</th>
-                  <th>Value</th>
                   <th>Due Date</th>
                   <th>Presales Owner</th>
                   <th style={{ textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {opportunities.map((opp) => (
+                {displayOpportunities.map((opp) => (
                   <tr key={opp.id}>
                     <td>
                       <div>
@@ -256,10 +269,9 @@ export default function OpportunitiesTab() {
                         {opp.deal_stage_name || 'Proposal'}
                       </span>
                     </td>
-                    <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                      {formatCurrency(opp.estimated_deal_value || 0)}
+                    <td style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                      {opp.target_submission_date ? opp.target_submission_date.split('T')[0] : 'N/A'}
                     </td>
-                    <td>{opp.target_submission_date ? opp.target_submission_date.split('T')[0] : 'N/A'}</td>
                     <td>
                       <strong style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>@{opp.presales_owner || 'Unassigned'}</strong>
                     </td>
@@ -439,11 +451,11 @@ export default function OpportunitiesTab() {
                 </div>
               </div>
 
-              {/* Section 2: Financials & Timeline */}
+              {/* Section 2: Timeline & Parameters */}
               <div className="form-section">
                 <div className="form-section-header">
                   <span className="form-section-title">
-                    <span>📊</span> 2. Commercials & Key Dates
+                    <span>📊</span> 2. Timeline & Key Dates
                   </span>
                 </div>
                 <div className="form-grid-3">
@@ -525,50 +537,39 @@ export default function OpportunitiesTab() {
                 </div>
               </div>
 
-
-              {/* Section 3: Detailed Briefings - Full Width & Spacious */}
+              {/* Section 3: Detailed Notes, Scope & Risks */}
               <div className="form-section">
                 <div className="form-section-header">
                   <span className="form-section-title">
-                    <span>📑</span> 3. Executive Briefing & Special Requirements
+                    <span>📝</span> 3. Solution Details, Scope & Key Risks
                   </span>
                 </div>
-                
-                <div className="executive-briefing-grid">
-                  
-                  <div className="form-group" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                    <label className="form-label" style={{ minHeight: '2.5rem', display: 'flex', alignItems: 'flex-end', marginBottom: '0.5rem' }}>Opportunity Summary</label>
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                      <RichTextEditor
-                        value={formData.summary}
-                        onChange={(val) => handleRichTextChange('summary', val)}
-                        placeholder="Enter executive summary, core scope, and key client pain points..."
-                      />
-                    </div>
-                  </div>
 
-                  <div className="form-group" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                    <label className="form-label" style={{ minHeight: '2.5rem', display: 'flex', alignItems: 'flex-end', marginBottom: '0.5rem' }}>Key Risks & Mitigation Strategy</label>
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                      <RichTextEditor
-                        value={formData.risks}
-                        onChange={(val) => handleRichTextChange('risks', val)}
-                        placeholder="Highlight technical risks, tight deadlines, resource constraints, and mitigations..."
-                      />
-                    </div>
-                  </div>
+                <div className="form-group">
+                  <RichTextEditor
+                    label="Executive Summary & Scope Description"
+                    value={formData.summary}
+                    onChange={(val) => handleRichTextChange('summary', val)}
+                    placeholder="Provide a high-level summary of the solution..."
+                  />
+                </div>
 
-                  <div className="form-group" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                    <label className="form-label" style={{ minHeight: '2.5rem', display: 'flex', alignItems: 'flex-end', marginBottom: '0.5rem' }}>Special Instructions & Deliverable Expectations</label>
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                      <RichTextEditor
-                        value={formData.special_instructions}
-                        onChange={(val) => handleRichTextChange('special_instructions', val)}
-                        placeholder="Specify custom client templates, pricing rules, compliance standards, and submission guidelines..."
-                      />
-                    </div>
-                  </div>
+                <div className="form-group">
+                  <RichTextEditor
+                    label="Identified Solution Risks & Dependencies"
+                    value={formData.risks}
+                    onChange={(val) => handleRichTextChange('risks', val)}
+                    placeholder="Detail key risks, dependencies..."
+                  />
+                </div>
 
+                <div className="form-group">
+                  <RichTextEditor
+                    label="Special Instructions & Customer Preferences"
+                    value={formData.special_instructions}
+                    onChange={(val) => handleRichTextChange('special_instructions', val)}
+                    placeholder="Special RFP formatting requirements..."
+                  />
                 </div>
               </div>
 

@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
+import { isUserAssociatedWithTask, isUserAssociatedWithEffort } from '@/lib/userAssociation';
 
 export default function EffortLogsTab() {
-  const { currentUser, allUsers, getOptions, getOptionBadgeStyle, showToast, showAlert, showConfirm } = useApp();
+  const { currentUser, userRole, allUsers, getOptions, getOptionBadgeStyle, showToast, showAlert, showConfirm } = useApp();
   const [effortLogs, setEffortLogs] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [opportunities, setOpportunities] = useState([]);
@@ -252,6 +253,9 @@ export default function EffortLogsTab() {
 
   // Filter work items list for "Work Items" tab
   const filteredWorkItems = tasks.filter(task => {
+    if (userRole !== 'Admin' && !isUserAssociatedWithTask(task, currentUser, opportunities)) {
+      return false;
+    }
     if (filterOpportunity && String(task.opportunity_id) !== String(filterOpportunity)) {
       return false;
     }
@@ -266,6 +270,9 @@ export default function EffortLogsTab() {
 
   // Filter effort logs list for "Hours Logged" tab
   const filteredEffortLogs = effortLogs.filter(log => {
+    if (userRole !== 'Admin' && !isUserAssociatedWithEffort(log, currentUser, tasks, opportunities)) {
+      return false;
+    }
     if (filterOpportunity && String(log.opportunity_id) !== String(filterOpportunity)) {
       return false;
     }

@@ -2,10 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
+import { isUserAssociatedWithOpp, isUserAssociatedWithTask } from '@/lib/userAssociation';
 
 export default function DashboardTab() {
   const { currentUser, userRole, getOptionColor, getOptionBadgeStyle } = useApp();
   const [data, setData] = useState(null);
+  const [opportunities, setOpportunities] = useState([]);
+  const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -13,12 +16,21 @@ export default function DashboardTab() {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch('/api/dashboard');
-      const json = await res.json();
-      if (!res.ok || json.error) {
-        throw new Error(json.error || `HTTP error! status: ${res.status}`);
+      const [dashRes, oppsRes, tasksRes] = await Promise.all([
+        fetch('/api/dashboard'),
+        fetch('/api/opportunities'),
+        fetch('/api/workitems')
+      ]);
+      const json = await dashRes.json();
+      const oppsData = await oppsRes.json();
+      const tasksData = await tasksRes.json();
+
+      if (!dashRes.ok || json.error) {
+        throw new Error(json.error || `HTTP error! status: ${dashRes.status}`);
       }
       setData(json);
+      setOpportunities(oppsData);
+      setTasks(tasksData);
     } catch (e) {
       console.error('Error fetching dashboard data:', e);
       setError(e.message || 'Failed to connect to database');
@@ -57,6 +69,37 @@ export default function DashboardTab() {
 
   const { summary = {}, tasks_by_status = [], overdue_tasks = [], workload = [], timeline_alerts = [], rework_hotspots = [] } = data;
 
+  const displaySummary = { ...summary };
+  let displayTimelineAlerts = timeline_alerts;
+  let displayWorkload = workload;
+  let displayOverdueTasks = overdue_tasks;
+  let displayReworkHotspots = rework_hotspots;
+  let displayTasksByStatus = tasks_by_status;
+
+  if (userRole !== 'Admin' && currentUser) {
+    const userOpps = opportunities.filter(o => isUserAssociatedWithOpp(o, currentUser));
+    const userTasks = tasks.filter(t => isUserAssociatedWithTask(t, currentUser, opportunities));
+
+    displaySummary.total_opportunities = userOpps.length;
+    displaySummary.active_tasks = userTasks.filter(t => t.status_name !== 'Completed').length;
+
+    displayTimelineAlerts = timeline_alerts.filter(opp => isUserAssociatedWithOpp(opp, currentUser));
+    displayWorkload = workload.filter(w => (w.username || '').toLowerCase() === currentUser.toLowerCase());
+    displayOverdueTasks = overdue_tasks.filter(t => isUserAssociatedWithTask(t, currentUser, opportunities));
+    displayReworkHotspots = rework_hotspots.filter(h => isUserAssociatedWithOpp(h, currentUser));
+
+    const statusCounts = {};
+    userTasks.forEach(t => {
+      const name = t.status_name || 'Not Started';
+      statusCounts[name] = (statusCounts[name] || 0) + 1;
+    });
+
+    displayTasksByStatus = tasks_by_status.map(st => ({
+      ...st,
+      count: statusCounts[st.status_name] || 0
+    }));
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       
@@ -66,16 +109,16 @@ export default function DashboardTab() {
         <div className="paper-panel metrics-card">
           <div className="metric-icon-wrapper" style={{ background: 'rgba(37, 99, 235, 0.15)', color: 'var(--accent-secondary)' }}>📈</div>
           <div className="metric-info">
-            <span className="metric-label">Total Opportunities</span>
-            <span className="metric-value">{summary.total_opportunities || 0}</span>
+            <span className="metric-label">{userRole === 'Admin' ? 'Total Opportunities' : 'Your Opportunities'}</span>
+            <span className="metric-value">{displaySummary.total_opportunities || 0}</span>
           </div>
         </div>
 
         <div className="paper-panel metrics-card">
           <div className="metric-icon-wrapper" style={{ background: 'rgba(245, 158, 11, 0.15)', color: 'var(--color-warning-text)' }}>⚡</div>
           <div className="metric-info">
-            <span className="metric-label">Active Work Items</span>
-            <span className="metric-value">{summary.active_tasks || 0}</span>
+            <span className="metric-label">{userRole === 'Admin' ? 'Active Work Items' : 'Your Active Work Items'}</span>
+            <span className="metric-value">{displaySummary.active_tasks || 0}</span>
           </div>
         </div>
 
@@ -88,14 +131,14 @@ export default function DashboardTab() {
         <div className="paper-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <h3 style={{ fontSize: '1.15rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.65rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span>📅 Target Submission Deadlines (≤ 7 Days)</span>
-            {timeline_alerts.length > 0 && <span className="badge badge-warning">{timeline_alerts.length}</span>}
+            {displayTimelineAlerts.length > 0 && <span className="badge badge-warning">{displayTimelineAlerts.length}</span>}
           </h3>
           
-          {timeline_alerts.length === 0 ? (
+          {displayTimelineAlerts.length === 0 ? (
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>No targets approaching in the next 7 days.</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {timeline_alerts.map((opp) => (
+              {displayTimelineAlerts.map((opp) => (
                 <div key={opp.id} className="alert-banner alert-banner-warning" style={{ margin: 0, padding: '0.75rem 1rem' }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 700 }}>{opp.company} - {opp.opportunity_name}</div>
@@ -114,14 +157,16 @@ export default function DashboardTab() {
         <div className="paper-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <h3 style={{ fontSize: '1.15rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.65rem', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span>⚠️ Resource Capacity Overloads</span>
-            {workload.filter(w => w.is_overloaded).length > 0 && <span className="badge badge-danger">{workload.filter(w => w.is_overloaded).length}</span>}
+            {displayWorkload.filter(w => w.is_overloaded).length > 0 && <span className="badge badge-danger">{displayWorkload.filter(w => w.is_overloaded).length}</span>}
           </h3>
           
-          {workload.filter(w => w.is_overloaded).length === 0 ? (
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>All team members are within their weekly capacities.</p>
+          {displayWorkload.filter(w => w.is_overloaded).length === 0 ? (
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+              {userRole === 'Admin' ? 'All team members are within their weekly capacities.' : 'Your workload is within your weekly capacity.'}
+            </p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {workload.filter(w => w.is_overloaded).map((w, idx) => (
+              {displayWorkload.filter(w => w.is_overloaded).map((w, idx) => (
                 <div key={idx} className="alert-banner alert-banner-danger" style={{ margin: 0, padding: '0.75rem 1rem' }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 700 }}>@{w.username} ({w.role_name})</div>
@@ -138,13 +183,13 @@ export default function DashboardTab() {
       </div>
 
       {/* Overdue Tasks Banner List */}
-      {overdue_tasks.length > 0 && (
+      {displayOverdueTasks.length > 0 && (
         <div className="paper-panel alert-banner alert-banner-danger" style={{ padding: '1.5rem', flexDirection: 'column' }}>
           <h3 style={{ fontSize: '1.15rem', color: 'var(--color-danger-text)', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            🚨 Overdue Tasks Alert ({overdue_tasks.length})
+            🚨 Overdue Tasks Alert ({displayOverdueTasks.length})
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', width: '100%' }}>
-            {overdue_tasks.map((task) => (
+            {displayOverdueTasks.map((task) => (
               <div key={task.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.65rem 0', borderBottom: '1px solid rgba(239, 68, 68, 0.2)' }}>
                 <span style={{ fontSize: '0.9rem' }}>
                   <strong style={{ color: 'var(--text-primary)' }}>{task.title}</strong> on <span style={{ color: 'var(--text-secondary)' }}>{task.company} - {task.opportunity_name}</span>
@@ -163,7 +208,7 @@ export default function DashboardTab() {
       <div className="paper-panel" style={{ padding: '1.5rem' }}>
         <h3 style={{ fontSize: '1.15rem', marginBottom: '1.25rem', color: 'var(--text-primary)' }}>Task Status Distribution</h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
-          {tasks_by_status.map((st, idx) => {
+          {displayTasksByStatus.map((st, idx) => {
             const statusColor = st.status_color || getOptionColor('task_status', st.status_name) || '#3B82F6';
             return (
               <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', background: 'rgba(226, 232, 240, 0.35)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
@@ -175,7 +220,7 @@ export default function DashboardTab() {
               </div>
             );
           })}
-          {tasks_by_status.length === 0 && (
+          {displayTasksByStatus.length === 0 && (
             <p style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '1.5rem 0' }}>No tasks found.</p>
           )}
         </div>
@@ -186,7 +231,9 @@ export default function DashboardTab() {
         
         {/* Team Workload */}
         <div className="paper-panel" style={{ padding: '1.5rem' }}>
-          <h3 style={{ fontSize: '1.15rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>Resource Capacity & Allocation</h3>
+          <h3 style={{ fontSize: '1.15rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
+            {userRole === 'Admin' ? 'Resource Capacity & Allocation' : 'Your Workload & Capacity'}
+          </h3>
           <div className="table-container">
             <table className="custom-table" style={{ fontSize: '0.88rem' }}>
               <thead>
@@ -198,7 +245,7 @@ export default function DashboardTab() {
                 </tr>
               </thead>
               <tbody>
-                {workload.map((res, idx) => (
+                {displayWorkload.map((res, idx) => (
                   <tr key={idx}>
                     <td><strong style={{ color: 'var(--text-primary)' }}>@{res.username}</strong></td>
                     <td><span className="badge" style={getOptionBadgeStyle('role', res.role_name)}>{res.role_name || 'N/A'}</span></td>
@@ -230,7 +277,7 @@ export default function DashboardTab() {
             🔄 Rework & Revision Hotspots (Risk Flag)
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {rework_hotspots.map((h) => (
+            {displayReworkHotspots.map((h) => (
               <div key={h.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.85rem 1rem', background: 'var(--color-danger-bg)', border: '1px solid rgba(239, 68, 68, 0.25)', borderRadius: 'var(--radius-md)' }}>
                 <div>
                   <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{h.company} - {h.opportunity_name}</div>
@@ -244,7 +291,7 @@ export default function DashboardTab() {
                 </div>
               </div>
             ))}
-            {rework_hotspots.length === 0 && (
+            {displayReworkHotspots.length === 0 && (
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', textAlign: 'center', padding: '2rem 0' }}>
                 No opportunities exceed the revision risk threshold (Threshold: {data.revision_threshold} revisions).
               </p>

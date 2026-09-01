@@ -129,11 +129,8 @@ export default function Home() {
               <div style={{ fontSize: '3rem' }}>🔒</div>
               <h3 style={{ color: 'var(--text-primary)', fontSize: '1.5rem', fontFamily: 'var(--font-title)' }}>Access Restricted</h3>
               <p style={{ color: 'var(--text-secondary)', maxWidth: '440px', textAlign: 'center', fontSize: '0.95rem' }}>
-                You are currently impersonating <strong>&quot;{userRole}&quot;</strong>. Switch to the <strong>Admin</strong> identity to access configuration console modules.
+                Admin console configuration options are restricted to Administrator accounts.
               </p>
-              <button className="btn btn-pill-cobalt" onClick={() => handleUserChange('admin')}>
-                ⚡ Switch to Admin Role
-              </button>
             </div>
           );
         }

@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
+import { isUserAssociatedWithOpp } from '@/lib/userAssociation';
 import RichTextEditor from '../RichTextEditor';
 
 export default function FeedbackTab() {
-  const { allUsers, getOptions, dropdownOptions, getOptionBadgeStyle, showToast, showAlert, showConfirm } = useApp();
+  const { currentUser, userRole, allUsers, getOptions, dropdownOptions, getOptionBadgeStyle, showToast, showAlert, showConfirm } = useApp();
   const [feedbacks, setFeedbacks] = useState([]);
   const [opportunities, setOpportunities] = useState([]);
   const [versions, setVersions] = useState([]);
@@ -185,6 +186,14 @@ export default function FeedbackTab() {
     );
   };
 
+  const displayFeedbacks = userRole === 'Admin'
+    ? feedbacks
+    : feedbacks.filter(fb => {
+        const ownerMatch = (fb.owner || '').toLowerCase().trim() === (currentUser || '').toLowerCase().trim();
+        const opp = opportunities.find(o => String(o.id) === String(fb.opportunity_id));
+        return ownerMatch || (opp && isUserAssociatedWithOpp(opp, currentUser));
+      });
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       
@@ -199,26 +208,26 @@ export default function FeedbackTab() {
       {/* Feedback list */}
       <div className="paper-panel" style={{ overflow: 'hidden' }}>
         {loading ? (
-          <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>Loading feedback...</p>
-        ) : feedbacks.length === 0 ? (
-          <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>No client feedback recorded yet. Click &quot;Register Feedback&quot; to log client updates.</p>
+          <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>Loading feedbacks...</p>
+        ) : displayFeedbacks.length === 0 ? (
+          <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>No feedback records found for your associated opportunities.</p>
         ) : (
           <div className="table-container">
             <table className="custom-table">
               <thead>
                 <tr>
-                  <th>Opportunity</th>
+                  <th>Opportunity & Ver</th>
                   <th>Source</th>
-                  <th>Feedback Type</th>
+                  <th>Type</th>
                   <th>Severity</th>
-                  <th>Feedback Text Snippet</th>
-                  <th>Action Needed?</th>
-                  <th>Status</th>
+                  <th>Feedback Detail</th>
+                  <th>Owner</th>
+                  <th>Due Date</th>
                   <th style={{ textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {feedbacks.map((fb) => (
+                {displayFeedbacks.map((fb) => (
                   <tr key={fb.id}>
                     <td>
                       <div><strong style={{ color: 'var(--text-primary)' }}>{fb.opportunity_name}</strong></div>

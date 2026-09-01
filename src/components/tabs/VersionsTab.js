@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
+import { isUserAssociatedWithOpp } from '@/lib/userAssociation';
 import RichTextEditor from '../RichTextEditor';
 
 export default function VersionsTab() {
-  const { allUsers, getOptions, getOptionBadgeStyle } = useApp();
+  const { currentUser, userRole, allUsers, getOptions, getOptionBadgeStyle } = useApp();
   const [versions, setVersions] = useState([]);
   const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -120,6 +121,13 @@ export default function VersionsTab() {
     }
   };
 
+  const displayVersions = userRole === 'Admin'
+    ? versions
+    : versions.filter(ver => {
+        const opp = opportunities.find(o => String(o.id) === String(ver.opportunity_id));
+        return opp && isUserAssociatedWithOpp(opp, currentUser);
+      });
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       
@@ -135,8 +143,8 @@ export default function VersionsTab() {
       <div className="paper-panel" style={{ overflow: 'hidden' }}>
         {loading ? (
           <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>Loading versions...</p>
-        ) : versions.length === 0 ? (
-          <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>No version records logged. Click &quot;New Version Revision&quot; to log a proposal revision.</p>
+        ) : displayVersions.length === 0 ? (
+          <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>No version records found for your associated opportunities.</p>
         ) : (
           <div className="table-container">
             <table className="custom-table">
@@ -153,7 +161,7 @@ export default function VersionsTab() {
                 </tr>
               </thead>
               <tbody>
-                {versions.map((ver) => (
+                {displayVersions.map((ver) => (
                   <tr key={ver.id}>
                     <td>
                       <div><strong style={{ color: 'var(--text-primary)' }}>{ver.opportunity_name}</strong></div>
