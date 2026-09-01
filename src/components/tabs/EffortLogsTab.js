@@ -29,6 +29,13 @@ export default function EffortLogsTab() {
   const [lockedTask, setLockedTask] = useState(null);
   const [liveVarianceWarning, setLiveVarianceWarning] = useState(null);
 
+  // Minimum selectable date for calendar (yesterday)
+  const getMinDate = () => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    return yesterday.toISOString().split('T')[0];
+  };
+
   // Form state
   const [formData, setFormData] = useState({
     work_item_id: '',
@@ -37,7 +44,8 @@ export default function EffortLogsTab() {
     hours_logged: 2,
     effort_type_id: '',
     activity_type_id: '',
-    notes: ''
+    notes: '',
+    mark_completed: false
   });
 
   const fetchData = async () => {
@@ -105,32 +113,6 @@ export default function EffortLogsTab() {
     }
   }, [formData.work_item_id, formData.hours_logged, tasks, effortLogs, settings]);
 
-  // Generic open create modal (top-right button)
-  const openCreateModal = () => {
-    setError(null);
-    setLiveVarianceWarning(null);
-    setIsLockedTaskMode(false);
-    setLockedTask(null);
-
-    const firstOppId = opportunities[0]?.id ? String(opportunities[0].id) : '';
-    setSelectedOppId(firstOppId);
-
-    const filteredTasks = firstOppId
-      ? tasks.filter(t => t.opportunity_id === parseInt(firstOppId, 10))
-      : tasks;
-
-    setFormData({
-      work_item_id: filteredTasks[0]?.id || tasks[0]?.id || '',
-      person: currentUser,
-      date: new Date().toISOString().split('T')[0],
-      hours_logged: 4,
-      effort_type_id: getOptions('effort_type')[0]?.id || '',
-      activity_type_id: getOptions('work_category')[0]?.id || '',
-      notes: ''
-    });
-    setIsModalOpen(true);
-  };
-
   // Open modal pre-filled and locked for a specific task row
   const openLogModalForTask = (task) => {
     setError(null);
@@ -146,7 +128,8 @@ export default function EffortLogsTab() {
       hours_logged: 4,
       effort_type_id: getOptions('effort_type')[0]?.id || '',
       activity_type_id: task.work_category_id || getOptions('work_category')[0]?.id || '',
-      notes: ''
+      notes: '',
+      mark_completed: false
     });
     setIsModalOpen(true);
   };
@@ -178,10 +161,10 @@ export default function EffortLogsTab() {
   };
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: type === 'checkbox' ? checked : value
     }));
   };
 
@@ -280,17 +263,14 @@ export default function EffortLogsTab() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       
-      {/* Header bar */}
+      {/* Header bar (Main effort log button removed as requested) */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h2 style={{ fontSize: '1.5rem', color: 'var(--text-primary)', fontWeight: 700 }}>Workload Effort Logging</h2>
           <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
-            Log hours against tasks, monitor burn rates, and track historical time allocations.
+            Log hours directly against tasks, monitor burn rates, and track historical time allocations.
           </p>
         </div>
-        <button className="btn btn-primary" onClick={openCreateModal} disabled={tasks.length === 0}>
-          {tasks.length === 0 ? 'No active tasks to log' : '⚡ Log Effort Hours'}
-        </button>
       </div>
 
       {/* Filter Bar */}
@@ -522,7 +502,7 @@ export default function EffortLogsTab() {
           ) : filteredEffortLogs.length === 0 ? (
             <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
               {effortLogs.length === 0
-                ? 'No hours logged yet. Click "Log Effort Hours" to submit workload details.'
+                ? 'No hours logged yet. Click "+ Add Log" on any work item task to submit workload details.'
                 : 'No effort logs match the selected filter criteria.'}
             </p>
           ) : (
@@ -587,7 +567,7 @@ export default function EffortLogsTab() {
           <div className="modal-content paper-panel" style={{ maxWidth: '1000px', width: '95%' }}>
             <button className="modal-close" onClick={() => setIsModalOpen(false)}>×</button>
             <h3 style={{ fontSize: '1.35rem', marginBottom: '1.5rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
-              {isLockedTaskMode ? 'Log Hours for Task' : 'Log Effort Workload'}
+              Log Workload Hours
             </h3>
 
             {error && (
@@ -611,71 +591,24 @@ export default function EffortLogsTab() {
                   </span>
                 </div>
                 
-                {isLockedTaskMode ? (
-                  /* Locked Task Card when launched from row-level Add Log button */
-                  <div style={{ background: 'var(--bg-secondary)', padding: '1rem 1.25rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)', marginBottom: '0.5rem' }}>
-                    <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.35rem' }}>
-                      Selected Work Item Task (Locked Context)
-                    </div>
-                    <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)' }}>
-                      {lockedTask?.title}
-                    </div>
-                    <div style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginTop: '0.35rem', display: 'flex', gap: '0.85rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                      <span>Opportunity: <strong style={{ color: 'var(--text-primary)' }}>{lockedTask?.opportunity_name ? `${lockedTask.company} - ${lockedTask.opportunity_name}` : 'General Work'}</strong></span>
-                      <span>•</span>
-                      <span>Assignee: <strong style={{ color: 'var(--text-primary)' }}>@{lockedTask?.assigned_to}</strong></span>
-                      <span>•</span>
-                      <span>Estimated: <strong style={{ color: 'var(--text-primary)' }}>{lockedTask?.estimated_hours || 0} hrs</strong></span>
-                    </div>
+                {/* Locked Task Card */}
+                <div style={{ background: 'var(--bg-secondary)', padding: '1rem 1.25rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)', marginBottom: '0.5rem' }}>
+                  <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.35rem' }}>
+                    Selected Work Item Task
                   </div>
-                ) : (
-                  /* Searchable Opportunity & Task Dropdowns when launched from generic top-right CTA */
-                  <>
-                    {/* Opportunity Selector Field */}
-                    <div className="form-group">
-                      <label className="form-label">Select Opportunity</label>
-                      <select
-                        className="form-control form-select"
-                        value={selectedOppId}
-                        onChange={handleOppChange}
-                      >
-                        <option value="">Show All Opportunities</option>
-                        {opportunities.map(opp => (
-                          <option key={opp.id} value={opp.id}>
-                            {opp.opportunity_name} ({opp.company})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                  <div style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)' }}>
+                    {lockedTask?.title}
+                  </div>
+                  <div style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginTop: '0.35rem', display: 'flex', gap: '0.85rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <span>Opportunity: <strong style={{ color: 'var(--text-primary)' }}>{lockedTask?.opportunity_name ? `${lockedTask.company} - ${lockedTask.opportunity_name}` : 'General Work'}</strong></span>
+                    <span>•</span>
+                    <span>Assignee: <strong style={{ color: 'var(--text-primary)' }}>@{lockedTask?.assigned_to}</strong></span>
+                    <span>•</span>
+                    <span>Estimated: <strong style={{ color: 'var(--text-primary)' }}>{lockedTask?.estimated_hours || 0} hrs</strong></span>
+                  </div>
+                </div>
 
-                    {/* Filtered Work Item Task Dropdown */}
-                    <div className="form-group">
-                      <label className="form-label">Work Item Task <span className="required">*</span></label>
-                      <select
-                        name="work_item_id"
-                        className="form-control form-select"
-                        value={formData.work_item_id}
-                        onChange={handleTaskChange}
-                        required
-                      >
-                        {availableTasks.length === 0 ? (
-                          <option value="" disabled>No work items found for selected opportunity</option>
-                        ) : (
-                          <>
-                            <option value="">Select a task...</option>
-                            {availableTasks.map(t => (
-                              <option key={t.id} value={t.id}>
-                                {t.title} — Est: {t.estimated_hours}h
-                              </option>
-                            ))}
-                          </>
-                        )}
-                      </select>
-                    </div>
-                  </>
-                )}
-
-                <div className="form-group" style={{ marginTop: isLockedTaskMode ? '0.5rem' : '0' }}>
+                <div className="form-group" style={{ marginTop: '0.5rem' }}>
                   <label className="form-label">Logging Person</label>
                   <input
                     type="text"
@@ -703,9 +636,13 @@ export default function EffortLogsTab() {
                       name="date"
                       className="form-control"
                       value={formData.date}
+                      min={getMinDate()}
                       onChange={handleInputChange}
                       required
                     />
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                      Allowed dates: Yesterday, Today, and Future dates.
+                    </div>
                   </div>
 
                   <div className="form-group">
@@ -768,6 +705,22 @@ export default function EffortLogsTab() {
                     onChange={handleInputChange}
                   />
                 </div>
+
+                {/* Explicit Completion Checkbox */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', background: 'var(--bg-secondary)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)', marginTop: '0.5rem' }}>
+                  <input
+                    type="checkbox"
+                    id="mark_completed_checkbox"
+                    name="mark_completed"
+                    checked={formData.mark_completed}
+                    onChange={handleInputChange}
+                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--accent-primary)' }}
+                  />
+                  <label htmlFor="mark_completed_checkbox" style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)', cursor: 'pointer', userSelect: 'none' }}>
+                    Mark Task as Completed upon logging these hours
+                  </label>
+                </div>
+
               </div>
 
               {/* Action buttons */}

@@ -93,6 +93,24 @@ export async function POST(request) {
 
     const effortLog = result.rows[0];
 
+    // Automatically update work item status:
+    // If user explicitly checked mark_completed -> set status to 'Completed'
+    // Otherwise -> set status to 'In Progress' if currently 'Not Started'
+    if (body.mark_completed === true) {
+      const completedRes = await query("SELECT id FROM dropdown_options WHERE category = 'task_status' AND option_name = 'Completed'");
+      if (completedRes.rows.length > 0) {
+        await query('UPDATE work_items SET status_id = $1 WHERE id = $2', [completedRes.rows[0].id, work_item_id]);
+      }
+    } else {
+      const inProgressRes = await query("SELECT id FROM dropdown_options WHERE category = 'task_status' AND option_name = 'In Progress'");
+      if (inProgressRes.rows.length > 0) {
+        await query(
+          "UPDATE work_items SET status_id = $1 WHERE id = $2 AND status_id IN (SELECT id FROM dropdown_options WHERE category = 'task_status' AND option_name = 'Not Started')",
+          [inProgressRes.rows[0].id, work_item_id]
+        );
+      }
+    }
+
     // Return created log with variance metadata
     const responseData = {
       ...effortLog,
