@@ -7,7 +7,6 @@ import LoaderSpinner from '@/components/LoaderSpinner';
 export default function LoginPage() {
   const { usersList, resourceProfiles, handleUserChange, login } = useApp();
   const [selectedUser, setSelectedUser] = useState('');
-  const [detectedRole, setDetectedRole] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
@@ -29,24 +28,12 @@ export default function LoginPage() {
 
   const allUsers = getCombinedUsers();
 
-  // Set default selected user and detect role
+  // Set default selected user
   useEffect(() => {
     if (allUsers.length > 0 && !selectedUser) {
       setSelectedUser(allUsers[0].username);
     }
   }, [resourceProfiles]);
-
-  // Dynamically update the detected role when selected user changes
-  useEffect(() => {
-    if (selectedUser) {
-      const userObj = allUsers.find(u => u.username === selectedUser);
-      if (userObj) {
-        setDetectedRole(userObj.role);
-      }
-    } else {
-      setDetectedRole('');
-    }
-  }, [selectedUser, resourceProfiles]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -163,29 +150,6 @@ export default function LoginPage() {
                 )}
               </select>
             </div>
-
-            {/* Dynamic RBAC Badge Output */}
-            {detectedRole && (
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '0.5rem', 
-                padding: '0.65rem 0.85rem', 
-                borderRadius: 'var(--radius-md)', 
-                backgroundColor: 'var(--bg-secondary)', 
-                border: '1px solid var(--border-subtle)',
-                fontSize: '0.8rem'
-              }}>
-                <span style={{ fontWeight: 700, color: 'var(--text-secondary)' }}>Detected Role:</span>
-                <span className="badge badge-info" style={{ 
-                  backgroundColor: rbacMatrix.find(m => m.role === detectedRole)?.badgeColor || 'var(--color-info-bg)', 
-                  color: rbacMatrix.find(m => m.role === detectedRole)?.color || 'var(--color-info-text)',
-                  fontSize: '0.72rem'
-                }}>
-                  {detectedRole}
-                </span>
-              </div>
-            )}
 
             {/* Passcode Entry */}
             <div className="form-group">

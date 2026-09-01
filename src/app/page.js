@@ -23,7 +23,7 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [theme, setTheme] = useState('glass-light');
 
-  // Inactivity session timeout: 5 minutes warning, 60 seconds countdown
+  // Inactivity session timeout: 30 minutes warning, 60 seconds countdown
   const [showTimeoutWarning, setShowTimeoutWarning] = useState(false);
   const [timeLeft, setTimeLeft] = useState(60);
   const lastActivityRef = useRef(Date.now());
@@ -50,7 +50,7 @@ export default function Home() {
     const intervalId = setInterval(() => {
       if (!showTimeoutWarning) {
         const inactiveTime = Date.now() - lastActivityRef.current;
-        if (inactiveTime >= 5 * 60 * 1000) { // 5 minutes
+        if (inactiveTime >= 30 * 60 * 1000) { // 30 minutes
           setShowTimeoutWarning(true);
           setTimeLeft(60);
         }

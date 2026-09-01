@@ -42,7 +42,7 @@ export function AppProvider({ children }) {
   // Fetch resource profiles (users)
   const fetchResourceProfiles = async () => {
     try {
-      const res = await fetch(`/api/resourceprofiles?t=${Date.now()}`, { cache: 'no-store' });
+      const res = await fetch('/api/resourceprofiles');
       const data = await res.json();
       setResourceProfiles(data);
     } catch (error) {
