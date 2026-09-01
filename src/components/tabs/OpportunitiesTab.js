@@ -201,15 +201,7 @@ export default function OpportunitiesTab() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       
       {/* Header bar with controls */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <h2 style={{ fontSize: '1.5rem', color: 'var(--text-primary)', fontWeight: 700 }}>Opportunities Pipeline</h2>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
-            {userRole === 'Admin'
-              ? 'Showing all organization opportunities.'
-              : `Showing opportunities associated with @${currentUser}.`}
-          </p>
-        </div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
         <button className="btn btn-primary" onClick={openCreateModal}>
           + Add Opportunity
         </button>

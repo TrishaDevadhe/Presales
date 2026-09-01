@@ -3,6 +3,19 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { isUserAssociatedWithOpp, isUserAssociatedWithTask } from '@/lib/userAssociation';
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  CartesianGrid,
+  PieChart,
+  Pie,
+  Cell
+} from 'recharts';
 
 export default function DashboardTab() {
   const { currentUser, userRole, getOptionColor, getOptionBadgeStyle } = useApp();
@@ -11,6 +24,11 @@ export default function DashboardTab() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const fetchDashboardData = async () => {
     try {
@@ -67,7 +85,7 @@ export default function DashboardTab() {
 
   if (!data) return null;
 
-  const { summary = {}, tasks_by_status = [], overdue_tasks = [], workload = [], timeline_alerts = [], rework_hotspots = [] } = data;
+  const { summary = {}, tasks_by_status = [], overdue_tasks = [], workload = [], timeline_alerts = [], rework_hotspots = [], opps_by_stage = [] } = data;
 
   const displaySummary = { ...summary };
   let displayTimelineAlerts = timeline_alerts;
@@ -75,6 +93,7 @@ export default function DashboardTab() {
   let displayOverdueTasks = overdue_tasks;
   let displayReworkHotspots = rework_hotspots;
   let displayTasksByStatus = tasks_by_status;
+  let displayOppsByStage = opps_by_stage;
 
   if (userRole !== 'Admin' && currentUser) {
     const userOpps = opportunities.filter(o => isUserAssociatedWithOpp(o, currentUser));
@@ -98,14 +117,77 @@ export default function DashboardTab() {
       ...st,
       count: statusCounts[st.status_name] || 0
     }));
+
+    // Calculate Stage distribution for current user
+    const stageMap = {};
+    userOpps.forEach(o => {
+      const sName = o.stage_name || 'Unassigned';
+      if (!stageMap[sName]) {
+        stageMap[sName] = {
+          stage_name: sName,
+          count: 0,
+          total_value: 0,
+          stage_color: o.stage_color || getOptionColor('deal_stage', sName) || '#3B82F6'
+        };
+      }
+      stageMap[sName].count += 1;
+      stageMap[sName].total_value += parseFloat(o.estimated_deal_value || 0);
+    });
+    displayOppsByStage = Object.values(stageMap);
+  } else {
+    displayOppsByStage = opps_by_stage.map(s => ({
+      ...s,
+      count: parseInt(s.count, 10),
+      total_value: parseFloat(s.total_value || 0),
+      stage_color: s.stage_color || getOptionColor('deal_stage', s.stage_name) || '#3B82F6'
+    }));
   }
+
+  // Format currency for chart labels
+  const formatCurrency = (val) => {
+    if (val >= 1000000) return `$${(val / 1000000).toFixed(1)}M`;
+    if (val >= 1000) return `$${(val / 1000).toFixed(0)}K`;
+    return `$${val}`;
+  };
+
+  // Custom Chart Tooltip
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div style={{
+          background: 'var(--surface-card, #ffffff)',
+          border: '1px solid var(--border-subtle, #cbd5e1)',
+          padding: '0.75rem 1rem',
+          borderRadius: 'var(--radius-md, 8px)',
+          boxShadow: '0 10px 25px -5px rgba(0,0,0,0.2)',
+          color: 'var(--text-primary, #0f172a)',
+          fontSize: '0.85rem',
+          backdropFilter: 'blur(12px)'
+        }}>
+          <p style={{ fontWeight: 800, marginBottom: '0.4rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.3rem' }}>{label}</p>
+          {payload.map((entry, index) => (
+            <p key={`item-${index}`} style={{ color: entry.color || entry.fill || 'var(--text-primary)', margin: '0.25rem 0', fontWeight: 600 }}>
+              <span>{entry.name}: </span>
+              <strong style={{ color: 'var(--text-primary)' }}>
+                {typeof entry.value === 'number' && entry.name.toLowerCase().includes('value')
+                  ? `$${entry.value.toLocaleString()}`
+                  : entry.value}
+              </strong>
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const totalTasksCount = displayTasksByStatus.reduce((acc, curr) => acc + (curr.count || 0), 0);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       
-      {/* Top Level Metrics Cards — Floating Glass Panel */}
+      {/* Top Level Metrics Cards */}
       <div className="dashboard-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
-        
         <div className="paper-panel metrics-card">
           <div className="metric-icon-wrapper" style={{ background: 'rgba(37, 99, 235, 0.15)', color: 'var(--accent-secondary)' }}>📈</div>
           <div className="metric-info">
@@ -121,8 +203,168 @@ export default function DashboardTab() {
             <span className="metric-value">{displaySummary.active_tasks || 0}</span>
           </div>
         </div>
-
       </div>
+
+      {/* Analytical View Charts Grid */}
+      {isMounted && (
+        <div className="analytics-charts-grid">
+          
+          {/* Chart 1: Opportunity Pipeline Value & Count by Stage */}
+          <div className="paper-panel chart-card">
+            <div className="chart-card-header">
+              <h3 className="chart-card-title">
+                <span>📊 Pipeline Value & Volume by Stage</span>
+              </h3>
+              <span className="badge badge-info">{displayOppsByStage.length} Stages</span>
+            </div>
+            
+            <div style={{ width: '100%', height: 300 }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={displayOppsByStage} margin={{ top: 20, right: 20, left: 0, bottom: 25 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.2)" />
+                  <XAxis
+                    dataKey="stage_name"
+                    tick={{ fill: 'var(--text-secondary)', fontSize: 12, fontWeight: 600 }}
+                    interval={0}
+                    angle={-15}
+                    textAnchor="end"
+                  />
+                  <YAxis
+                    yAxisId="left"
+                    orientation="left"
+                    tickFormatter={formatCurrency}
+                    tick={{ fill: 'var(--text-secondary)', fontSize: 12 }}
+                  />
+                  <YAxis
+                    yAxisId="right"
+                    orientation="right"
+                    allowDecimals={false}
+                    tick={{ fill: 'var(--text-secondary)', fontSize: 12 }}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend wrapperStyle={{ paddingTop: '10px', fontSize: '0.85rem' }} />
+                  <Bar yAxisId="left" dataKey="total_value" name="Pipeline Value ($)" fill="#2563EB" radius={[6, 6, 0, 0]} />
+                  <Bar yAxisId="right" dataKey="count" name="Opportunity Count" fill="#10B981" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Chart 2: Work Item Status Distribution */}
+          <div className="paper-panel chart-card">
+            <div className="chart-card-header">
+              <h3 className="chart-card-title">
+                <span>🍩 Work Item Status Distribution</span>
+              </h3>
+              <span className="badge badge-neutral">Total: {totalTasksCount} Items</span>
+            </div>
+
+            <div style={{ width: '100%', height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {displayTasksByStatus.length === 0 || totalTasksCount === 0 ? (
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>No task status data available.</p>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend wrapperStyle={{ fontSize: '0.85rem' }} />
+                    <Pie
+                      data={displayTasksByStatus.filter(st => st.count > 0)}
+                      dataKey="count"
+                      nameKey="status_name"
+                      cx="50%"
+                      cy="48%"
+                      innerRadius={60}
+                      outerRadius={95}
+                      paddingAngle={3}
+                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      labelLine={false}
+                    >
+                      {displayTasksByStatus.filter(st => st.count > 0).map((entry, index) => {
+                        const color = entry.status_color || getOptionColor('task_status', entry.status_name) || '#3B82F6';
+                        return <Cell key={`cell-${index}`} fill={color} stroke="var(--surface-card)" strokeWidth={2} />;
+                      })}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </div>
+
+          {/* Chart 3: Resource Workload vs Capacity */}
+          <div className="paper-panel chart-card">
+            <div className="chart-card-header">
+              <h3 className="chart-card-title">
+                <span>⚖️ Resource Workload vs Capacity (Hours)</span>
+              </h3>
+              <span className="badge badge-info">{displayWorkload.length} Team Members</span>
+            </div>
+
+            <div style={{ width: '100%', height: 300 }}>
+              {displayWorkload.length === 0 ? (
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', textAlign: 'center', paddingTop: '4rem' }}>No resource workload data.</p>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={displayWorkload} margin={{ top: 20, right: 20, left: 0, bottom: 25 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.2)" />
+                    <XAxis
+                      dataKey="username"
+                      tick={{ fill: 'var(--text-secondary)', fontSize: 12, fontWeight: 600 }}
+                      tickFormatter={(val) => `@${val}`}
+                    />
+                    <YAxis tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend wrapperStyle={{ paddingTop: '10px', fontSize: '0.85rem' }} />
+                    <Bar dataKey="active_hours" name="Active Allocated (hrs)" fill="#8B5CF6" radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="weekly_capacity_hours" name="Weekly Capacity (hrs)" fill="#94A3B8" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </div>
+
+          {/* Chart 4: Revision Risk & Hotspot Analytics */}
+          <div className="paper-panel chart-card">
+            <div className="chart-card-header">
+              <h3 className="chart-card-title">
+                <span>🔄 Proposal Revision & Rework Risk</span>
+              </h3>
+              <span className="badge badge-warning">Threshold: {data.revision_threshold || 3} Revisions</span>
+            </div>
+
+            <div style={{ width: '100%', height: 300 }}>
+              {displayReworkHotspots.length === 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '0.5rem' }}>
+                  <div style={{ fontSize: '2.5rem' }}>✅</div>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', fontWeight: 600 }}>Zero Rework Hotspots Flagged</p>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>All proposals are within healthy revision bounds.</p>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    layout="vertical"
+                    data={displayReworkHotspots}
+                    margin={{ top: 15, right: 30, left: 40, bottom: 15 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.2)" />
+                    <XAxis type="number" allowDecimals={false} tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} />
+                    <YAxis
+                      type="category"
+                      dataKey="opportunity_name"
+                      tick={{ fill: 'var(--text-secondary)', fontSize: 11, fontWeight: 600 }}
+                      width={110}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend wrapperStyle={{ paddingTop: '10px', fontSize: '0.85rem' }} />
+                    <Bar dataKey="revision_counter" name="Total Revisions" fill="#EF4444" radius={[0, 6, 6, 0]} />
+                    <Bar dataKey="commercial_revision_counter" name="Commercial Revisions" fill="#F59E0B" radius={[0, 6, 6, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </div>
+
+        </div>
+      )}
 
       {/* Critical Warnings Block (Target Submissions & Capacity Overloads) */}
       <div className="dashboard-grid-auto">

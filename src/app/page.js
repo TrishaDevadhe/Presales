@@ -15,8 +15,7 @@ import WorkItemsTab from '@/components/tabs/WorkItemsTab';
 import EffortLogsTab from '@/components/tabs/EffortLogsTab';
 import VersionsTab from '@/components/tabs/VersionsTab';
 import FeedbackTab from '@/components/tabs/FeedbackTab';
-import ResourceProfilesTab from '@/components/tabs/ResourceProfilesTab';
-import AdminTab from '@/components/tabs/AdminTab';
+import SettingsTab from '@/components/tabs/SettingsTab';
 
 export default function Home() {
   const { currentUser, userRole, isLoggedIn, logout, handleUserChange, loading, allUsers } = useApp();
@@ -121,21 +120,10 @@ export default function Home() {
         return <VersionsTab />;
       case 'feedback':
         return <FeedbackTab />;
+      case 'settings':
       case 'profiles':
-        return <ResourceProfilesTab />;
       case 'admin':
-        if (userRole !== 'Admin') {
-          return (
-            <div className="paper-panel" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '50vh', gap: '1rem', padding: '3rem' }}>
-              <div style={{ fontSize: '3rem' }}>🔒</div>
-              <h3 style={{ color: 'var(--text-primary)', fontSize: '1.5rem', fontFamily: 'var(--font-title)' }}>Access Restricted</h3>
-              <p style={{ color: 'var(--text-secondary)', maxWidth: '440px', textAlign: 'center', fontSize: '0.95rem' }}>
-                Admin console configuration options are restricted to Administrator accounts.
-              </p>
-            </div>
-          );
-        }
-        return <AdminTab />;
+        return <SettingsTab />;
       default:
         return <DashboardTab />;
     }
@@ -215,11 +203,11 @@ export default function Home() {
             <button
               onClick={() => setActiveTab('dashboard')}
               className={`nav-item-link ${activeTab === 'dashboard' ? 'active' : ''}`}
-              title="Dashboard Stage"
+              title="Dashboard"
               style={{ width: '100%', background: 'transparent', textAlign: 'left', cursor: 'pointer' }}
             >
               <span className="nav-item-icon">📐</span>
-              {!isSidebarCollapsed && <span className="nav-item-text">Dashboard Stage</span>}
+              {!isSidebarCollapsed && <span className="nav-item-text">Dashboard</span>}
             </button>
           </li>
           <li>
@@ -279,34 +267,13 @@ export default function Home() {
           </li>
           <li>
             <button
-              onClick={() => setActiveTab('profiles')}
-              className={`nav-item-link ${activeTab === 'profiles' ? 'active' : ''}`}
-              title="Resource Profiles"
+              onClick={() => setActiveTab('settings')}
+              className={`nav-item-link ${activeTab === 'settings' || activeTab === 'profiles' || activeTab === 'admin' ? 'active' : ''}`}
+              title="Settings"
               style={{ width: '100%', background: 'transparent', textAlign: 'left', cursor: 'pointer' }}
             >
-              <span className="nav-item-icon">👥</span>
-              {!isSidebarCollapsed && <span className="nav-item-text">Resource Profiles</span>}
-            </button>
-          </li>
-          <li>
-            <button
-              onClick={() => setActiveTab('admin')}
-              className={`nav-item-link ${activeTab === 'admin' ? 'active' : ''}`}
-              title="Admin Console"
-              style={{
-                width: '100%',
-                background: 'transparent',
-                textAlign: 'left',
-                cursor: 'pointer',
-                opacity: userRole !== 'Admin' ? 0.65 : 1
-              }}
-            >
               <span className="nav-item-icon">⚙️</span>
-              {!isSidebarCollapsed && (
-                <span className="nav-item-text">
-                  Admin Console {userRole !== 'Admin' && '🔒'}
-                </span>
-              )}
+              {!isSidebarCollapsed && <span className="nav-item-text">Settings</span>}
             </button>
           </li>
         </ul>
@@ -359,20 +326,20 @@ export default function Home() {
       <main className={`main-content ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
 
         {/* Header navigation bar */}
-        <header className="app-header">
-          <div className="header-title-section">
-            <h2 className="header-title">
-              {activeTab === 'dashboard' && 'NetSales Solution Stage'}
-              {activeTab === 'opportunities' && 'Opportunities Pipeline'}
-              {activeTab === 'workitems' && 'Work Items & Task Boards'}
-              {activeTab === 'efforts' && 'Workload Effort Logging'}
-              {activeTab === 'versions' && 'Proposal Revision Logs'}
-              {activeTab === 'feedback' && 'Client Feedback Loop'}
-              {activeTab === 'profiles' && 'Team Resource Profiles'}
-              {activeTab === 'admin' && 'Configuration Console'}
-            </h2>
-          </div>
-        </header>
+        {activeTab !== 'dashboard' && (
+          <header className="app-header">
+            <div className="header-title-section">
+              <h2 className="header-title">
+                {activeTab === 'opportunities' && 'Opportunities Pipeline'}
+                {activeTab === 'workitems' && 'Work Items & Task Boards'}
+                {activeTab === 'efforts' && 'Workload Effort Logging'}
+                {activeTab === 'versions' && 'Proposal Revision Logs'}
+                {activeTab === 'feedback' && 'Client Feedback Loop'}
+                {(activeTab === 'settings' || activeTab === 'profiles' || activeTab === 'admin') && 'Settings & Administration'}
+              </h2>
+            </div>
+          </header>
+        )}
 
         {/* Active view component */}
         {renderActiveTab()}

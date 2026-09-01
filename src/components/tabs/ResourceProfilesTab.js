@@ -129,28 +129,22 @@ export default function ResourceProfilesTab() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       
       {/* Header section */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <h2 style={{ fontSize: '1.5rem', color: 'var(--text-primary)', fontWeight: 700 }}>Team Resource Profiles</h2>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
-            Manage team members, roles, skill matrices, weekly capacity limits, and system access passcodes.
-          </p>
-        </div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
         <button className="btn btn-primary" onClick={openCreateModal}>
-          + Register Resource
+          + Register User
         </button>
       </div>
 
       {/* Profiles list */}
       <div className="paper-panel" style={{ overflow: 'hidden' }}>
         {loading ? (
-          <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>Loading profiles...</p>
+          <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>Loading users...</p>
         ) : profiles.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '3.5rem 1.5rem', color: 'var(--text-secondary)' }}>
             <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>👥</div>
-            <h4 style={{ fontSize: '1.1rem', color: 'var(--text-primary)', marginBottom: '0.4rem' }}>No Resource Profiles Registered</h4>
+            <h4 style={{ fontSize: '1.1rem', color: 'var(--text-primary)', marginBottom: '0.4rem' }}>No Users Registered</h4>
             <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
-              Click &quot;+ Register Resource&quot; above to add team members and assign capacity limits.
+              Click &quot;+ Register User&quot; above to add team members and assign capacity limits.
             </p>
           </div>
         ) : (

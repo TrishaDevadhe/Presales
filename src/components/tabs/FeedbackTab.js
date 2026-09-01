@@ -198,8 +198,7 @@ export default function FeedbackTab() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       
       {/* Header bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ fontSize: '1.5rem', color: 'var(--text-primary)', fontWeight: 700 }}>Client Feedback & Revisions</h2>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
         <button className="btn btn-primary" onClick={openCreateModal} disabled={opportunities.length === 0}>
           {opportunities.length === 0 ? 'Register opportunity first' : '+ Register Feedback'}
         </button>
