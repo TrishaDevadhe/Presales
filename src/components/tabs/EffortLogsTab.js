@@ -303,12 +303,12 @@ export default function EffortLogsTab() {
             className="form-control form-select"
             value={filterOpportunity}
             onChange={(e) => setFilterOpportunity(e.target.value)}
-            style={{ fontSize: '0.88rem', padding: '0.5rem 0.8rem' }}
+            style={{ fontSize: '0.88rem', padding: '0.45rem 0.8rem' }}
           >
             <option value="">All Opportunities</option>
             {opportunities.map(opp => (
               <option key={opp.id} value={opp.id}>
-                {opp.opportunity_name} ({opp.company})
+                {opp.company} - {opp.opportunity_name}
               </option>
             ))}
           </select>
@@ -320,7 +320,7 @@ export default function EffortLogsTab() {
             className="form-control form-select"
             value={filterDeliverableType}
             onChange={(e) => setFilterDeliverableType(e.target.value)}
-            style={{ fontSize: '0.88rem', padding: '0.5rem 0.8rem' }}
+            style={{ fontSize: '0.88rem', padding: '0.45rem 0.8rem' }}
           >
             <option value="">All Deliverable Types</option>
             {getOptions('deliverable_type').map(dt => (
@@ -337,7 +337,7 @@ export default function EffortLogsTab() {
             className="form-control form-select"
             value={filterPerson}
             onChange={(e) => setFilterPerson(e.target.value)}
-            style={{ fontSize: '0.88rem', padding: '0.5rem 0.8rem' }}
+            style={{ fontSize: '0.88rem', padding: '0.45rem 0.8rem' }}
           >
             <option value="">All Team Members</option>
             {allUsers.map(u => (
@@ -403,13 +403,12 @@ export default function EffortLogsTab() {
               <table className="custom-table">
                 <thead>
                   <tr>
-                    <th>Task Title</th>
-                    <th>Linked Opportunity</th>
+                    <th>Task Title & Opportunity</th>
                     <th>Work Category</th>
                     <th>Assignee</th>
                     <th>Due Date</th>
                     <th>Est. Hours</th>
-                    <th>Hours Logged So Far</th>
+                    <th>Logged Hours</th>
                     <th style={{ minWidth: '140px' }}>Burn Progress</th>
                     <th>Status</th>
                     <th style={{ textAlign: 'right' }}>Actions</th>
@@ -436,14 +435,11 @@ export default function EffortLogsTab() {
                     return (
                       <tr key={task.id}>
                         <td>
-                          <strong style={{ color: 'var(--text-primary)', fontSize: '0.92rem' }}>{task.title}</strong>
-                        </td>
-                        <td>
-                          <div style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
-                            {task.opportunity_name ? task.opportunity_name : 'General Work'}
+                          <div>
+                            <strong style={{ color: 'var(--text-primary)', fontSize: '0.95rem' }}>{task.title}</strong>
                           </div>
-                          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                            {task.company || '-'}
+                          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
+                            {task.opportunity_name ? `${task.company} - ${task.opportunity_name}` : 'General Work'}
                           </div>
                         </td>
                         <td>
@@ -452,9 +448,9 @@ export default function EffortLogsTab() {
                           </span>
                         </td>
                         <td>
-                          <span className="badge badge-neutral">
+                          <strong style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
                             @{task.assigned_to}
-                          </span>
+                          </strong>
                         </td>
                         <td style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
                           {task.due_date ? task.due_date.split('T')[0] : '-'}
@@ -496,7 +492,7 @@ export default function EffortLogsTab() {
                         <td style={{ textAlign: 'right' }}>
                           <button
                             className="btn btn-primary btn-sm"
-                            style={{ padding: '0.35rem 0.8rem', fontSize: '0.82rem', whiteSpace: 'nowrap' }}
+                            style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem', whiteSpace: 'nowrap' }}
                             onClick={() => openLogModalForTask(task)}
                           >
                             + Add Log
@@ -530,7 +526,7 @@ export default function EffortLogsTab() {
                   <tr>
                     <th>Date</th>
                     <th>Person</th>
-                    <th>Work Item / Opportunity</th>
+                    <th>Work Item & Opportunity</th>
                     <th>Deliverable</th>
                     <th>Hours Logged</th>
                     <th>Activity Type</th>
@@ -542,15 +538,21 @@ export default function EffortLogsTab() {
                 <tbody>
                   {filteredEffortLogs.map((log) => (
                     <tr key={log.id}>
-                      <td><strong style={{ color: 'var(--text-primary)' }}>{log.date ? (typeof log.date === 'string' ? log.date.split('T')[0] : log.date) : ''}</strong></td>
-                      <td>
-                        <span className="badge badge-neutral">
-                          @{log.person}
-                        </span>
+                      <td style={{ whiteSpace: 'nowrap' }}>
+                        <strong style={{ color: 'var(--text-primary)', fontSize: '0.88rem' }}>
+                          {log.date ? (typeof log.date === 'string' ? log.date.split('T')[0] : log.date) : ''}
+                        </strong>
                       </td>
                       <td>
-                        <div style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{log.work_item_title}</div>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                        <strong style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                          @{log.person}
+                        </strong>
+                      </td>
+                      <td>
+                        <div>
+                          <strong style={{ color: 'var(--text-primary)', fontSize: '0.95rem' }}>{log.work_item_title}</strong>
+                        </div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
                           {log.opportunity_name ? `${log.company} - ${log.opportunity_name}` : 'General Work'}
                         </div>
                       </td>
@@ -559,14 +561,28 @@ export default function EffortLogsTab() {
                           {log.deliverable_type_name || 'N/A'}
                         </span>
                       </td>
-                      <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{log.hours_logged} hrs</td>
-                      <td><span className="badge" style={getOptionBadgeStyle('work_category', log.activity_type_name)}>{log.activity_type_name || 'General'}</span></td>
-                      <td><span className="badge" style={getOptionBadgeStyle('effort_type', log.effort_type_name)}>{log.effort_type_name || 'Standard'}</span></td>
-                      <td style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={log.notes}>
+                      <td style={{ fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
+                        {log.hours_logged} hrs
+                      </td>
+                      <td>
+                        <span className="badge" style={getOptionBadgeStyle('work_category', log.activity_type_name)}>
+                          {log.activity_type_name || 'General'}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="badge" style={getOptionBadgeStyle('effort_type', log.effort_type_name)}>
+                          {log.effort_type_name || 'Standard'}
+                        </span>
+                      </td>
+                      <td style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={log.notes}>
                         {log.notes || '-'}
                       </td>
                       <td style={{ textAlign: 'right' }}>
-                        <button className="btn btn-danger" style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem' }} onClick={() => handleDelete(log.id)}>
+                        <button
+                          className="btn btn-danger"
+                          style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem' }}
+                          onClick={() => handleDelete(log.id)}
+                        >
                           Delete
                         </button>
                       </td>
