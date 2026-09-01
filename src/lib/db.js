@@ -1,5 +1,9 @@
-import { Pool } from 'pg';
+import { Pool, types } from 'pg';
 import { initDb } from './initDb.js';
+
+// Override PostgreSQL DATE type parser (OID 1082) to return raw string 'YYYY-MM-DD'
+// Prevents UTC midnight JavaScript Date object conversion that shifts dates to previous day in client timezones
+types.setTypeParser(1082, (val) => val);
 
 let pool;
 let initPromise = null;
