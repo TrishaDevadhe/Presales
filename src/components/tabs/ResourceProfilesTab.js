@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 
 export default function ResourceProfilesTab() {
-  const { getOptions, getOptionBadgeStyle, refreshProfiles, showToast, showAlert, formatUserName } = useApp();
+  const { getOptions, getOptionBadgeStyle, refreshProfiles, showToast, showAlert, showConfirm, formatUserName } = useApp();
   const [profiles, setProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -121,6 +121,35 @@ export default function ResourceProfilesTab() {
     }
   };
 
+  const handleDeleteUser = async (prof) => {
+    if (prof.username && prof.username.toLowerCase().trim() === 'admin') {
+      showAlert('The primary admin account cannot be deleted.', 'Action Restricted', 'warning');
+      return;
+    }
+
+    const confirmed = await showConfirm({
+      title: 'Delete User Profile',
+      message: `Are you sure you want to delete user profile "${formatUserName(prof.username)}" (@${prof.username})? This action cannot be undone.`,
+      danger: true
+    });
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(`/api/resourceprofiles?username=${encodeURIComponent(prof.username)}&id=${prof.id}`, {
+        method: 'DELETE'
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to delete user profile');
+      }
+      showToast(`User profile "${formatUserName(prof.username)}" deleted successfully!`, 'success');
+      fetchProfiles();
+      refreshProfiles();
+    } catch (err) {
+      showAlert(err.message, 'Delete Error', 'danger');
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       
@@ -187,10 +216,15 @@ export default function ResourceProfilesTab() {
                         )) : <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>None</span>}
                       </div>
                     </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <button className="btn btn-secondary" style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem' }} onClick={() => openEditModal(prof)}>
-                        Edit Profile
-                      </button>
+                    <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end', alignItems: 'center' }}>
+                        <button className="btn btn-secondary" style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem' }} onClick={() => openEditModal(prof)}>
+                          Edit Profile
+                        </button>
+                        <button className="btn btn-danger" style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem' }} onClick={() => handleDeleteUser(prof)}>
+                          Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

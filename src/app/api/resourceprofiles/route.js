@@ -126,3 +126,34 @@ export async function POST(request) {
 export async function PUT(request) {
   return POST(request);
 }
+
+export async function DELETE(request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    const username = searchParams.get('username');
+
+    if (!id && !username) {
+      return NextResponse.json({ error: 'User ID or username is required for deletion' }, { status: 400 });
+    }
+
+    if (username && username.toLowerCase().trim() === 'admin') {
+      return NextResponse.json({ error: 'Primary admin user cannot be deleted' }, { status: 403 });
+    }
+
+    let result;
+    if (id) {
+      result = await query('DELETE FROM resource_profiles WHERE id = $1 RETURNING *', [id]);
+    } else {
+      result = await query('DELETE FROM resource_profiles WHERE LOWER(username) = LOWER($1) RETURNING *', [username]);
+    }
+
+    if (result.rows.length === 0) {
+      return NextResponse.json({ error: 'Resource profile not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ message: 'Resource profile deleted successfully' });
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
