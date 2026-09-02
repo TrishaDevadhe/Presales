@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { useApp } from '@/context/AppContext';
 
 export default function StaffMultiSelect({
   label,
@@ -11,8 +12,15 @@ export default function StaffMultiSelect({
   options = [],
   placeholder = 'Select team members...'
 }) {
+  const { formatUserName } = useApp() || {};
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef(null);
+
+  const getUserLabel = (u) => {
+    if (!u) return '';
+    if (formatUserName) return formatUserName(u);
+    return u === 'admin' || u === 'Adhesh(admin)' || u === 'Adhesh(Admin)' ? 'Adhesh(admin)' : `@${u}`;
+  };
 
   const usersList = options.length > 0 ? options : allUsers;
 
@@ -90,7 +98,7 @@ export default function StaffMultiSelect({
                 fontWeight: 600
               }}
             >
-              @{u}
+              {getUserLabel(u)}
               <span
                 onClick={(e) => {
                   e.stopPropagation();
@@ -151,7 +159,7 @@ export default function StaffMultiSelect({
                     transition: 'background 0.15s ease'
                   }}
                 >
-                  <span>@{u}</span>
+                  <span>{getUserLabel(u)}</span>
                   {isSelected && <span style={{ fontSize: '0.85rem', color: 'var(--accent-primary)' }}>✓</span>}
                 </div>
               );

@@ -6,7 +6,7 @@ import { isUserAssociatedWithTask } from '@/lib/userAssociation';
 import RichTextEditor from '../RichTextEditor';
 
 export default function WorkItemsTab() {
-  const { currentUser, userRole, allUsers, getOptions, resourceProfiles, getOptionBadgeStyle, showToast, showAlert, showConfirm } = useApp();
+  const { currentUser, userRole, allUsers, getOptions, resourceProfiles, getOptionBadgeStyle, formatUserName, showToast, showAlert, showConfirm } = useApp();
   const [tasks, setTasks] = useState([]);
   const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -416,6 +416,12 @@ export default function WorkItemsTab() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
+      {/* Header bar with controls */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+        <button className="btn btn-primary" onClick={openCreateModal}>
+          + Add Work Item
+        </button>
+      </div>
 
       {/* Filter panel */}
       <div className="paper-panel" style={{ padding: '1rem 1.5rem', display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
@@ -443,7 +449,7 @@ export default function WorkItemsTab() {
             >
               <option value="">All Assignees</option>
               {allUsers.map(u => (
-                <option key={u} value={u}>@{u}</option>
+                <option key={u} value={u}>{formatUserName(u)}</option>
               ))}
             </select>
           </div>
@@ -513,7 +519,7 @@ export default function WorkItemsTab() {
                         </span>
                       </td>
                       <td>
-                        <strong style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>@{task.assigned_to}</strong>
+                        <strong style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{formatUserName(task.assigned_to)}</strong>
                       </td>
                       <td>
                         <span className="badge" style={getOptionBadgeStyle('task_status', task.status_name)}>
@@ -585,8 +591,8 @@ export default function WorkItemsTab() {
                         </span>
                       </td>
                       <td>
-                        <div><strong style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>@{task.assigned_to}</strong></div>
-                        {task.reviewer && <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Reviewer: @{task.reviewer}</div>}
+                        <div><strong style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{formatUserName(task.assigned_to)}</strong></div>
+                        {task.reviewer && <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Reviewer: {formatUserName(task.reviewer)}</div>}
                       </td>
                       <td>
                         <span className={`badge ${task.status_name === 'Terminated' ? 'badge-danger' : 'badge-neutral'}`} style={{ fontWeight: 700 }}>
@@ -724,7 +730,7 @@ export default function WorkItemsTab() {
                         >
                           <option value="">Select Assignee</option>
                           {allUsers.map(u => (
-                            <option key={u} value={u}>@{u}</option>
+                            <option key={u} value={u}>{formatUserName(u)}</option>
                           ))}
                         </select>
                       </div>
@@ -739,7 +745,7 @@ export default function WorkItemsTab() {
                         >
                           <option value="">None</option>
                           {allUsers.map(u => (
-                            <option key={u} value={u}>@{u}</option>
+                            <option key={u} value={u}>{formatUserName(u)}</option>
                           ))}
                         </select>
                       </div>
@@ -750,7 +756,7 @@ export default function WorkItemsTab() {
                           type="text"
                           name="collaborators"
                           className="form-control"
-                          placeholder="e.g. bob_jones, jane_doe"
+                          placeholder="e.g. vartika_jadon, jane_doe"
                           value={formData.collaborators}
                           onChange={handleInputChange}
                         />
@@ -1049,7 +1055,7 @@ export default function WorkItemsTab() {
                               >
                                 <option value="">Select Assignee</option>
                                 {allUsers.map(u => (
-                                  <option key={u} value={u}>@{u}</option>
+                                  <option key={u} value={u}>{formatUserName(u)}</option>
                                 ))}
                               </select>
                             </div>
@@ -1111,7 +1117,7 @@ export default function WorkItemsTab() {
                               >
                                 <option value="">None</option>
                                 {allUsers.map(u => (
-                                  <option key={u} value={u}>@{u}</option>
+                                  <option key={u} value={u}>{formatUserName(u)}</option>
                                 ))}
                               </select>
                             </div>
@@ -1120,7 +1126,7 @@ export default function WorkItemsTab() {
                               <input
                                 type="text"
                                 className="form-control"
-                                placeholder="e.g. bob_jones, jane_doe"
+                                placeholder="e.g. vartika_jadon, jane_doe"
                                 value={task.collaborators}
                                 onChange={(e) => {
                                   const val = e.target.value;
@@ -1221,7 +1227,7 @@ export default function WorkItemsTab() {
               </div>
               {viewDetailsTask.reviewer && (
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.5rem', fontWeight: 600 }}>
-                  Recorded by Reviewer: <span style={{ color: 'var(--text-primary)' }}>@{viewDetailsTask.reviewer}</span>
+                  Recorded by Reviewer: <span style={{ color: 'var(--text-primary)' }}>{formatUserName(viewDetailsTask.reviewer)}</span>
                 </div>
               )}
             </div>
@@ -1242,7 +1248,7 @@ export default function WorkItemsTab() {
 
               <div>
                 <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Assigned To</div>
-                <div style={{ fontSize: '0.9rem', color: 'var(--text-primary)', marginTop: '0.15rem' }}>@{viewDetailsTask.assigned_to}</div>
+                <div style={{ fontSize: '0.9rem', color: 'var(--text-primary)', marginTop: '0.15rem' }}>{formatUserName(viewDetailsTask.assigned_to)}</div>
               </div>
 
               <div>

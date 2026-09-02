@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 
 export default function EditProfileModal({ isOpen, onClose }) {
-  const { currentUser, userRole, resourceProfiles, setCurrentUser, refreshProfiles, showToast, showAlert, getOptions } = useApp();
+  const { currentUser, userRole, resourceProfiles, setCurrentUser, refreshProfiles, showToast, showAlert, getOptions, formatUserName } = useApp();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -24,10 +24,12 @@ export default function EditProfileModal({ isOpen, onClose }) {
     if (isOpen && currentUser && resourceProfiles) {
       const prof = resourceProfiles.find(p => p.username.toLowerCase() === currentUser.toLowerCase()) || {};
       setOriginalUser(currentUser);
+      const defaultName = prof.name || (currentUser === 'admin' ? 'Adhesh(admin)' : prof.username || currentUser);
+      const defaultPwd = prof.password || (currentUser === 'admin' ? '-admin123' : '');
       setFormData({
-        name: prof.name || prof.username || currentUser,
+        name: defaultName,
         username: prof.username || currentUser,
-        password: prof.password || '',
+        password: defaultPwd,
         role_id: prof.role_id || (getOptions('role')[0]?.id || ''),
         seniority_id: prof.seniority_id || (getOptions('seniority')[0]?.id || ''),
         department_id: prof.department_id || (getOptions('department')[0]?.id || ''),
@@ -124,7 +126,7 @@ export default function EditProfileModal({ isOpen, onClose }) {
                 My User Profile & Credentials
               </h3>
               <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: '0.2rem 0 0 0' }}>
-                Manage personal account identity, login passcode, and profile settings for <strong style={{ color: 'var(--text-primary)' }}>@{currentUser}</strong>
+                Manage personal account identity, login passcode, and profile settings for <strong style={{ color: 'var(--text-primary)' }}>{formatUserName(currentUser)}</strong>
               </p>
             </div>
           </div>

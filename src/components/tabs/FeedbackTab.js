@@ -6,7 +6,7 @@ import { isUserAssociatedWithOpp } from '@/lib/userAssociation';
 import RichTextEditor from '../RichTextEditor';
 
 export default function FeedbackTab() {
-  const { currentUser, userRole, allUsers, getOptions, dropdownOptions, getOptionBadgeStyle, showToast, showAlert, showConfirm } = useApp();
+  const { currentUser, userRole, allUsers, getOptions, dropdownOptions, getOptionBadgeStyle, formatUserName, showToast, showAlert, showConfirm } = useApp();
   const [feedbacks, setFeedbacks] = useState([]);
   const [opportunities, setOpportunities] = useState([]);
   const [versions, setVersions] = useState([]);
@@ -248,7 +248,7 @@ export default function FeedbackTab() {
                       {fb.action_required ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                           <span style={{ fontSize: '0.85rem', color: 'var(--color-warning-text)' }}>
-                            ⚠️ Owner: <strong>@{fb.owner}</strong>
+                            ⚠️ Owner: <strong>{formatUserName(fb.owner)}</strong>
                           </span>
                           <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                             Due: {fb.due_date ? fb.due_date.split('T')[0] : 'N/A'}
@@ -431,7 +431,7 @@ export default function FeedbackTab() {
                       >
                         <option value="">Select Owner</option>
                         {allUsers.map(u => (
-                          <option key={u} value={u}>@{u}</option>
+                          <option key={u} value={u}>{formatUserName(u)}</option>
                         ))}
                       </select>
                     </div>

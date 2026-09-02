@@ -17,7 +17,7 @@ import {
 } from 'recharts';
 
 export default function DashboardTab() {
-  const { currentUser, userRole, getOptionColor, getOptionBadgeStyle } = useApp();
+  const { currentUser, userRole, getOptionColor, getOptionBadgeStyle, formatUserName } = useApp();
   
   // Dashboard Tier State: 'tier1' (My Work) | 'tier2' (Team & Pipeline) | 'tier3' (System Analytics)
   const [activeTier, setActiveTier] = useState('tier1');
@@ -170,7 +170,7 @@ export default function DashboardTab() {
     const pFree = Math.max(0, pCap - pCommitted);
     const pUtil = pCap > 0 ? Math.round((pCommitted / pCap) * 100) : 0;
     return {
-      username: `@${pName}`,
+      username: formatUserName(pName),
       rawUser: pName,
       role: p.role_name || 'Team Member',
       capacity: pCap,
@@ -278,7 +278,7 @@ export default function DashboardTab() {
               Presales Performance Workspace
             </h3>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: 0 }}>
-              Role-tailored intelligence tier model (@{currentUser})
+              Role-tailored intelligence tier model ({formatUserName(currentUser)})
             </p>
           </div>
         </div>
@@ -425,7 +425,7 @@ export default function DashboardTab() {
                       <div>
                         <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.9rem' }}>{t.title}</div>
                         <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
-                          Assigned to: <strong>@{t.assigned_to}</strong> • Due: {t.due_date}
+                          Assigned to: <strong>{formatUserName(t.assigned_to)}</strong> • Due: {t.due_date}
                         </div>
                       </div>
                       <span className="badge badge-warning">Review Pending</span>
@@ -643,7 +643,7 @@ export default function DashboardTab() {
                       <div>
                         <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.9rem' }}>{o.company} - {o.opportunity_name}</div>
                         <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
-                          Due in <strong>{o.daysLeft} days</strong> ({o.target_submission_date}) • Presales Lead: @{o.presales_owner}
+                          Due in <strong>{o.daysLeft} days</strong> ({o.target_submission_date}) • Presales Lead: {formatUserName(o.presales_owner)}
                         </div>
                       </div>
                       <span className="badge badge-danger">Remaining Work: {o.remainingWorkHours} hrs</span>
@@ -673,7 +673,7 @@ export default function DashboardTab() {
                       <div>
                         <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.9rem' }}>{o.company} - {o.opportunity_name}</div>
                         <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
-                          Owner: @{o.presales_owner}
+                          Owner: {formatUserName(o.presales_owner)}
                         </div>
                       </div>
                       <span className="badge badge-warning">{o.revision_counter} Revisions</span>

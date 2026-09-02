@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 
 export default function ResourceProfilesTab() {
-  const { getOptions, getOptionBadgeStyle, refreshProfiles, showToast, showAlert } = useApp();
+  const { getOptions, getOptionBadgeStyle, refreshProfiles, showToast, showAlert, formatUserName } = useApp();
   const [profiles, setProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -148,7 +148,7 @@ export default function ResourceProfilesTab() {
             <table className="custom-table">
               <thead>
                 <tr>
-                  <th>Username</th>
+                  <th>Name / User ID</th>
                   <th>Role</th>
                   <th>Seniority</th>
                   <th>Department</th>
@@ -162,7 +162,12 @@ export default function ResourceProfilesTab() {
                 {profiles.map((prof) => (
                   <tr key={prof.id}>
                     <td>
-                      <strong style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>@{prof.username}</strong>
+                      <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.88rem' }}>
+                        {formatUserName(prof.username)}
+                      </div>
+                      <div style={{ color: 'var(--text-muted)', fontSize: '0.76rem' }}>
+                        Handle: {prof.username}
+                      </div>
                     </td>
                     <td>
                       <span className="badge" style={getOptionBadgeStyle('role', prof.role_name)}>
@@ -201,7 +206,7 @@ export default function ResourceProfilesTab() {
           <div className="modal-content paper-panel" style={{ maxWidth: '1000px', width: '95%' }}>
             <button className="modal-close" onClick={() => setIsModalOpen(false)}>×</button>
             <h3 style={{ fontSize: '1.35rem', marginBottom: '1.5rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
-              {isEditMode ? `Edit Profile: @${formData.username}` : 'Register Team Member Profile'}
+              {isEditMode ? `Edit Profile: ${formatUserName(formData.username)}` : 'Register Team Member Profile'}
             </h3>
 
             {error && (

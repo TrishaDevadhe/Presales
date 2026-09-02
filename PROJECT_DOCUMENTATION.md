@@ -344,7 +344,7 @@ Buttons across the app adhere to a strict visual hierarchy, 3 size levels, and c
 - **Top Filter Bar**: Added an interactive Filter Bar to the Effort Tracking Log view containing:
   - **Filter by Opportunity**: Scopes logs to specific active opportunities.
   - **Filter by Deliverable Type**: Scopes logs to deliverable classifications (*RFP*, *Proposal*, etc.).
-  - **Filter by Logging Person**: Scopes logs to individual team members (`@admin`, `@jane_doe`, `@bob_jones`, `@alice_williams`, `@john_smith`).
+  - **Filter by Logging Person**: Scopes logs to individual team members (`@admin`, `@jane_doe`, `@vartika_jadon`, `@alice_williams`, `@john_smith`, `@vikrant_dhuriya`, `@divyam_malliwal`).
 - **Form Opportunity Selector**: The *Log Effort Workload* modal features an Opportunity selector at the top that dynamically scopes the available Work Item Tasks dropdown.
 
 ### C. Work Items Table Refinement & Global App-Themed Dialog System

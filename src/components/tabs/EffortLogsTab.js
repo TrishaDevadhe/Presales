@@ -5,7 +5,7 @@ import { useApp } from '@/context/AppContext';
 import { isUserAssociatedWithTask, isUserAssociatedWithEffort } from '@/lib/userAssociation';
 
 export default function EffortLogsTab() {
-  const { currentUser, userRole, allUsers, getOptions, getOptionBadgeStyle, showToast, showAlert, showConfirm } = useApp();
+  const { currentUser, userRole, allUsers, getOptions, getOptionBadgeStyle, formatUserName, showToast, showAlert, showConfirm } = useApp();
   const [effortLogs, setEffortLogs] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [opportunities, setOpportunities] = useState([]);
@@ -345,7 +345,7 @@ export default function EffortLogsTab() {
             <option value="">All Team Members</option>
             {allUsers.map(u => (
               <option key={u} value={u}>
-                @{u}
+                {formatUserName(u)}
               </option>
             ))}
           </select>
@@ -452,7 +452,7 @@ export default function EffortLogsTab() {
                         </td>
                         <td>
                           <strong style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                            @{task.assigned_to}
+                            {formatUserName(task.assigned_to)}
                           </strong>
                         </td>
                         <td style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
@@ -471,7 +471,7 @@ export default function EffortLogsTab() {
                               disabled={isCompleted}
                               title={isCompleted ? 'Cannot log effort on completed work items' : 'Add effort log'}
                             >
-                              + Add Log
+                              + Log Hour
                             </button>
                           </div>
                         </td>
@@ -521,7 +521,7 @@ export default function EffortLogsTab() {
           ) : filteredEffortLogs.length === 0 ? (
             <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
               {effortLogs.length === 0
-                ? 'No hours logged yet. Click "+ Add Log" on any work item task to submit workload details.'
+                ? 'No hours logged yet. Click "+ Log Hour" on any work item task to submit workload details.'
                 : 'No effort logs match the selected filter criteria.'}
             </p>
           ) : (
@@ -548,7 +548,7 @@ export default function EffortLogsTab() {
                       </td>
                       <td>
                         <strong style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                          @{log.person}
+                          {formatUserName(log.person)}
                         </strong>
                       </td>
                       <td>
@@ -622,9 +622,9 @@ export default function EffortLogsTab() {
                 <div style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginTop: '0.35rem', display: 'flex', gap: '0.85rem', flexWrap: 'wrap', alignItems: 'center' }}>
                   <span>Opportunity: <strong style={{ color: 'var(--text-primary)' }}>{lockedTask?.opportunity_name ? `${lockedTask.company} - ${lockedTask.opportunity_name}` : 'General Work'}</strong></span>
                   <span>•</span>
-                  <span>Assignee: <strong style={{ color: 'var(--text-primary)' }}>@{lockedTask?.assigned_to}</strong></span>
+                  <span>Assignee: <strong style={{ color: 'var(--text-primary)' }}>{formatUserName(lockedTask?.assigned_to)}</strong></span>
                   <span>•</span>
-                  <span>Logging Person: <strong style={{ color: 'var(--text-primary)' }}>@{formData.person}</strong></span>
+                  <span>Logging Person: <strong style={{ color: 'var(--text-primary)' }}>{formatUserName(formData.person)}</strong></span>
                   <span>•</span>
                   <span>Estimated: <strong style={{ color: 'var(--text-primary)' }}>{lockedTask?.estimated_hours || 0} hrs</strong></span>
                 </div>

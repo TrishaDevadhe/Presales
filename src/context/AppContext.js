@@ -21,11 +21,14 @@ export function AppProvider({ children }) {
 
   // Available mock users and roles
   const users = [
-    { username: 'admin', role: 'Admin' },
-    { username: 'jane_doe', role: 'Presales Owner' },
-    { username: 'john_smith', role: 'Sales Owner' },
-    { username: 'bob_jones', role: 'Team Member' },
-    { username: 'alice_williams', role: 'Team Member' }
+    { username: 'admin', name: 'Adhesh(admin)', role: 'Admin' },
+    { username: 'jane_doe', name: 'Jane Doe', role: 'Presales Owner' },
+    { username: 'trisha_devadhe', name: 'Trisha Devadhe', role: 'Team Member' },
+    { username: 'john_smith', name: 'John Smith', role: 'Sales Owner' },
+    { username: 'vartika_jadon', name: 'Vartika Jadon', role: 'Team Member' },
+    { username: 'alice_williams', name: 'Alice Williams', role: 'Team Member' },
+    { username: 'vikrant_dhuriya', name: 'Vikrant Dhuriya', role: 'Team Member' },
+    { username: 'divyam_malliwal', name: 'Divyam Malliwal', role: 'Team Member' }
   ];
 
   const capitalizeOptionName = (str) => {
@@ -112,6 +115,19 @@ export function AppProvider({ children }) {
     setUserRole(role);
     setIsLoggedIn(true);
     showToast(`Successfully authenticated as @${username} (${role})`);
+  };
+
+  const formatUserName = (username) => {
+    if (!username || typeof username !== 'string') return username || '';
+    const str = username.trim();
+    if (str.toLowerCase() === 'admin' || str === 'admin') {
+      return 'Adhesh(admin)';
+    }
+    const prof = resourceProfiles.find(p => p.username && p.username.toLowerCase() === str.toLowerCase());
+    if (prof && prof.name) return prof.name;
+    const mock = users.find(u => u.username && u.username.toLowerCase() === str.toLowerCase());
+    if (mock && mock.name) return mock.name;
+    return str;
   };
 
   const logout = () => {
@@ -295,6 +311,7 @@ export function AppProvider({ children }) {
         getOptionColor,
         getOptionBadgeStyle,
         formatOptionLabel,
+        formatUserName,
         showToast,
         showAlert,
         showConfirm,

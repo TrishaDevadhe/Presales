@@ -5,7 +5,7 @@ import { useApp } from '@/context/AppContext';
 import { isUserAssociatedWithOpp, isUserAssociatedWithTask } from '@/lib/userAssociation';
 
 export default function VersionsTab() {
-  const { currentUser, userRole, allUsers, getOptions, getOptionBadgeStyle, showToast, showAlert, showConfirm } = useApp();
+  const { currentUser, userRole, allUsers, getOptions, getOptionBadgeStyle, formatUserName, showToast, showAlert, showConfirm } = useApp();
   const [versions, setVersions] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [opportunities, setOpportunities] = useState([]);
@@ -359,7 +359,7 @@ export default function VersionsTab() {
             <option value="">All Team Members</option>
             {allUsers.map(u => (
               <option key={u} value={u}>
-                @{u}
+                {formatUserName(u)}
               </option>
             ))}
           </select>
@@ -445,7 +445,7 @@ export default function VersionsTab() {
                           </span>
                         </td>
                         <td>
-                          <strong style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>@{task.assigned_to}</strong>
+                          <strong style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{formatUserName(task.assigned_to)}</strong>
                         </td>
                         <td>
                           <span className="badge badge-info" style={{ fontWeight: 700 }}>
@@ -511,7 +511,7 @@ export default function VersionsTab() {
                       </td>
                       <td>
                         <strong style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                          @{ver.reviewed_by || ver.approved_by || 'Unassigned'}
+                          {formatUserName(ver.reviewed_by || ver.approved_by || 'Unassigned')}
                         </strong>
                       </td>
                       <td>
@@ -607,7 +607,7 @@ export default function VersionsTab() {
                     >
                       <option value="">Select Person</option>
                       {allUsers.map(u => (
-                        <option key={u} value={u}>@{u}</option>
+                        <option key={u} value={u}>{formatUserName(u)}</option>
                       ))}
                     </select>
                   </div>
@@ -661,7 +661,7 @@ export default function VersionsTab() {
                       >
                         <option value="">Select Member</option>
                         {allUsers.map(u => (
-                          <option key={u} value={u}>@{u}</option>
+                          <option key={u} value={u}>{formatUserName(u)}</option>
                         ))}
                       </select>
                     </div>

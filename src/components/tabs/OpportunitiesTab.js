@@ -8,7 +8,7 @@ import CompanyAutocomplete from '../CompanyAutocomplete';
 import StaffMultiSelect from '../StaffMultiSelect';
 
 export default function OpportunitiesTab() {
-  const { currentUser, userRole, allUsers, getOptions, getOptionBadgeStyle, showToast, showAlert, showConfirm } = useApp();
+  const { currentUser, userRole, allUsers, getOptions, getOptionBadgeStyle, formatUserName, showToast, showAlert, showConfirm } = useApp();
   const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -265,7 +265,7 @@ export default function OpportunitiesTab() {
                       {opp.target_submission_date ? opp.target_submission_date.split('T')[0] : 'N/A'}
                     </td>
                     <td>
-                      <strong style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>@{opp.presales_owner || 'Unassigned'}</strong>
+                      <strong style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{formatUserName(opp.presales_owner) || 'Unassigned'}</strong>
                     </td>
                     <td style={{ textAlign: 'right' }}>
                       <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
@@ -375,7 +375,7 @@ export default function OpportunitiesTab() {
                     >
                       <option value="">Select Account Manager / Sales Owner</option>
                       {allUsers.map(u => (
-                        <option key={u} value={u}>@{u}</option>
+                        <option key={u} value={u}>{formatUserName(u)}</option>
                       ))}
                     </select>
                   </div>
@@ -391,7 +391,7 @@ export default function OpportunitiesTab() {
                     >
                       <option value="">Select Secondary Sales Owner</option>
                       {allUsers.map(u => (
-                        <option key={u} value={u}>@{u}</option>
+                        <option key={u} value={u}>{formatUserName(u)}</option>
                       ))}
                     </select>
                   </div>
@@ -408,7 +408,7 @@ export default function OpportunitiesTab() {
                     >
                       <option value="">Select Presales Lead</option>
                       {allUsers.map(u => (
-                        <option key={u} value={u}>@{u}</option>
+                        <option key={u} value={u}>{formatUserName(u)}</option>
                       ))}
                     </select>
                   </div>

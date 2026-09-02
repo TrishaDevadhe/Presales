@@ -133,12 +133,14 @@ export async function initDb() {
 
     CREATE TABLE IF NOT EXISTS task_templates (
       id SERIAL PRIMARY KEY,
-      deliverable_type_id INTEGER NOT NULL REFERENCES dropdown_options(id) ON DELETE CASCADE,
+      deliverable_type_id INTEGER REFERENCES dropdown_options(id) ON DELETE CASCADE,
       task_name VARCHAR(255) NOT NULL,
       default_estimated_hours NUMERIC(6,2),
       default_role_id INTEGER REFERENCES dropdown_options(id) ON DELETE SET NULL,
       sequence INTEGER DEFAULT 0
     );
+    ALTER TABLE task_templates ADD COLUMN IF NOT EXISTS deliverable_type_id INTEGER REFERENCES dropdown_options(id) ON DELETE CASCADE;
+    ALTER TABLE task_templates ADD COLUMN IF NOT EXISTS work_category_id INTEGER REFERENCES dropdown_options(id) ON DELETE SET NULL;
 
     CREATE TABLE IF NOT EXISTS automation_settings (
       id SERIAL PRIMARY KEY,
@@ -267,29 +269,44 @@ export async function initDb() {
 
   // 4. Insert default user profiles
   const userRoles = [
-    { username: 'admin', role: 'Admin', seniority: 'Principal Consultant', dept: 'Presales Solutions', cap: 40.0, focus: 'Management, Solution Architecture' },
-    { username: 'jane_doe', role: 'Presales Owner', seniority: 'Senior Consultant', dept: 'Presales Solutions', cap: 45.0, focus: 'RFPs, Cloud Architecture' },
-    { username: 'john_smith', role: 'Sales Owner', seniority: 'Principal Consultant', dept: 'Enterprise Sales', cap: 40.0, focus: 'Sales, Relationship Management' },
-    { username: 'bob_jones', role: 'Team Member', seniority: 'Consultant', dept: 'Delivery / Consulting', cap: 35.0, focus: 'Demo Prep, Frontend' },
-    { username: 'alice_williams', role: 'Team Member', seniority: 'Associate', dept: 'Delivery / Consulting', cap: 40.0, focus: 'Pricing, Excel Modeling' }
+    { username: 'admin', name: 'Adhesh(admin)', role: 'Admin', seniority: 'Principal Consultant', dept: 'Presales Solutions', cap: 40.0, focus: 'Management, Solution Architecture' },
+    { username: 'jane_doe', name: 'Jane Doe', role: 'Presales Owner', seniority: 'Senior Consultant', dept: 'Presales Solutions', cap: 45.0, focus: 'RFPs, Cloud Architecture' },
+    { username: 'trisha_devadhe', name: 'Trisha Devadhe', role: 'Team Member', seniority: 'Senior Consultant', dept: 'Presales Solutions', cap: 40.0, focus: 'RFPs, Cloud Architecture' },
+    { username: 'john_smith', name: 'John Smith', role: 'Sales Owner', seniority: 'Principal Consultant', dept: 'Enterprise Sales', cap: 40.0, focus: 'Sales, Relationship Management' },
+    { username: 'vartika_jadon', name: 'Vartika Jadon', role: 'Team Member', seniority: 'Consultant', dept: 'Delivery / Consulting', cap: 35.0, focus: 'Demo Prep, Frontend' },
+    { username: 'alice_williams', name: 'Alice Williams', role: 'Team Member', seniority: 'Associate', dept: 'Delivery / Consulting', cap: 40.0, focus: 'Pricing, Excel Modeling' },
+    { username: 'vikrant_dhuriya', name: 'Vikrant Dhuriya', role: 'Team Member', seniority: 'Consultant', dept: 'Delivery / Consulting', cap: 40.0, focus: 'Solution Architecture & Integration' },
+    { username: 'divyam_malliwal', name: 'Divyam Malliwal', role: 'Team Member', seniority: 'Consultant', dept: 'Delivery / Consulting', cap: 40.0, focus: 'Technical Consulting & Delivery' }
   ];
 
+  const passwordMap = {
+    admin: 'admin123',
+    jane_doe: 'jane123',
+    trisha_devadhe: 'trisha123',
+    vartika_jadon: 'vartika123',
+    vikrant_dhuriya: 'vikrant123',
+    divyam_malliwal: 'divyam123',
+    john_smith: 'john123',
+    alice_williams: 'alice123'
+  };
+
   for (const u of userRoles) {
-    const defaultPassword = u.username.split('_')[0] + '123';
+    const defaultPassword = passwordMap[u.username] || (u.username.split('_')[0] + '123');
     await query(
-      `INSERT INTO resource_profiles (username, role_id, seniority_id, skills, department_id, weekly_capacity_hours, standard_focus, password)
+      `INSERT INTO resource_profiles (username, name, role_id, seniority_id, skills, department_id, weekly_capacity_hours, standard_focus, password)
        VALUES (
          $1, 
-         (SELECT id FROM dropdown_options WHERE category = 'role' AND option_name = $2 LIMIT 1),
-         (SELECT id FROM dropdown_options WHERE category = 'seniority' AND option_name = $3 LIMIT 1),
-         $4,
-         (SELECT id FROM dropdown_options WHERE category = 'department' AND option_name = $5 LIMIT 1),
-         $6,
+         $2,
+         (SELECT id FROM dropdown_options WHERE category = 'role' AND option_name = $3 LIMIT 1),
+         (SELECT id FROM dropdown_options WHERE category = 'seniority' AND option_name = $4 LIMIT 1),
+         $5,
+         (SELECT id FROM dropdown_options WHERE category = 'department' AND option_name = $6 LIMIT 1),
          $7,
-         $8
+         $8,
+         $9
        )
-       ON CONFLICT (username) DO NOTHING;`,
-      [u.username, u.role, u.seniority, u.focus, u.dept, u.cap, u.focus, defaultPassword]
+       ON CONFLICT (username) DO UPDATE SET name = EXCLUDED.name, password = EXCLUDED.password;`,
+      [u.username, u.name, u.role, u.seniority, u.focus, u.dept, u.cap, u.focus, defaultPassword]
     );
   }
 
@@ -312,6 +329,7 @@ export async function initDb() {
       ('brochure', 'Collateral Review & Export', 2.0, 'Presales Owner', 3)
     ) AS t(deliv_name, task_name, hours, role_name, seq)
     JOIN dropdown_options d ON d.category = 'deliverable_type' AND LOWER(d.option_name) = LOWER(t.deliv_name)
+    LEFT JOIN dropdown_options r ON r.category = 'role' AND LOWER(r.option_name) = LOWER(t.role_name)
     WHERE NOT EXISTS (SELECT 1 FROM task_templates);
   `);
 

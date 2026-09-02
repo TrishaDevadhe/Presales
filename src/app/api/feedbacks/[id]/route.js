@@ -1,6 +1,8 @@
 import { query } from '@/lib/db';
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 // GET a single feedback
 export async function GET(request, { params }) {
   const id = params.id;

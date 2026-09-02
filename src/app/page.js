@@ -18,11 +18,16 @@ import SettingsTab from '@/components/tabs/SettingsTab';
 import EditProfileModal from '@/components/EditProfileModal';
 
 export default function Home() {
-  const { currentUser, userRole, isLoggedIn, logout, handleUserChange, loading, allUsers } = useApp();
+  const { currentUser, userRole, isLoggedIn, logout, handleUserChange, loading, allUsers, resourceProfiles } = useApp();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [theme, setTheme] = useState('glass-light');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+
+  const activeProfile = (resourceProfiles || []).find(
+    (p) => p.username && p.username.toLowerCase() === (currentUser || '').toLowerCase()
+  );
+  const userDisplayName = activeProfile?.name || (currentUser === 'admin' ? 'Adhesh(admin)' : (currentUser ? formatUserName(currentUser) : 'User'));
 
   // Inactivity session timeout: 30 minutes warning, 60 seconds countdown
   const [showTimeoutWarning, setShowTimeoutWarning] = useState(false);
@@ -310,15 +315,15 @@ export default function Home() {
             className="minimal-user-card"
             onClick={() => setIsEditProfileOpen(true)}
             style={{ cursor: 'pointer' }}
-            title={`Click to Edit Profile (Name, ID, Password) - Logged in as @${currentUser}`}
+            title={`Click to Edit Profile (Name, ID, Password) - Logged in as ${userDisplayName}`}
           >
             <div className="user-avatar-badge">
-              <span>{currentUser ? currentUser.charAt(0).toUpperCase() : 'U'}</span>
+              <span>{userDisplayName ? userDisplayName.charAt(0).toUpperCase() : 'U'}</span>
               <span className={`status-dot ${userRole === 'Admin' ? 'admin' : 'user'}`} />
             </div>
             {!isSidebarCollapsed && (
               <div className="user-details">
-                <div className="user-name">@{currentUser}</div>
+                <div className="user-name">{userDisplayName}</div>
                 <div className="user-role">{userRole}</div>
               </div>
             )}
