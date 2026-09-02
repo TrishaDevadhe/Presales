@@ -54,7 +54,8 @@ export default function ResourceProfilesTab() {
       skills: '',
       department_id: getOptions('department')[0]?.id || '',
       weekly_capacity_hours: 40,
-      standard_focus_area: 'Core Presales Architect'
+      standard_focus_area: 'Core Presales Architect',
+      is_active: true
     });
     setIsModalOpen(true);
   };
@@ -70,7 +71,8 @@ export default function ResourceProfilesTab() {
       skills: prof.skills || '',
       department_id: prof.department_id || '',
       weekly_capacity_hours: parseFloat(prof.weekly_capacity_hours) || 40,
-      standard_focus_area: prof.standard_focus_area || ''
+      standard_focus_area: prof.standard_focus_area || '',
+      is_active: prof.is_active !== false
     });
     setIsModalOpen(true);
   };
@@ -121,35 +123,6 @@ export default function ResourceProfilesTab() {
     }
   };
 
-  const handleDeleteUser = async (prof) => {
-    if (prof.username && prof.username.toLowerCase().trim() === 'admin') {
-      showAlert('The primary admin account cannot be deleted.', 'Action Restricted', 'warning');
-      return;
-    }
-
-    const confirmed = await showConfirm({
-      title: 'Delete User Profile',
-      message: `Are you sure you want to delete user profile "${formatUserName(prof.username)}" (@${prof.username})? This action cannot be undone.`,
-      danger: true
-    });
-    if (!confirmed) return;
-
-    try {
-      const res = await fetch(`/api/resourceprofiles?username=${encodeURIComponent(prof.username)}&id=${prof.id}`, {
-        method: 'DELETE'
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to delete user profile');
-      }
-      showToast(`User profile "${formatUserName(prof.username)}" deleted successfully!`, 'success');
-      fetchProfiles();
-      refreshProfiles();
-    } catch (err) {
-      showAlert(err.message, 'Delete Error', 'danger');
-    }
-  };
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       
@@ -178,6 +151,7 @@ export default function ResourceProfilesTab() {
               <thead>
                 <tr>
                   <th>Name / User ID</th>
+                  <th>Status</th>
                   <th>Role</th>
                   <th>Seniority</th>
                   <th>Department</th>
@@ -197,6 +171,11 @@ export default function ResourceProfilesTab() {
                       <div style={{ color: 'var(--text-muted)', fontSize: '0.76rem' }}>
                         Handle: {prof.username}
                       </div>
+                    </td>
+                    <td>
+                      <span className={`badge ${prof.is_active !== false ? 'badge-success' : 'badge-neutral'}`} style={{ fontWeight: 600 }}>
+                        {prof.is_active !== false ? '🟢 Active' : '⚪ Inactive'}
+                      </span>
                     </td>
                     <td>
                       <span className="badge" style={getOptionBadgeStyle('role', prof.role_name)}>
@@ -220,9 +199,6 @@ export default function ResourceProfilesTab() {
                       <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end', alignItems: 'center' }}>
                         <button className="btn btn-secondary" style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem' }} onClick={() => openEditModal(prof)}>
                           Edit Profile
-                        </button>
-                        <button className="btn btn-danger" style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem' }} onClick={() => handleDeleteUser(prof)}>
-                          Delete
                         </button>
                       </div>
                     </td>
@@ -365,6 +341,41 @@ export default function ResourceProfilesTab() {
                     value={formData.skills}
                     onChange={handleInputChange}
                   />
+                </div>
+
+                {/* Account Status / Active Toggle */}
+                <div className="form-group">
+                  <label className="form-label">User Status (Active / Inactive)</label>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    background: 'var(--bg-secondary)',
+                    padding: '0.75rem 1rem',
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid var(--border-subtle)'
+                  }}>
+                    <div>
+                      <strong style={{ color: formData.is_active !== false ? '#10b981' : 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                        {formData.is_active !== false ? '🟢 Active Account' : '⚪ Inactive Account'}
+                      </strong>
+                      <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
+                        {formData.is_active !== false ? 'User account is active and available for assignments.' : 'User account is deactivated / inactive.'}
+                      </div>
+                    </div>
+                    <label style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer', gap: '0.5rem' }}>
+                      <input
+                        type="checkbox"
+                        name="is_active"
+                        checked={formData.is_active !== false}
+                        onChange={(e) => setFormData(prev => ({ ...prev, is_active: e.target.checked }))}
+                        style={{ width: '20px', height: '20px', cursor: 'pointer', accentColor: '#10b981' }}
+                      />
+                      <span style={{ fontWeight: 600, fontSize: '0.88rem', color: formData.is_active !== false ? '#10b981' : 'var(--text-secondary)' }}>
+                        {formData.is_active !== false ? 'Active' : 'Inactive'}
+                      </span>
+                    </label>
+                  </div>
                 </div>
               </div>
 

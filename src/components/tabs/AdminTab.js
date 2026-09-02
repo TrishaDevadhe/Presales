@@ -209,24 +209,6 @@ export default function AdminTab() {
     }
   };
 
-  const handleTemplateDelete = async (id) => {
-    const confirmed = await showConfirm({
-      title: 'Delete Task Template',
-      message: 'Are you sure you want to delete this template task?',
-      danger: true
-    });
-    if (!confirmed) return;
-
-    try {
-      const res = await fetch(`/api/tasktemplates?id=${id}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('Failed to delete template');
-      showToast('Template task deleted successfully', 'success');
-      fetchTemplates();
-    } catch (err) {
-      showAlert(err.message, 'Error', 'danger');
-    }
-  };
-
   // -- AUTOMATION SETTINGS HANDLERS --
   const handleAutomationChange = (name, val) => {
     setAutomationSettings(prev => ({
@@ -459,9 +441,6 @@ export default function AdminTab() {
                         <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
                           <button className="btn btn-secondary" style={{ padding: '0.25rem 0.55rem', fontSize: '0.75rem' }} onClick={() => openTemplateEdit(tpl)}>
                             Modify
-                          </button>
-                          <button className="btn btn-danger" style={{ padding: '0.25rem 0.55rem', fontSize: '0.75rem' }} onClick={() => handleTemplateDelete(tpl.id)}>
-                            Delete
                           </button>
                         </div>
                       </td>

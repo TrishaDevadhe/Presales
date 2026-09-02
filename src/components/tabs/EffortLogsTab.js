@@ -228,27 +228,6 @@ export default function EffortLogsTab() {
     }
   };
 
-  const handleDelete = async (id) => {
-    const confirmed = await showConfirm({
-      title: 'Delete Effort Log',
-      message: 'Are you sure you want to delete this effort log?',
-      danger: true
-    });
-    if (!confirmed) return;
-
-    try {
-      const res = await fetch(`/api/efforts/${id}`, { method: 'DELETE' });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Failed to delete effort log');
-      }
-      showToast('Effort log deleted successfully', 'success');
-      fetchData();
-    } catch (err) {
-      showAlert(err.message, 'Error', 'danger');
-    }
-  };
-
   // Filter tasks based on selected opportunity for modal form (exclude terminated/cancelled)
   const availableTasks = (selectedOppId
     ? tasks.filter(t => t.opportunity_id === parseInt(selectedOppId, 10))
@@ -471,7 +450,7 @@ export default function EffortLogsTab() {
                               disabled={isCompleted}
                               title={isCompleted ? 'Cannot log effort on completed work items' : 'Add effort log'}
                             >
-                              + Log Hour
+                              + Log Hours
                             </button>
                           </div>
                         </td>
@@ -521,7 +500,7 @@ export default function EffortLogsTab() {
           ) : filteredEffortLogs.length === 0 ? (
             <p style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
               {effortLogs.length === 0
-                ? 'No hours logged yet. Click "+ Log Hour" on any work item task to submit workload details.'
+                ? 'No hours logged yet. Click "+ Log Hours" on any work item task to submit workload details.'
                 : 'No effort logs match the selected filter criteria.'}
             </p>
           ) : (

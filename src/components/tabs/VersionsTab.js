@@ -23,10 +23,13 @@ export default function VersionsTab() {
   // Modal state for revising or terminating a work item
   const [isReviseModalOpen, setIsReviseModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
+  const [showAssignedSuggestions, setShowAssignedSuggestions] = useState(false);
+  const [showRevisingSuggestions, setShowRevisingSuggestions] = useState(false);
   const [reviseFormData, setReviseFormData] = useState({
     is_terminated: false,
     version_number: 2,
     revising_person: currentUser || '',
+    assigned_to: '',
     revision_description: '',
     trigger_source_id: '',
     version_type_id: '',
@@ -84,6 +87,7 @@ export default function VersionsTab() {
       is_terminated: false,
       version_number: nextVer,
       revising_person: currentUser || task.assigned_to || allUsers[0] || '',
+      assigned_to: task.assigned_to || currentUser || '',
       revision_description: '',
       trigger_source_id: getOptions('trigger_source')[0]?.id || '',
       version_type_id: getOptions('version_type')[0]?.id || '',
@@ -91,6 +95,8 @@ export default function VersionsTab() {
       terminating_person: currentUser || task.reviewer || task.assigned_to || allUsers[0] || '',
       termination_reason: ''
     });
+    setShowAssignedSuggestions(false);
+    setShowRevisingSuggestions(false);
     setIsReviseModalOpen(true);
   };
 
@@ -165,6 +171,16 @@ export default function VersionsTab() {
     }
 
     // === STANDARD REVISION FLOW ===
+    if (!reviseFormData.revising_person || !reviseFormData.revising_person.trim()) {
+      setError('Please specify who revised the item (Revised By).');
+      return;
+    }
+
+    if (!reviseFormData.assigned_to || !reviseFormData.assigned_to.trim()) {
+      setError('Please select or enter an assigned person.');
+      return;
+    }
+
     if (!reviseFormData.revision_description.trim()) {
       setError('Please provide a revision description explaining why this revision was required.');
       return;
@@ -211,7 +227,7 @@ export default function VersionsTab() {
         deliverable_type_id: selectedTask.deliverable_type_id,
         title: newWorkItemTitle,
         description: `[Revised Version ${nextVer} - Revised by @${reviseFormData.revising_person}]\nReason: ${reviseFormData.revision_description}\n\nPrevious Description:\n${selectedTask.description || ''}`,
-        assigned_to: selectedTask.assigned_to,
+        assigned_to: reviseFormData.assigned_to,
         reviewer: selectedTask.reviewer,
         collaborators: selectedTask.collaborators,
         priority_id: selectedTask.priority_id,
@@ -261,27 +277,6 @@ export default function VersionsTab() {
     }
   };
 
-  const handleDeleteVersion = async (id) => {
-    const confirmed = await showConfirm({
-      title: 'Delete Revision Log',
-      message: 'Are you sure you want to delete this revision log entry?',
-      danger: true
-    });
-    if (!confirmed) return;
-
-    try {
-      const res = await fetch(`/api/versions/${id}`, { method: 'DELETE' });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Failed to delete version log');
-      }
-      showToast('Revision log deleted successfully', 'success');
-      fetchData();
-    } catch (err) {
-      showAlert(err.message, 'Error', 'danger');
-    }
-  };
-
   // Filtering work items (show work items whose status is ANYTHING OTHER THAN 'Not Started' or 'Blocked')
   const filteredWorkItems = tasks.filter(task => {
     if (userRole !== 'Admin' && !isUserAssociatedWithTask(task, currentUser, opportunities)) return false;
@@ -303,6 +298,22 @@ export default function VersionsTab() {
     if (filterOpportunity && String(ver.opportunity_id) !== String(filterOpportunity)) return false;
     if (filterPerson && (ver.reviewed_by || '').toLowerCase() !== filterPerson.toLowerCase()) return false;
     return true;
+  });
+
+  // Filter employees for Assigned To suggestion autocomplete
+  const assignedToQuery = (reviseFormData.assigned_to || '').trim().toLowerCase();
+  const filteredAssignees = allUsers.filter(u => {
+    const formatted = (formatUserName(u) || '').toLowerCase();
+    const username = u.toLowerCase();
+    return !assignedToQuery || username.includes(assignedToQuery) || formatted.includes(assignedToQuery);
+  });
+
+  // Filter employees for Revised By suggestion autocomplete
+  const revisingPersonQuery = (reviseFormData.revising_person || '').trim().toLowerCase();
+  const filteredRevisingUsers = allUsers.filter(u => {
+    const formatted = (formatUserName(u) || '').toLowerCase();
+    const username = u.toLowerCase();
+    return !revisingPersonQuery || username.includes(revisingPersonQuery) || formatted.includes(revisingPersonQuery);
   });
 
   return (
@@ -494,7 +505,6 @@ export default function VersionsTab() {
                     <th>Trigger Source</th>
                     <th>Revision Description</th>
                     <th>Rework Hours</th>
-                    <th style={{ textAlign: 'right' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -524,15 +534,6 @@ export default function VersionsTab() {
                       </td>
                       <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
                         {ver.estimated_rework_hours || 0} hrs
-                      </td>
-                      <td style={{ textAlign: 'right' }}>
-                        <button
-                          className="btn btn-danger"
-                          style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem' }}
-                          onClick={() => handleDeleteVersion(ver.id)}
-                        >
-                          Delete
-                        </button>
                       </td>
                     </tr>
                   ))}
@@ -650,20 +651,128 @@ export default function VersionsTab() {
                       />
                     </div>
 
-                    {/* Name of Person Revising */}
-                    <div className="form-group">
-                      <label className="form-label">Person Revising <span className="required">*</span></label>
-                      <select
-                        className="form-control form-select"
-                        value={reviseFormData.revising_person}
-                        onChange={(e) => setReviseFormData(prev => ({ ...prev, revising_person: e.target.value }))}
+                    {/* Revised By with Employee Autocomplete Suggestions */}
+                    <div className="form-group" style={{ position: 'relative' }}>
+                      <label className="form-label">Revised By <span className="required">*</span></label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Type name to search employee..."
+                        value={allUsers.includes(reviseFormData.revising_person) ? formatUserName(reviseFormData.revising_person) : reviseFormData.revising_person}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setReviseFormData(prev => ({ ...prev, revising_person: val }));
+                          setShowRevisingSuggestions(true);
+                        }}
+                        onFocus={() => setShowRevisingSuggestions(true)}
+                        onBlur={() => setTimeout(() => setShowRevisingSuggestions(false), 200)}
                         required
-                      >
-                        <option value="">Select Member</option>
-                        {allUsers.map(u => (
-                          <option key={u} value={u}>{formatUserName(u)}</option>
-                        ))}
-                      </select>
+                      />
+                      {showRevisingSuggestions && filteredRevisingUsers.length > 0 && (
+                        <div
+                          className="paper-panel"
+                          style={{
+                            position: 'absolute',
+                            top: 'calc(100% + 4px)',
+                            left: 0,
+                            right: 0,
+                            zIndex: 9999,
+                            maxHeight: '180px',
+                            overflowY: 'auto',
+                            border: '1px solid var(--border-subtle)',
+                            borderRadius: 'var(--radius-md)',
+                            background: 'var(--paper-panel)',
+                            boxShadow: '0 12px 30px rgba(0, 0, 0, 0.25)',
+                            padding: '0.35rem 0'
+                          }}
+                        >
+                          {filteredRevisingUsers.map(u => (
+                            <div
+                              key={u}
+                              onClick={() => {
+                                setReviseFormData(prev => ({ ...prev, revising_person: u }));
+                                setShowRevisingSuggestions(false);
+                              }}
+                              onMouseDown={(e) => e.preventDefault()}
+                              style={{
+                                padding: '0.5rem 0.85rem',
+                                cursor: 'pointer',
+                                fontSize: '0.88rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                transition: 'background 0.15s ease',
+                                borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
+                              }}
+                            >
+                              <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{formatUserName(u)}</span>
+                              <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>@{u}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Assigned To with Employee Autocomplete Suggestions */}
+                    <div className="form-group" style={{ position: 'relative' }}>
+                      <label className="form-label">Assigned To <span className="required">*</span></label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        placeholder="Type name to search employee..."
+                        value={allUsers.includes(reviseFormData.assigned_to) ? formatUserName(reviseFormData.assigned_to) : reviseFormData.assigned_to}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setReviseFormData(prev => ({ ...prev, assigned_to: val }));
+                          setShowAssignedSuggestions(true);
+                        }}
+                        onFocus={() => setShowAssignedSuggestions(true)}
+                        onBlur={() => setTimeout(() => setShowAssignedSuggestions(false), 200)}
+                        required
+                      />
+                      {showAssignedSuggestions && filteredAssignees.length > 0 && (
+                        <div
+                          className="paper-panel"
+                          style={{
+                            position: 'absolute',
+                            top: 'calc(100% + 4px)',
+                            left: 0,
+                            right: 0,
+                            zIndex: 9999,
+                            maxHeight: '180px',
+                            overflowY: 'auto',
+                            border: '1px solid var(--border-subtle)',
+                            borderRadius: 'var(--radius-md)',
+                            background: 'var(--paper-panel)',
+                            boxShadow: '0 12px 30px rgba(0, 0, 0, 0.25)',
+                            padding: '0.35rem 0'
+                          }}
+                        >
+                          {filteredAssignees.map(u => (
+                            <div
+                              key={u}
+                              onClick={() => {
+                                setReviseFormData(prev => ({ ...prev, assigned_to: u }));
+                                setShowAssignedSuggestions(false);
+                              }}
+                              onMouseDown={(e) => e.preventDefault()}
+                              style={{
+                                padding: '0.5rem 0.85rem',
+                                cursor: 'pointer',
+                                fontSize: '0.88rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                transition: 'background 0.15s ease',
+                                borderBottom: '1px solid rgba(255, 255, 255, 0.05)'
+                              }}
+                            >
+                              <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{formatUserName(u)}</span>
+                              <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>@{u}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     {/* Trigger Source */}

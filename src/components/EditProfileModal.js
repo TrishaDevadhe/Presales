@@ -34,7 +34,8 @@ export default function EditProfileModal({ isOpen, onClose }) {
         seniority_id: prof.seniority_id || (getOptions('seniority')[0]?.id || ''),
         department_id: prof.department_id || (getOptions('department')[0]?.id || ''),
         weekly_capacity_hours: prof.weekly_capacity_hours ? parseFloat(prof.weekly_capacity_hours) : 40,
-        standard_focus_area: prof.standard_focus_area || prof.standard_focus || ''
+        standard_focus_area: prof.standard_focus_area || prof.standard_focus || '',
+        is_active: prof.is_active !== false
       });
     }
   }, [isOpen, currentUser, resourceProfiles]);
@@ -66,7 +67,8 @@ export default function EditProfileModal({ isOpen, onClose }) {
         seniority_id: formData.seniority_id || null,
         department_id: formData.department_id || null,
         weekly_capacity_hours: parseFloat(formData.weekly_capacity_hours) || 40,
-        standard_focus_area: formData.standard_focus_area
+        standard_focus_area: formData.standard_focus_area,
+        is_active: formData.is_active
       };
 
       const res = await fetch('/api/resourceprofiles', {
@@ -285,6 +287,43 @@ export default function EditProfileModal({ isOpen, onClose }) {
                 disabled={!isAdmin}
                 placeholder="e.g. Core Presales Architect & Security Strategy"
               />
+            </div>
+
+            {/* Account Status / Active Toggle */}
+            <div className="form-group" style={{ marginTop: '0.85rem' }}>
+              <label className="form-label">
+                User Status {!isAdmin && '(Admin Only)'}
+              </label>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                background: 'var(--bg-secondary)',
+                padding: '0.75rem 1rem',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid var(--glass-border)'
+              }}>
+                <div>
+                  <strong style={{ color: formData.is_active ? '#10b981' : 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                    {formData.is_active ? '🟢 Active Account' : '⚪ Inactive Account'}
+                  </strong>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
+                    {formData.is_active ? 'User account is active and can be assigned work.' : 'User account is inactive.'}
+                  </div>
+                </div>
+                <label style={{ display: 'inline-flex', alignItems: 'center', cursor: isAdmin ? 'pointer' : 'not-allowed', gap: '0.5rem' }}>
+                  <input
+                    type="checkbox"
+                    checked={formData.is_active}
+                    onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+                    disabled={!isAdmin}
+                    style={{ width: '20px', height: '20px', cursor: isAdmin ? 'pointer' : 'not-allowed', accentColor: '#10b981' }}
+                  />
+                  <span style={{ fontWeight: 600, fontSize: '0.88rem', color: formData.is_active ? '#10b981' : 'var(--text-secondary)' }}>
+                    {formData.is_active ? 'Active' : 'Inactive'}
+                  </span>
+                </label>
+              </div>
             </div>
           </div>
 

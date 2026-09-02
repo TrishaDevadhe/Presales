@@ -356,26 +356,6 @@ export default function WorkItemsTab() {
     }
   };
 
-  const handleDelete = async (id) => {
-    const confirmed = await showConfirm({
-      title: 'Delete Work Item',
-      message: 'Are you sure you want to delete this work item?',
-      danger: true
-    });
-    if (!confirmed) return;
-
-    try {
-      const res = await fetch(`/api/workitems/${id}`, { method: 'DELETE' });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Failed to delete task');
-      }
-      showToast('Work item deleted successfully', 'success');
-      fetchData();
-    } catch (err) {
-      showAlert(err.message, 'Error', 'danger');
-    }
-  };
 
   const handleRestoreTask = async (task) => {
     const inProgressOpt = getOptions('task_status').find(o => o.option_name === 'In Progress') || getOptions('task_status')[0];
@@ -533,9 +513,6 @@ export default function WorkItemsTab() {
                           <button className="btn btn-secondary" style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem' }} onClick={() => openEditModal(task)}>
                             Edit
                           </button>
-                          <button className="btn btn-danger" style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem' }} onClick={() => handleDelete(task.id)}>
-                            Delete
-                          </button>
                         </div>
                       </td>
                     </tr>
@@ -623,13 +600,6 @@ export default function WorkItemsTab() {
                             title="Restore work item back to Active Work Items"
                           >
                             🔄 Restore
-                          </button>
-                          <button
-                            className="btn btn-danger"
-                            style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem' }}
-                            onClick={() => handleDelete(task.id)}
-                          >
-                            Delete
                           </button>
                         </div>
                       </td>

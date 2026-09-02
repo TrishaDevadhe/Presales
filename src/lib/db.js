@@ -43,6 +43,8 @@ async function ensureDbInitialized() {
           await pool.query(`
             ALTER TABLE resource_profiles ADD COLUMN IF NOT EXISTS password VARCHAR(255);
             ALTER TABLE resource_profiles ADD COLUMN IF NOT EXISTS name VARCHAR(255);
+            ALTER TABLE resource_profiles ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
+            UPDATE resource_profiles SET is_active = true WHERE is_active IS NULL;
 
             -- Update Admin credentials
             UPDATE resource_profiles 

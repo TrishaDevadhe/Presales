@@ -5,6 +5,12 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
+    try {
+      await query('ALTER TABLE resource_profiles ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;');
+    } catch (e) {
+      console.warn('Migration probe warning:', e.message);
+    }
+
     const result = await query(`
       SELECT r.*, 
              r.standard_focus AS standard_focus_area,
@@ -46,6 +52,15 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Username/ID is required' }, { status: 400 });
     }
 
+    const is_active = body.is_active !== undefined ? Boolean(body.is_active) : true;
+
+    // Ensure is_active column exists in database table
+    try {
+      await query('ALTER TABLE resource_profiles ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;');
+    } catch (e) {
+      console.warn('Migration probe warning:', e.message);
+    }
+
     const targetUser = (original_username || username).toLowerCase().trim();
     const check = await query('SELECT id, password, name FROM resource_profiles WHERE username = $1', [targetUser]);
 
@@ -54,8 +69,8 @@ export async function POST(request) {
       const generatedPassword = passwordInput || generateRandomPassword();
       result = await query(
         `INSERT INTO resource_profiles 
-         (username, name, role_id, seniority_id, skills, department_id, weekly_capacity_hours, standard_focus, password)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         (username, name, role_id, seniority_id, skills, department_id, weekly_capacity_hours, standard_focus, password, is_active)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
          RETURNING *`,
         [
           username.toLowerCase().trim(),
@@ -66,7 +81,8 @@ export async function POST(request) {
           department_id || null,
           parseFloat(weekly_capacity_hours) || 40.0,
           standard_focus,
-          generatedPassword
+          generatedPassword,
+          is_active
         ]
       );
     } else {
@@ -85,8 +101,9 @@ export async function POST(request) {
              department_id = COALESCE($6, department_id),
              weekly_capacity_hours = COALESCE($7, weekly_capacity_hours),
              standard_focus = COALESCE($8, standard_focus),
-             password = $9
-         WHERE id = $10
+             password = $9,
+             is_active = $10
+         WHERE id = $11
          RETURNING *`,
         [
           newUsername,
@@ -98,6 +115,7 @@ export async function POST(request) {
           weekly_capacity_hours ? parseFloat(weekly_capacity_hours) : null,
           standard_focus || null,
           finalPassword,
+          is_active,
           check.rows[0].id
         ]
       );

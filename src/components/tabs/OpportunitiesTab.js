@@ -171,27 +171,6 @@ export default function OpportunitiesTab() {
     }
   };
 
-  const handleDelete = async (id) => {
-    const confirmed = await showConfirm({
-      title: 'Delete Opportunity',
-      message: 'Are you sure you want to delete this opportunity? This will permanently delete all associated tasks, versions, and feedback!',
-      danger: true
-    });
-    if (!confirmed) return;
-
-    try {
-      const res = await fetch(`/api/opportunities/${id}`, { method: 'DELETE' });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Failed to delete opportunity');
-      }
-      fetchOpportunities();
-      showToast('Opportunity deleted successfully.', 'success');
-    } catch (err) {
-      showAlert(err.message, 'Error', 'danger');
-    }
-  };
-
   // Filter opportunities for non-admin users based on association
   const displayOpportunities = userRole === 'Admin'
     ? opportunities
@@ -271,9 +250,6 @@ export default function OpportunitiesTab() {
                       <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
                         <button className="btn btn-secondary" style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem' }} onClick={() => openEditModal(opp)}>
                           Edit
-                        </button>
-                        <button className="btn btn-danger" style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem' }} onClick={() => handleDelete(opp.id)}>
-                          Delete
                         </button>
                       </div>
                     </td>
@@ -358,6 +334,23 @@ export default function OpportunitiesTab() {
                       required
                     >
                       {getOptions('deliverable_type').map(opt => (
+                        <option key={opt.id} value={opt.id}>{opt.option_name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Opportunity Status (Deal Stage) */}
+                  <div className="form-group">
+                    <label className="form-label">Status <span className="required">*</span></label>
+                    <select
+                      name="deal_stage_id"
+                      className="form-control form-select"
+                      value={formData.deal_stage_id}
+                      onChange={handleInputChange}
+                      required
+                    >
+                      <option value="">Select Status</option>
+                      {getOptions('deal_stage').map(opt => (
                         <option key={opt.id} value={opt.id}>{opt.option_name}</option>
                       ))}
                     </select>

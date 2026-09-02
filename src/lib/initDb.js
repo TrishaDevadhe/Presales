@@ -30,6 +30,7 @@ export async function initDb() {
       password VARCHAR(255)
     );
     ALTER TABLE resource_profiles ADD COLUMN IF NOT EXISTS name VARCHAR(255);
+    ALTER TABLE resource_profiles ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
 
     CREATE TABLE IF NOT EXISTS opportunities (
       id SERIAL PRIMARY KEY,

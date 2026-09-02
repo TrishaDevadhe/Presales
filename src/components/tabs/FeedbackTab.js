@@ -129,27 +129,6 @@ export default function FeedbackTab() {
     }
   };
 
-  const handleDelete = async (id) => {
-    const confirmed = await showConfirm({
-      title: 'Delete Feedback Log',
-      message: 'Are you sure you want to delete this feedback log?',
-      danger: true
-    });
-    if (!confirmed) return;
-
-    try {
-      const res = await fetch(`/api/feedbacks/${id}`, { method: 'DELETE' });
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Failed to delete feedback');
-      }
-      showToast('Feedback log deleted successfully', 'success');
-      fetchData();
-    } catch (err) {
-      showAlert(err.message, 'Error', 'danger');
-    }
-  };
-
   const handleResolve = async (fb) => {
     const resolvedOpt = getOptions('feedback_status').find(o => o.option_name === 'Resolved');
     if (!resolvedOpt) return;
@@ -265,16 +244,11 @@ export default function FeedbackTab() {
                       </span>
                     </td>
                     <td style={{ textAlign: 'right' }}>
-                      <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
                         {fb.status_name !== 'Resolved' && (
                           <button className="btn btn-secondary" style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem', color: 'var(--color-success-text)' }} onClick={() => handleResolve(fb)}>
                             Resolve
                           </button>
                         )}
-                        <button className="btn btn-danger" style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem' }} onClick={() => handleDelete(fb.id)}>
-                          Delete
-                        </button>
-                      </div>
                     </td>
                   </tr>
                 ))}
