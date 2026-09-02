@@ -416,13 +416,6 @@ export default function WorkItemsTab() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
-      {/* Header section */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ fontSize: '1.5rem', color: 'var(--text-primary)', fontWeight: 700 }}>Work Items & Task Management</h2>
-        <button className="btn btn-primary" onClick={openCreateModal}>
-          + Create Work Item
-        </button>
-      </div>
 
       {/* Filter panel */}
       <div className="paper-panel" style={{ padding: '1rem 1.5rem', display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
@@ -961,7 +954,7 @@ export default function WorkItemsTab() {
 
                     <div style={{ overflowX: 'auto', width: '100%', borderRadius: '12px', border: '1px solid var(--border-subtle)', background: 'var(--surface-card, rgba(255, 255, 255, 0.95))' }}>
                       <div style={{ minWidth: '1750px', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                        
+
                         {/* Header Row */}
                         <div style={{
                           display: 'grid',

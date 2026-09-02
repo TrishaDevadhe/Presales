@@ -238,7 +238,7 @@ export default function VersionsTab() {
 
       // 3. Mark the original work item as Cancelled (superseded) so it is removed from active revision work items list
       const cancelledStatus = getOptions('task_status').find(s => s.option_name === 'Cancelled') ||
-                              getOptions('task_status').find(s => s.option_name === 'Terminated') || { id: 6 };
+        getOptions('task_status').find(s => s.option_name === 'Terminated') || { id: 6 };
 
       await fetch(`/api/workitems/${selectedTask.id}`, {
         method: 'PUT',
@@ -307,16 +307,6 @@ export default function VersionsTab() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      
-      {/* Top Header Bar */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <h2 style={{ fontSize: '1.5rem', color: 'var(--text-primary)', fontWeight: 700 }}>Revision Logs & Work Item Revisions</h2>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
-            Revise active work items to spawn updated versions, or mark work items as terminated to archive them.
-          </p>
-        </div>
-      </div>
 
       {/* Filter Views Panel */}
       <div className="paper-panel" style={{ padding: '1rem 1.25rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -579,7 +569,7 @@ export default function VersionsTab() {
             )}
 
             <form onSubmit={handleReviseSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              
+
               {/* Option Checkbox: Mark Work Item as Terminated */}
               <div style={{
                 background: reviseFormData.is_terminated ? 'rgba(239, 68, 68, 0.08)' : 'rgba(241, 245, 249, 0.5)',
@@ -598,7 +588,7 @@ export default function VersionsTab() {
                   <span>🚫 Mark Work Item as Terminated</span>
                 </label>
                 <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '0.25rem', marginLeft: '1.75rem' }}>
-                  {reviseFormData.is_terminated 
+                  {reviseFormData.is_terminated
                     ? 'This work item will be marked as Terminated, removed from active views across the app, and stored in the Work Item Archives.'
                     : 'Check this option if the work item needs to be terminated or cancelled instead of revised.'}
                 </div>
@@ -647,7 +637,7 @@ export default function VersionsTab() {
                 /* REVISION FIELDS (Standard Flow) */
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                   <div className="form-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
-                    
+
                     {/* Auto-computed Next Version Number */}
                     <div className="form-group">
                       <label className="form-label">Revised Version Number</label>
