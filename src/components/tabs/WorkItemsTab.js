@@ -952,7 +952,7 @@ export default function WorkItemsTab() {
                       </button>
                     </div>
 
-                    <div style={{ overflowX: 'auto', width: '100%', borderRadius: '12px', border: '1px solid var(--border-subtle)', background: 'var(--surface-card, rgba(255, 255, 255, 0.95))' }}>
+                    <div style={{ overflowX: 'auto', width: '100%', borderRadius: '12px', border: '1px solid var(--border-subtle)', background: 'var(--surface-card)' }}>
                       <div style={{ minWidth: '1750px', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
 
                         {/* Header Row */}
@@ -992,7 +992,7 @@ export default function WorkItemsTab() {
                               gap: '0.75rem',
                               alignItems: 'center',
                               padding: '0.5rem 0',
-                              borderBottom: index === bulkTasks.length - 1 ? 'none' : '1px solid rgba(226, 232, 240, 0.5)'
+                              borderBottom: index === bulkTasks.length - 1 ? 'none' : '1px solid var(--border-subtle)'
                             }}
                           >
                             <div style={{
@@ -1273,7 +1273,7 @@ export default function WorkItemsTab() {
             {viewDetailsTask.description && (
               <div style={{ marginBottom: '1.25rem' }}>
                 <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600, marginBottom: '0.35rem' }}>Original Description</div>
-                <div style={{ background: 'rgba(241, 245, 249, 0.6)', padding: '0.85rem', borderRadius: 'var(--radius-sm)', fontSize: '0.88rem', color: 'var(--text-primary)', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
+                <div style={{ background: 'var(--bg-secondary)', padding: '0.85rem', borderRadius: 'var(--radius-sm)', fontSize: '0.88rem', color: 'var(--text-primary)', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
                   {viewDetailsTask.description}
                 </div>
               </div>

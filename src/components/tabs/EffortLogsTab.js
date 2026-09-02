@@ -485,7 +485,7 @@ export default function EffortLogsTab() {
                                 {pct}%
                               </span>
                             </div>
-                            <div style={{ width: '100%', height: '6px', background: 'rgba(226, 232, 240, 0.6)', borderRadius: '999px', overflow: 'hidden' }}>
+                            <div style={{ width: '100%', height: '6px', background: 'var(--bg-tertiary)', borderRadius: '999px', overflow: 'hidden' }}>
                               <div
                                 style={{
                                   height: '100%',

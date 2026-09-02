@@ -572,7 +572,7 @@ export default function VersionsTab() {
 
               {/* Option Checkbox: Mark Work Item as Terminated */}
               <div style={{
-                background: reviseFormData.is_terminated ? 'rgba(239, 68, 68, 0.08)' : 'rgba(241, 245, 249, 0.5)',
+                background: reviseFormData.is_terminated ? 'rgba(239, 68, 68, 0.08)' : 'var(--bg-secondary)',
                 border: `1px solid ${reviseFormData.is_terminated ? 'rgba(239, 68, 68, 0.3)' : 'var(--glass-border)'}`,
                 borderRadius: 'var(--radius-md)',
                 padding: '0.85rem 1rem',
@@ -646,7 +646,7 @@ export default function VersionsTab() {
                         className="form-control"
                         value={`Version ${reviseFormData.version_number} (v${reviseFormData.version_number})`}
                         disabled
-                        style={{ fontWeight: 700, color: 'var(--accent-secondary)', background: 'rgba(226, 232, 240, 0.4)' }}
+                        style={{ fontWeight: 700, color: 'var(--accent-secondary)', background: 'var(--bg-secondary)' }}
                       />
                     </div>
 

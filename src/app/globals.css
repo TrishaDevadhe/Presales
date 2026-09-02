@@ -729,6 +729,11 @@ p, body, input, select, textarea, button {
   background: rgba(30, 58, 138, 0.05);
 }
 
+[data-theme="dark"] .tab-item:hover:not(.active) {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.08);
+}
+
 .tab-item.active {
   background: var(--paper-panel);
   color: var(--accent-primary);
@@ -738,7 +743,9 @@ p, body, input, select, textarea, button {
 
 [data-theme="dark"] .tab-item.active {
   background: var(--bg-tertiary);
-  color: var(--accent-primary);
+  color: #60A5FA;
+  border-color: rgba(96, 165, 250, 0.3);
+  box-shadow: var(--shadow-sm);
 }
 
 /* ==========================================================================
@@ -2382,6 +2389,47 @@ select.form-select option {
   gap: 0.5rem;
   margin: 0;
 }
+
+/* ==========================================================================
+   RECHARTS DARK MODE & HIGH CONTRAST STYLING OVERRIDES
+   ========================================================================== */
+.recharts-default-tooltip {
+  background-color: var(--paper-panel) !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: var(--shadow-md) !important;
+  color: var(--text-primary) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+[data-theme="dark"] .recharts-default-tooltip {
+  background-color: rgba(17, 24, 39, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  color: #F9FAFB !important;
+}
+
+[data-theme="dark"] .recharts-tooltip-item-name,
+[data-theme="dark"] .recharts-tooltip-item-value {
+  color: #F9FAFB !important;
+}
+
+[data-theme="dark"] .recharts-tooltip-label {
+  color: #9CA3AF !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="dark"] .recharts-cartesian-grid line {
+  stroke: rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .recharts-text.recharts-cartesian-axis-tick-value {
+  fill: #9CA3AF !important;
+}
+
+[data-theme="dark"] .recharts-legend-item-text {
+  color: #D1D5DB !important;
+}
+
 
 
 

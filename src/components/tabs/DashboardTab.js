@@ -284,7 +284,7 @@ export default function DashboardTab() {
         </div>
 
         {/* Tier Buttons */}
-        <div className="tab-group" style={{ background: 'rgba(241, 245, 249, 0.6)', padding: '0.25rem', borderRadius: 'var(--radius-md)' }}>
+        <div className="tab-group" style={{ background: 'var(--bg-secondary)', padding: '0.25rem', borderRadius: 'var(--radius-md)' }}>
           <button
             onClick={() => setActiveTier('tier1')}
             className={`tab-item ${activeTier === 'tier1' ? 'active' : ''}`}
@@ -383,7 +383,7 @@ export default function DashboardTab() {
                     const daysLeft = t.due_date ? Math.ceil((new Date(t.due_date) - new Date()) / (1000 * 60 * 60 * 24)) : null;
                     const isOverdue = daysLeft !== null && daysLeft < 0;
                     return (
-                      <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 0.9rem', background: isOverdue ? 'rgba(239, 68, 68, 0.06)' : 'rgba(241, 245, 249, 0.5)', border: isOverdue ? '1px solid rgba(239, 68, 68, 0.25)' : '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
+                      <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 0.9rem', background: isOverdue ? 'rgba(239, 68, 68, 0.06)' : 'var(--bg-secondary)', border: isOverdue ? '1px solid rgba(239, 68, 68, 0.25)' : '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)' }}>
                         <div>
                           <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.9rem' }}>{t.title}</div>
                           <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '0.2rem' }}>
@@ -546,7 +546,7 @@ export default function DashboardTab() {
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                           <span style={{ fontWeight: 700, color: m.isOverloaded ? '#EF4444' : 'var(--text-primary)' }}>{m.utilization}%</span>
-                          <div style={{ width: '70px', height: '6px', background: 'rgba(226, 232, 240, 0.6)', borderRadius: '999px', overflow: 'hidden' }}>
+                          <div style={{ width: '70px', height: '6px', background: 'var(--bg-tertiary)', borderRadius: '999px', overflow: 'hidden' }}>
                             <div style={{ height: '100%', width: `${Math.min(m.utilization, 100)}%`, backgroundColor: m.isOverloaded ? '#EF4444' : '#10B981' }} />
                           </div>
                         </div>
