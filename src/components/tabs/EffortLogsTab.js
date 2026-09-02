@@ -535,7 +535,6 @@ export default function EffortLogsTab() {
                     <th>Deliverable</th>
                     <th>Hours Logged</th>
                     <th>Notes</th>
-                    <th style={{ textAlign: 'right' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -569,15 +568,6 @@ export default function EffortLogsTab() {
                       </td>
                       <td style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={log.notes}>
                         {log.notes || '-'}
-                      </td>
-                      <td style={{ textAlign: 'right' }}>
-                        <button
-                          className="btn btn-danger"
-                          style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem' }}
-                          onClick={() => handleDelete(log.id)}
-                        >
-                          Delete
-                        </button>
                       </td>
                     </tr>
                   ))}
