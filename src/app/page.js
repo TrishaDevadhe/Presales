@@ -211,7 +211,8 @@ export default function Home() {
           <button
             onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
             className="sidebar-toggle-btn"
-            title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+            title={isSidebarCollapsed ? undefined : "Collapse Sidebar"}
+            data-tooltip={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
           >
             {isSidebarCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
           </button>
@@ -223,7 +224,8 @@ export default function Home() {
             <button
               onClick={() => setActiveTab('dashboard')}
               className={`nav-item-link ${activeTab === 'dashboard' ? 'active' : ''}`}
-              title="Dashboard"
+              title={isSidebarCollapsed ? undefined : "Dashboard"}
+              data-tooltip="Dashboard"
               style={{ width: '100%', background: 'transparent', textAlign: 'left', cursor: 'pointer' }}
             >
               <span className="nav-item-icon">📐</span>
@@ -234,7 +236,8 @@ export default function Home() {
             <button
               onClick={() => setActiveTab('opportunities')}
               className={`nav-item-link ${activeTab === 'opportunities' ? 'active' : ''}`}
-              title="Opportunities"
+              title={isSidebarCollapsed ? undefined : "Opportunities"}
+              data-tooltip="Opportunities"
               style={{ width: '100%', background: 'transparent', textAlign: 'left', cursor: 'pointer' }}
             >
               <span className="nav-item-icon">💼</span>
@@ -245,7 +248,8 @@ export default function Home() {
             <button
               onClick={() => setActiveTab('workitems')}
               className={`nav-item-link ${activeTab === 'workitems' ? 'active' : ''}`}
-              title="Work Items"
+              title={isSidebarCollapsed ? undefined : "Work Items"}
+              data-tooltip="Work Items"
               style={{ width: '100%', background: 'transparent', textAlign: 'left', cursor: 'pointer' }}
             >
               <span className="nav-item-icon">⚡</span>
@@ -256,7 +260,8 @@ export default function Home() {
             <button
               onClick={() => setActiveTab('efforts')}
               className={`nav-item-link ${activeTab === 'efforts' ? 'active' : ''}`}
-              title="Effort Logging"
+              title={isSidebarCollapsed ? undefined : "Effort Logging"}
+              data-tooltip="Effort Logging"
               style={{ width: '100%', background: 'transparent', textAlign: 'left', cursor: 'pointer' }}
             >
               <span className="nav-item-icon">⏱️</span>
@@ -267,7 +272,8 @@ export default function Home() {
             <button
               onClick={() => setActiveTab('versions')}
               className={`nav-item-link ${activeTab === 'versions' ? 'active' : ''}`}
-              title="Revision Logs"
+              title={isSidebarCollapsed ? undefined : "Revision Logs"}
+              data-tooltip="Revision Logs"
               style={{ width: '100%', background: 'transparent', textAlign: 'left', cursor: 'pointer' }}
             >
               <span className="nav-item-icon">🔄</span>
@@ -279,7 +285,8 @@ export default function Home() {
               <button
                 onClick={() => setActiveTab('settings')}
                 className={`nav-item-link ${activeTab === 'settings' || activeTab === 'profiles' || activeTab === 'admin' ? 'active' : ''}`}
-                title="Settings"
+                title={isSidebarCollapsed ? undefined : "Settings"}
+                data-tooltip="Settings"
                 style={{ width: '100%', background: 'transparent', textAlign: 'left', cursor: 'pointer' }}
               >
                 <span className="nav-item-icon">⚙️</span>
@@ -295,7 +302,8 @@ export default function Home() {
           <div
             className="minimal-theme-toggle"
             onClick={toggleTheme}
-            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            data-tooltip={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            title={isSidebarCollapsed ? undefined : (theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode')}
           >
             <div className="toggle-info">
               {theme === 'dark' ? <Moon size={15} className="toggle-icon" /> : <Sun size={15} className="toggle-icon" />}
@@ -315,7 +323,8 @@ export default function Home() {
             className="minimal-user-card"
             onClick={() => setIsEditProfileOpen(true)}
             style={{ cursor: 'pointer' }}
-            title={`Click to Edit Profile (Name, ID, Password) - Logged in as ${userDisplayName}`}
+            data-tooltip={`Profile: ${userDisplayName}`}
+            title={isSidebarCollapsed ? undefined : `Click to Edit Profile - Logged in as ${userDisplayName}`}
           >
             <div className="user-avatar-badge">
               <span>{userDisplayName ? userDisplayName.charAt(0).toUpperCase() : 'U'}</span>
@@ -333,7 +342,8 @@ export default function Home() {
                 logout();
               }}
               className="btn-logout-minimal"
-              title="Sign Out Session"
+              data-tooltip="Sign Out"
+              title={isSidebarCollapsed ? undefined : "Sign Out Session"}
             >
               <LogOut size={15} />
             </button>

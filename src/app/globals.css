@@ -334,6 +334,76 @@ p, body, input, select, textarea, button {
 /* Collapsible Sidebar States & Controls */
 .sidebar.collapsed {
   width: 80px !important;
+  overflow: visible !important;
+}
+
+.sidebar.collapsed .sidebar-brand-header,
+.sidebar.collapsed .nav-menu,
+.sidebar.collapsed .sidebar-footer {
+  overflow: visible !important;
+}
+
+/* Floating Tooltips on Hover for Collapsed Sidebar Items */
+.sidebar.collapsed [data-tooltip] {
+  position: relative;
+}
+
+.sidebar.collapsed [data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: calc(100% + 12px);
+  top: 50%;
+  transform: translateY(-50%) scale(0.92);
+  transform-origin: left center;
+  background: #0f172a;
+  color: #ffffff;
+  padding: 0.45rem 0.8rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.18s ease, transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.18s ease;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.35), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  z-index: 99999;
+}
+
+.sidebar.collapsed [data-tooltip]::before {
+  content: '';
+  position: absolute;
+  left: calc(100% + 6px);
+  top: 50%;
+  transform: translateY(-50%);
+  border-width: 5px 6px 5px 0;
+  border-style: solid;
+  border-color: transparent #0f172a transparent transparent;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.18s ease, visibility 0.18s ease;
+  z-index: 99999;
+}
+
+.sidebar.collapsed [data-tooltip]:hover::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(-50%) scale(1);
+}
+
+.sidebar.collapsed [data-tooltip]:hover::before {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Suppress parent card tooltip when hovering over nested logout button */
+.sidebar.collapsed .minimal-user-card:has(.btn-logout-minimal:hover)::after,
+.sidebar.collapsed .minimal-user-card:has(.btn-logout-minimal:hover)::before {
+  opacity: 0 !important;
+  visibility: hidden !important;
 }
 
 .main-content.sidebar-collapsed {
