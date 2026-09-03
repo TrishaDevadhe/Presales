@@ -107,19 +107,70 @@ export async function POST(request) {
     // Automatically update work item status:
     // If user explicitly checked mark_completed -> set status to 'Completed'
     // Otherwise -> set status to 'In Progress' if currently 'Not Started'
+    let statusChanged = false;
+    let oldStatusName = wiRes.rows[0].status_name || 'In Progress';
+    let newStatusName = oldStatusName;
+
     if (body.mark_completed === true) {
-      const completedRes = await query("SELECT id FROM dropdown_options WHERE category = 'task_status' AND option_name = 'Completed'");
+      const completedRes = await query("SELECT id, option_name FROM dropdown_options WHERE category = 'task_status' AND option_name = 'Completed'");
       if (completedRes.rows.length > 0) {
         await query('UPDATE work_items SET status_id = $1 WHERE id = $2', [completedRes.rows[0].id, work_item_id]);
+        statusChanged = true;
+        newStatusName = completedRes.rows[0].option_name;
       }
     } else {
-      const inProgressRes = await query("SELECT id FROM dropdown_options WHERE category = 'task_status' AND option_name = 'In Progress'");
+      const inProgressRes = await query("SELECT id, option_name FROM dropdown_options WHERE category = 'task_status' AND option_name = 'In Progress'");
       if (inProgressRes.rows.length > 0) {
-        await query(
-          "UPDATE work_items SET status_id = $1 WHERE id = $2 AND status_id IN (SELECT id FROM dropdown_options WHERE category = 'task_status' AND option_name = 'Not Started')",
+        const updateRes = await query(
+          "UPDATE work_items SET status_id = $1 WHERE id = $2 AND status_id IN (SELECT id FROM dropdown_options WHERE category = 'task_status' AND option_name = 'Not Started') RETURNING id",
           [inProgressRes.rows[0].id, work_item_id]
         );
+        if (updateRes.rows.length > 0) {
+          statusChanged = true;
+          oldStatusName = 'Not Started';
+          newStatusName = 'In Progress';
+        }
       }
+    }
+
+    // Audit Logging for Effort Entry and Status Change
+    try {
+      const { logActivity } = await import('@/lib/auditLogger');
+      const realUser = request.headers.get('x-real-user') || person || 'admin';
+      const actingAsUser = request.headers.get('x-acting-as-user') || null;
+
+      const actTypeRes = activity_type_id ? await query('SELECT option_name FROM dropdown_options WHERE id = $1', [activity_type_id]) : { rows: [] };
+      const actTypeName = actTypeRes.rows[0]?.option_name || 'Effort Logged';
+
+      await logActivity({
+        real_user_id: realUser,
+        acting_as_user_id: actingAsUser,
+        entity_type: 'Effort Log',
+        entity_id: effortLog.id,
+        entity_title: `${hours}h logged on "${wiRes.rows[0].title}"`,
+        action_type: 'Created',
+        field_changed: 'Hours Logged',
+        value_before: '0 hrs',
+        value_after: `${hours} hrs (${actTypeName})`,
+        summary_text: `Logged ${hours} hrs (${actTypeName}) on task "${wiRes.rows[0].title}"`
+      });
+
+      if (statusChanged && oldStatusName !== newStatusName) {
+        await logActivity({
+          real_user_id: realUser,
+          acting_as_user_id: actingAsUser,
+          entity_type: 'Work Item',
+          entity_id: work_item_id,
+          entity_title: wiRes.rows[0].title,
+          action_type: 'Status Changed',
+          field_changed: 'Status',
+          value_before: oldStatusName,
+          value_after: newStatusName,
+          summary_text: `Status Changed: ${oldStatusName} → ${newStatusName} by @${person} upon logging effort`
+        });
+      }
+    } catch (e) {
+      console.error('Audit logging failed for effort log:', e);
     }
 
     // Return created log with variance metadata

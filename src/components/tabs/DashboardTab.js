@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
+import { User } from 'lucide-react';
 import {
   ResponsiveContainer,
   BarChart,
@@ -181,9 +182,21 @@ export default function DashboardTab() {
 
       {/* HEADER BANNER */}
       <div className="paper-panel" style={{ padding: '1.25rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(16, 185, 129, 0.05) 100%)', border: '1px solid var(--glass-border)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div style={{ width: '48px', height: '48px', borderRadius: 'var(--radius-md)', background: 'var(--accent-primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 800 }}>
-            👤
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1.1rem' }}>
+          <div style={{
+            width: '52px',
+            height: '52px',
+            borderRadius: '14px',
+            background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+            color: '#ffffff',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 4px 14px rgba(59, 130, 246, 0.35)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            flexShrink: 0
+          }}>
+            <User size={26} strokeWidth={2.2} />
           </div>
           <div>
             <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>

@@ -66,6 +66,42 @@ export function AppProvider({ children }) {
     }
   };
 
+  const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes inactivity limit
+
+  const saveSession = (username, role) => {
+    try {
+      const sessionData = {
+        username,
+        role,
+        lastActiveTimestamp: Date.now()
+      };
+      localStorage.setItem('presales_session', JSON.stringify(sessionData));
+    } catch (err) {
+      console.error('Failed to save session:', err);
+    }
+  };
+
+  const updateLastActive = () => {
+    try {
+      const stored = localStorage.getItem('presales_session');
+      if (stored) {
+        const sessionData = JSON.parse(stored);
+        sessionData.lastActiveTimestamp = Date.now();
+        localStorage.setItem('presales_session', JSON.stringify(sessionData));
+      }
+    } catch (err) {
+      console.error('Failed to update last active timestamp:', err);
+    }
+  };
+
+  const clearSession = () => {
+    try {
+      localStorage.removeItem('presales_session');
+    } catch (err) {
+      console.error('Failed to clear session:', err);
+    }
+  };
+
   useEffect(() => {
     const init = async () => {
       setLoading(true);
@@ -73,15 +109,83 @@ export function AppProvider({ children }) {
       const dropdownsPromise = fetchDropdowns();
       await Promise.all([dropdownsPromise, profilesPromise]);
 
-      // Always show login page first on fresh load or browser refresh
-      setCurrentUser(null);
-      setUserRole(null);
-      setIsLoggedIn(false);
+      // Check persistent session in localStorage
+      try {
+        const stored = localStorage.getItem('presales_session');
+        if (stored) {
+          const session = JSON.parse(stored);
+          const now = Date.now();
+          if (session.username && (now - session.lastActiveTimestamp < INACTIVITY_TIMEOUT_MS)) {
+            setCurrentUser(session.username);
+            setUserRole(session.role);
+            setIsLoggedIn(true);
+            updateLastActive();
+          } else {
+            clearSession();
+            setCurrentUser(null);
+            setUserRole(null);
+            setIsLoggedIn(false);
+          }
+        } else {
+          setCurrentUser(null);
+          setUserRole(null);
+          setIsLoggedIn(false);
+        }
+      } catch (err) {
+        clearSession();
+        setCurrentUser(null);
+        setUserRole(null);
+        setIsLoggedIn(false);
+      }
 
       setLoading(false);
     };
     init();
   }, []);
+
+  // Inactivity and session check listener
+  useEffect(() => {
+    if (!isLoggedIn) return;
+
+    const handleUserActivity = () => {
+      updateLastActive();
+    };
+
+    const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
+    let throttleTimeout = null;
+
+    const throttledHandler = () => {
+      if (!throttleTimeout) {
+        throttleTimeout = setTimeout(() => {
+          handleUserActivity();
+          throttleTimeout = null;
+        }, 10000); // Throttle update to once every 10 seconds
+      }
+    };
+
+    events.forEach(evt => window.addEventListener(evt, throttledHandler));
+
+    // Periodic check for inactivity timeout (every 30 seconds)
+    const timer = setInterval(() => {
+      try {
+        const stored = localStorage.getItem('presales_session');
+        if (stored) {
+          const session = JSON.parse(stored);
+          if (Date.now() - session.lastActiveTimestamp > INACTIVITY_TIMEOUT_MS) {
+            logout('inactivity');
+          }
+        }
+      } catch (err) {
+        console.error('Error checking inactivity:', err);
+      }
+    }, 30000);
+
+    return () => {
+      events.forEach(evt => window.removeEventListener(evt, throttledHandler));
+      clearInterval(timer);
+      if (throttleTimeout) clearTimeout(throttleTimeout);
+    };
+  }, [isLoggedIn]);
 
   const handleUserChange = (username) => {
     const found = users.find(u => u.username === username);
@@ -114,6 +218,7 @@ export function AppProvider({ children }) {
     setCurrentUser(username);
     setUserRole(role);
     setIsLoggedIn(true);
+    saveSession(username, role);
     showToast(`Successfully authenticated as @${username} (${role})`);
   };
 
@@ -130,11 +235,16 @@ export function AppProvider({ children }) {
     return str;
   };
 
-  const logout = () => {
+  const logout = (reason = 'manual') => {
+    clearSession();
     setCurrentUser(null);
     setUserRole(null);
     setIsLoggedIn(false);
-    showToast('Logged out of session');
+    if (reason === 'inactivity') {
+      showAlert('Your session has expired due to inactivity. Please log in again.', 'Session Expired', 'warning');
+    } else {
+      showToast('Logged out of session');
+    }
   };
 
   // Title Case Option Text Helper
