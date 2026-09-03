@@ -5,6 +5,8 @@ import { useApp } from '@/context/AppContext';
 import { isUserAssociatedWithTask } from '@/lib/userAssociation';
 import RichTextEditor from '../RichTextEditor';
 
+import RecordHistoryView from '../RecordHistoryView';
+
 export default function WorkItemsTab() {
   const { currentUser, userRole, allUsers, getOptions, resourceProfiles, getOptionBadgeStyle, formatUserName, showToast, showAlert, showConfirm } = useApp();
   const [tasks, setTasks] = useState([]);
@@ -23,6 +25,7 @@ export default function WorkItemsTab() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
+  const [modalSubTab, setModalSubTab] = useState('details'); // 'details' | 'history'
 
   // Read-only Details Modal state for archived tasks
   const [isViewDetailsModalOpen, setIsViewDetailsModalOpen] = useState(false);
@@ -163,6 +166,7 @@ export default function WorkItemsTab() {
     setIsEditMode(false);
     setSelectedTask(null);
     setCapacityWarning(null);
+    setModalSubTab('details');
     const initialOpp = opportunities[0];
     const defaultCategoryId = getOptions('work_category')[0]?.id || '';
     const defaultAssignee = allUsers[3] || allUsers[0] || '';
@@ -212,6 +216,7 @@ export default function WorkItemsTab() {
     setIsEditMode(true);
     setSelectedTask(task);
     setCapacityWarning(null);
+    setModalSubTab('details');
     setFormData({
       opportunity_id: task.opportunity_id || '',
       work_category_id: task.work_category_id || '',
@@ -617,9 +622,31 @@ export default function WorkItemsTab() {
         <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}>
           <div className="modal-content paper-panel" style={{ maxWidth: '1400px', width: '95%' }}>
             <button className="modal-close" onClick={() => setIsModalOpen(false)}>×</button>
-            <h3 style={{ fontSize: '1.35rem', marginBottom: '1.5rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
-              {isEditMode ? 'Edit Work Item' : 'Create New Work Item'}
-            </h3>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
+              <h3 style={{ fontSize: '1.35rem', color: 'var(--text-primary)', fontWeight: 700, margin: 0 }}>
+                {isEditMode ? 'Edit Work Item' : 'Create New Work Item'}
+              </h3>
+              {isEditMode && selectedTask && (
+                <div className="tab-group" style={{ background: 'var(--bg-secondary)', padding: '0.2rem', borderRadius: 'var(--radius-md)' }}>
+                  <button
+                    type="button"
+                    className={`tab-item ${modalSubTab === 'details' ? 'active' : ''}`}
+                    onClick={() => setModalSubTab('details')}
+                    style={{ fontSize: '0.82rem', padding: '0.35rem 0.9rem' }}
+                  >
+                    ⚡ Details
+                  </button>
+                  <button
+                    type="button"
+                    className={`tab-item ${modalSubTab === 'history' ? 'active' : ''}`}
+                    onClick={() => setModalSubTab('history')}
+                    style={{ fontSize: '0.82rem', padding: '0.35rem 0.9rem' }}
+                  >
+                    📜 History
+                  </button>
+                </div>
+              )}
+            </div>
 
             {error && (
               <div className="alert-banner alert-banner-danger" style={{ marginBottom: '1.25rem' }}>
@@ -633,7 +660,11 @@ export default function WorkItemsTab() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {modalSubTab === 'history' && isEditMode && selectedTask && (
+              <RecordHistoryView entityType="Work Item" entityId={selectedTask.id} />
+            )}
+
+            <form onSubmit={handleSubmit} style={{ display: modalSubTab === 'details' ? 'flex' : 'none', flexDirection: 'column', gap: '1.5rem' }}>
 
               {isEditMode ? (
                 <>
@@ -1164,7 +1195,7 @@ export default function WorkItemsTab() {
                 </button>
               </div>
 
-            </form>
+              </form>
           </div>
         </div>
       )}

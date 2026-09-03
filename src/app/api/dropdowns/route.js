@@ -59,7 +59,27 @@ export async function POST(request) {
       [category, option_name, active !== false, parseInt(sort_order, 10) || 0, color || null]
     );
 
-    return NextResponse.json(result.rows[0], { status: 201 });
+    const newOpt = result.rows[0];
+
+    try {
+      const { logActivity } = await import('@/lib/auditLogger');
+      const realUser = request.headers.get('x-real-user') || 'admin';
+      const actingAsUser = request.headers.get('x-acting-as-user') || null;
+
+      await logActivity({
+        real_user_id: realUser,
+        acting_as_user_id: actingAsUser,
+        entity_type: 'Admin Config',
+        entity_id: newOpt.id,
+        entity_title: `Picklist Option (${category}): ${option_name}`,
+        action_type: 'Created',
+        summary_text: `Added new picklist option in category '${category}': ${option_name}`
+      });
+    } catch (e) {
+      console.error('Audit logging failed for dropdown option creation:', e);
+    }
+
+    return NextResponse.json(newOpt, { status: 201 });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -75,6 +95,9 @@ export async function PUT(request) {
       return NextResponse.json({ error: 'ID and Option Name are required' }, { status: 400 });
     }
 
+    const existingRes = await query('SELECT * FROM dropdown_options WHERE id = $1', [id]);
+    const existing = existingRes.rows[0];
+
     const result = await query(
       `UPDATE dropdown_options
        SET option_name = $1, active = $2, sort_order = $3, color = $4
@@ -87,7 +110,30 @@ export async function PUT(request) {
       return NextResponse.json({ error: 'Option not found' }, { status: 404 });
     }
 
-    return NextResponse.json(result.rows[0]);
+    const updatedOpt = result.rows[0];
+
+    try {
+      const { logActivity } = await import('@/lib/auditLogger');
+      const realUser = request.headers.get('x-real-user') || 'admin';
+      const actingAsUser = request.headers.get('x-acting-as-user') || null;
+
+      await logActivity({
+        real_user_id: realUser,
+        acting_as_user_id: actingAsUser,
+        entity_type: 'Admin Config',
+        entity_id: updatedOpt.id,
+        entity_title: `Picklist Option (${updatedOpt.category}): ${updatedOpt.option_name}`,
+        action_type: 'Updated',
+        field_changed: existing && existing.option_name !== updatedOpt.option_name ? 'Option Name' : 'Option Configuration',
+        value_before: existing ? `${existing.option_name} (Active: ${existing.active})` : null,
+        value_after: `${updatedOpt.option_name} (Active: ${updatedOpt.active})`,
+        summary_text: `Updated picklist option in category '${updatedOpt.category}': ${updatedOpt.option_name}`
+      });
+    } catch (e) {
+      console.error('Audit logging failed for dropdown option update:', e);
+    }
+
+    return NextResponse.json(updatedOpt);
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

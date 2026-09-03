@@ -14,6 +14,7 @@ import OpportunitiesTab from '@/components/tabs/OpportunitiesTab';
 import WorkItemsTab from '@/components/tabs/WorkItemsTab';
 import EffortLogsTab from '@/components/tabs/EffortLogsTab';
 import VersionsTab from '@/components/tabs/VersionsTab';
+import AuditLogTab from '@/components/tabs/AuditLogTab';
 import SettingsTab from '@/components/tabs/SettingsTab';
 import EditProfileModal from '@/components/EditProfileModal';
 
@@ -124,6 +125,9 @@ export default function Home() {
         return <EffortLogsTab />;
       case 'versions':
         return <VersionsTab />;
+      case 'auditlog':
+      case 'auditlogs':
+        return <AuditLogTab />;
       case 'settings':
       case 'profiles':
       case 'admin':
@@ -278,6 +282,18 @@ export default function Home() {
             >
               <span className="nav-item-icon">🔄</span>
               {!isSidebarCollapsed && <span className="nav-item-text">Revision Logs</span>}
+            </button>
+          </li>
+          <li>
+            <button
+              onClick={() => setActiveTab('auditlog')}
+              className={`nav-item-link ${activeTab === 'auditlog' || activeTab === 'auditlogs' ? 'active' : ''}`}
+              title={isSidebarCollapsed ? undefined : "Audit Logs"}
+              data-tooltip="Audit Logs"
+              style={{ width: '100%', background: 'transparent', textAlign: 'left', cursor: 'pointer' }}
+            >
+              <span className="nav-item-icon">📋</span>
+              {!isSidebarCollapsed && <span className="nav-item-text">Audit Logs</span>}
             </button>
           </li>
           {userRole === 'Admin' && (

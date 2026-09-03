@@ -194,6 +194,24 @@ export async function POST(request) {
 
     const task = result.rows[0];
 
+    try {
+      const { logActivity } = await import('@/lib/auditLogger');
+      const realUser = request.headers.get('x-real-user') || body.real_user_id || assigned_to || 'admin';
+      const actingAsUser = request.headers.get('x-acting-as-user') || body.acting_as_user_id || null;
+
+      await logActivity({
+        real_user_id: realUser,
+        acting_as_user_id: actingAsUser,
+        entity_type: 'Work Item',
+        entity_id: task.id,
+        entity_title: task.title,
+        action_type: 'Created',
+        summary_text: `Work Item created: ${task.title} (Assigned to: @${assigned_to})`
+      });
+    } catch (e) {
+      console.error('Audit logging failed for work item creation:', e);
+    }
+
     // Return the created task, and attach capacity check results if overloaded
     const responseData = { ...task };
     if (capCheck && capCheck.overloaded) {

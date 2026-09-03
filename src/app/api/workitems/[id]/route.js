@@ -141,6 +141,12 @@ export async function PUT(request, { params }) {
       }
     }
 
+    const existingRes = await query(
+      `SELECT w.*, st.option_name as status_name FROM work_items w LEFT JOIN dropdown_options st ON w.status_id = st.id WHERE w.id = $1`,
+      [id]
+    );
+    const existing = existingRes.rows[0];
+
     // Update
     const result = await query(
       `UPDATE work_items
@@ -197,6 +203,59 @@ export async function PUT(request, { params }) {
 
     const task = result.rows[0];
 
+    try {
+      const { logActivity } = await import('@/lib/auditLogger');
+      const realUser = request.headers.get('x-real-user') || body.real_user_id || assigned_to || 'admin';
+      const actingAsUser = request.headers.get('x-acting-as-user') || body.acting_as_user_id || null;
+
+      const newStatusRes = await query('SELECT option_name FROM dropdown_options WHERE id = $1', [task.status_id]);
+      const newStatusName = newStatusRes.rows[0]?.option_name || 'N/A';
+
+      let actionType = 'Updated';
+      let fieldChanged = null;
+      let valueBefore = null;
+      let valueAfter = null;
+      let summaryText = `Updated Work Item: ${task.title}`;
+
+      if (existing && existing.status_id !== task.status_id) {
+        actionType = 'Status Changed';
+        fieldChanged = 'Status';
+        valueBefore = existing.status_name || 'Not Started';
+        valueAfter = newStatusName;
+        summaryText = `Status Changed: ${valueBefore} → ${valueAfter}`;
+        if (newStatusName === 'Blocked' && blocker_reason) {
+          summaryText += ` (Blocker Note: ${blocker_reason})`;
+        }
+      } else if (existing && existing.assigned_to !== task.assigned_to) {
+        actionType = 'Assigned';
+        fieldChanged = 'Assigned To';
+        valueBefore = `@${existing.assigned_to}`;
+        valueAfter = `@${task.assigned_to}`;
+        summaryText = `Reassigned Work Item: ${valueBefore} → ${valueAfter}`;
+      } else if (existing && existing.due_date !== task.due_date) {
+        actionType = 'Updated';
+        fieldChanged = 'Due Date';
+        valueBefore = existing.due_date;
+        valueAfter = task.due_date;
+        summaryText = `Due Date changed: ${valueBefore} → ${valueAfter}`;
+      }
+
+      await logActivity({
+        real_user_id: realUser,
+        acting_as_user_id: actingAsUser,
+        entity_type: 'Work Item',
+        entity_id: task.id,
+        entity_title: task.title,
+        action_type: actionType,
+        field_changed: fieldChanged,
+        value_before: valueBefore,
+        value_after: valueAfter,
+        summary_text: summaryText
+      });
+    } catch (e) {
+      console.error('Audit logging failed for work item update:', e);
+    }
+
     // Return the updated task, and attach capacity check results if overloaded
     const responseData = { ...task };
     if (capCheck && capCheck.overloaded) {
@@ -213,10 +272,34 @@ export async function PUT(request, { params }) {
 export async function DELETE(request, { params }) {
   const id = params.id;
   try {
+    const existingRes = await query('SELECT * FROM work_items WHERE id = $1', [id]);
+    const existing = existingRes.rows[0];
+
     const result = await query('DELETE FROM work_items WHERE id = $1 RETURNING *', [id]);
     if (result.rows.length === 0) {
       return NextResponse.json({ error: 'Work Item not found' }, { status: 404 });
     }
+
+    if (existing) {
+      try {
+        const { logActivity } = await import('@/lib/auditLogger');
+        const realUser = request.headers.get('x-real-user') || 'admin';
+        const actingAsUser = request.headers.get('x-acting-as-user') || null;
+
+        await logActivity({
+          real_user_id: realUser,
+          acting_as_user_id: actingAsUser,
+          entity_type: 'Work Item',
+          entity_id: id,
+          entity_title: existing.title,
+          action_type: 'Deleted',
+          summary_text: `Work Item deleted: ${existing.title}`
+        });
+      } catch (e) {
+        console.error('Audit logging failed for work item deletion:', e);
+      }
+    }
+
     return NextResponse.json({ message: 'Work Item deleted successfully' });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });

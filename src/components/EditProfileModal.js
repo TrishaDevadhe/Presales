@@ -40,6 +40,29 @@ export default function EditProfileModal({ isOpen, onClose }) {
     }
   }, [isOpen, currentUser, resourceProfiles]);
 
+  const [mySignInLogs, setMySignInLogs] = useState([]);
+  const [loadingSignInLogs, setLoadingSignInLogs] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && currentUser) {
+      setLoadingSignInLogs(true);
+      fetch(`/api/auditlogs?tab=access&user=${encodeURIComponent(currentUser)}&role=${encodeURIComponent(userRole)}&currentUser=${encodeURIComponent(currentUser)}`, {
+        headers: {
+          'x-user-role': userRole || 'Team Member',
+          'x-real-user': currentUser || ''
+        }
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            setMySignInLogs(data.slice(0, 10));
+          }
+        })
+        .catch(err => console.error('Failed to load user sign-in logs:', err))
+        .finally(() => setLoadingSignInLogs(false));
+    }
+  }, [isOpen, currentUser, userRole]);
+
   if (!isOpen) return null;
 
   const isAdmin = userRole === 'Admin';
@@ -325,6 +348,46 @@ export default function EditProfileModal({ isOpen, onClose }) {
                 </label>
               </div>
             </div>
+          </div>
+
+          {/* Form Section 3: My Sign-in Activity (Part G of Audit Spec) */}
+          <div className="form-section">
+            <div className="form-section-header">
+              <span className="form-section-title">
+                <span>🛡️</span> My Sign-in Activity (Last 10 Events)
+              </span>
+            </div>
+
+            {loadingSignInLogs ? (
+              <div style={{ padding: '1rem', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Loading sign-in history...</div>
+            ) : mySignInLogs.length === 0 ? (
+              <div style={{ padding: '1rem', fontSize: '0.82rem', color: 'var(--text-muted)' }}>No sign-in activity recorded yet.</div>
+            ) : (
+              <div className="table-container" style={{ marginTop: '0.5rem', maxHeight: '200px', overflowY: 'auto' }}>
+                <table className="custom-table" style={{ fontSize: '0.8rem' }}>
+                  <thead>
+                    <tr>
+                      <th>Timestamp</th>
+                      <th>Event</th>
+                      <th>IP Address</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {mySignInLogs.map(log => (
+                      <tr key={log.id}>
+                        <td>{new Date(log.timestamp).toLocaleString()}</td>
+                        <td>
+                          <span className={`badge ${log.event_type === 'Login Failure' ? 'badge-danger' : log.event_type === 'Login Success' ? 'badge-success' : 'badge-neutral'}`} style={{ fontSize: '0.72rem' }}>
+                            {log.event_type}
+                          </span>
+                        </td>
+                        <td style={{ fontFamily: 'monospace' }}>{log.ip_address || '127.0.0.1'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
 
           {/* Modal Actions Footer */}

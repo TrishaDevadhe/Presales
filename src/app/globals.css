@@ -2500,6 +2500,36 @@ select.form-select option {
   color: #D1D5DB !important;
 }
 
+/* Audit Log Diff Inspection Tokens (Part C) */
+.audit-diff-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  background: var(--bg-secondary);
+  padding: 0.65rem 0.85rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--glass-border);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.82rem;
+}
+
+.audit-diff-before {
+  color: var(--color-danger-text, #ef4444);
+  text-decoration: line-through;
+  background: rgba(239, 68, 68, 0.1);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+}
+
+.audit-diff-after {
+  color: #10b981;
+  font-weight: 700;
+  background: rgba(16, 185, 129, 0.1);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+}
+
+
 
 
 

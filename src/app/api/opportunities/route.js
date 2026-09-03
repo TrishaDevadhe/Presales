@@ -112,6 +112,24 @@ export async function POST(request) {
 
     const opportunity = oppResult.rows[0];
 
+    const realUser = request.headers.get('x-real-user') || body.real_user_id || presales_owner || 'admin';
+    const actingAsUser = request.headers.get('x-acting-as-user') || body.acting_as_user_id || null;
+
+    try {
+      const { logActivity } = await import('@/lib/auditLogger');
+      await logActivity({
+        real_user_id: realUser,
+        acting_as_user_id: actingAsUser,
+        entity_type: 'Opportunity',
+        entity_id: opportunity.id,
+        entity_title: `${opportunity.company} - ${opportunity.opportunity_name}`,
+        action_type: 'Created',
+        summary_text: `Opportunity created: ${opportunity.company} - ${opportunity.opportunity_name}`
+      });
+    } catch (e) {
+      console.error('Audit logging failed for opportunity creation:', e);
+    }
+
     // AUTOMATION: Generate tasks from template
     // If deliverable_type_id is specified, prioritize templates for that deliverable_type
     let templateQuery = 'SELECT * FROM task_templates';

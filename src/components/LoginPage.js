@@ -81,10 +81,33 @@ export default function LoginPage() {
                       (cleanUser === 'divyam_malliwal' && (inputPass === 'divyam123' || inputPass === '-divyam123'));
 
       if (!isValid) {
+        fetch('/api/auditlogs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'access',
+            username: selectedUser,
+            event_type: 'Login Failure',
+            failure_reason: 'Invalid passcode entry',
+            user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : 'Browser Client'
+          })
+        }).catch(err => console.error('Failed to log login failure:', err));
+
         setError('Authentication Failed: Invalid password passcode.');
         setIsAuthenticating(false);
         return;
       }
+
+      fetch('/api/auditlogs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'access',
+          username: selectedUser,
+          event_type: 'Login Success',
+          user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : 'Browser Client'
+        })
+      }).catch(err => console.error('Failed to log login success:', err));
 
       handleUserChange(selectedUser);
       login(selectedUser);

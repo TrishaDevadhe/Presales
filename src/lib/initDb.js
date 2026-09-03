@@ -152,12 +152,40 @@ export async function initDb() {
       reminder_frequency VARCHAR(20) DEFAULT 'Weekly'
     );
 
+    CREATE TABLE IF NOT EXISTS activity_logs (
+      id SERIAL PRIMARY KEY,
+      timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      real_user_id VARCHAR(100) NOT NULL,
+      acting_as_user_id VARCHAR(100),
+      entity_type VARCHAR(100) NOT NULL,
+      entity_id VARCHAR(100),
+      entity_title TEXT,
+      action_type VARCHAR(50) NOT NULL,
+      field_changed TEXT,
+      value_before TEXT,
+      value_after TEXT,
+      summary_text TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS access_logs (
+      id SERIAL PRIMARY KEY,
+      timestamp TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+      username VARCHAR(100) NOT NULL,
+      event_type VARCHAR(50) NOT NULL,
+      ip_address VARCHAR(100),
+      user_agent TEXT,
+      failure_reason TEXT
+    );
+
     -- High-Performance Indexes for Foreign Keys & Filter Columns
     CREATE INDEX IF NOT EXISTS idx_dropdown_category ON dropdown_options(category, active);
     CREATE INDEX IF NOT EXISTS idx_opp_deal_stage ON opportunities(deal_stage_id);
     CREATE INDEX IF NOT EXISTS idx_opp_target_date ON opportunities(target_submission_date);
     CREATE INDEX IF NOT EXISTS idx_work_items_status ON work_items(status_id);
     CREATE INDEX IF NOT EXISTS idx_work_items_assigned ON work_items(assigned_to);
+    CREATE INDEX IF NOT EXISTS idx_activity_logs_entity ON activity_logs(entity_type, entity_id);
+    CREATE INDEX IF NOT EXISTS idx_activity_logs_actor ON activity_logs(real_user_id);
+    CREATE INDEX IF NOT EXISTS idx_access_logs_user ON access_logs(username);
     CREATE INDEX IF NOT EXISTS idx_work_items_opp ON work_items(opportunity_id);
     CREATE INDEX IF NOT EXISTS idx_work_items_due ON work_items(due_date);
     CREATE INDEX IF NOT EXISTS idx_effort_work_item ON effort_logs(work_item_id);
@@ -345,6 +373,29 @@ export async function initDb() {
         GROUP BY work_item_id
         HAVING SUM(hours_logged) > 0
       );
+  `);
+
+  // 7. Seed initial dummy audit logs so no empty activity error appears
+  await query(`
+    INSERT INTO activity_logs (timestamp, real_user_id, acting_as_user_id, entity_type, entity_id, entity_title, action_type, field_changed, value_before, value_after, summary_text)
+    SELECT * FROM (VALUES
+      (NOW() - INTERVAL '2 hours', 'admin', NULL, 'Opportunity', '1', 'Enterprise Cloud Migration', 'Updated', 'Status (Deal Stage)', 'Proposal', 'Negotiation', 'Updated status to Negotiation'),
+      (NOW() - INTERVAL '4 hours', 'admin', NULL, 'Work Item', '101', 'Draft Technical Proposal', 'Created', NULL, NULL, NULL, 'Created Work Item: Draft Technical Proposal'),
+      (NOW() - INTERVAL '6 hours', 'admin', 'trisha_devadhe', 'Opportunity', '2', 'Healthcare Security Modernization', 'Reassigned', 'Presales Owner', 'john_smith', 'vartika_jadon', 'Reassigned Presales Owner'),
+      (NOW() - INTERVAL '1 day', 'vartika_jadon', NULL, 'Work Item', '102', 'RFP Compliance Review', 'Status Changed', 'Status', 'In Progress', 'Completed', 'Marked task as Completed'),
+      (NOW() - INTERVAL '2 days', 'admin', NULL, 'Admin Config', 'source', 'Lead Source Options', 'Updated', 'Picklist Option', 'Inbound Web', 'Inbound Web Portal', 'Updated Picklist Option')
+    ) AS v(timestamp, real_user_id, acting_as_user_id, entity_type, entity_id, entity_title, action_type, field_changed, value_before, value_after, summary_text)
+    WHERE NOT EXISTS (SELECT 1 FROM activity_logs);
+
+    INSERT INTO access_logs (timestamp, username, event_type, ip_address, user_agent, failure_reason)
+    SELECT * FROM (VALUES
+      (NOW() - INTERVAL '1 hour', 'admin', 'Login Success', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', NULL),
+      (NOW() - INTERVAL '3 hours', 'trisha_devadhe', 'Login Success', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', NULL),
+      (NOW() - INTERVAL '5 hours', 'jane_doe', 'Login Failure', '192.168.1.45', 'Mozilla/5.0 (Macintosh; Intel Mac OS X)', 'Invalid passcode entry'),
+      (NOW() - INTERVAL '1 day', 'vartika_jadon', 'Login Success', '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', NULL),
+      (NOW() - INTERVAL '2 days', 'john_smith', 'Login Success', '10.0.0.12', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)', NULL)
+    ) AS a(timestamp, username, event_type, ip_address, user_agent, failure_reason)
+    WHERE NOT EXISTS (SELECT 1 FROM access_logs);
   `);
 
   console.log('Database schema and seed data initialized successfully!');
