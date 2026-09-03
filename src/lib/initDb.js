@@ -206,13 +206,10 @@ export async function initDb() {
     ['source', 'Partner Channel', 3, '#8b5cf6'],
     ['source', 'Existing Account Expansion', 4, '#6366f1'],
     ['source', 'Referral', 5, '#f59e0b'],
-    ['deal_stage', 'Proposal', 1, '#f59e0b'],
-    ['deal_stage', 'Qualification', 2, '#6b7280'],
-    ['deal_stage', 'Discovery', 3, '#3b82f6'],
-    ['deal_stage', 'Internal Review', 4, '#8b5cf6'],
-    ['deal_stage', 'Submitted to Client', 5, '#06b6d4'],
-    ['deal_stage', 'Won', 6, '#10b981'],
-    ['deal_stage', 'Lost', 7, '#ef4444'],
+    ['deal_stage', 'Discovery', 1, '#3b82f6'],
+    ['deal_stage', 'Submitted to Client', 2, '#06b6d4'],
+    ['deal_stage', 'Won', 3, '#10b981'],
+    ['deal_stage', 'Lost', 4, '#ef4444'],
     ['priority', 'Low', 1, '#22c55e'],
     ['priority', 'Medium', 2, '#eab308'],
     ['priority', 'High', 3, '#f97316'],
@@ -288,6 +285,30 @@ export async function initDb() {
      ON CONFLICT (category, option_name) DO UPDATE SET color = EXCLUDED.color, sort_order = EXCLUDED.sort_order;`,
     flatParams
   );
+
+  // Clean up removed options (PDF proposal document, duplicates, removed deal stages)
+  await query(`
+    UPDATE opportunities
+    SET deal_stage_id = (SELECT id FROM dropdown_options WHERE category = 'deal_stage' AND option_name = 'Discovery' LIMIT 1)
+    WHERE deal_stage_id IN (
+      SELECT id FROM dropdown_options WHERE category = 'deal_stage' AND LOWER(option_name) IN ('proposal', 'qualification', 'internal review')
+    );
+
+    DELETE FROM dropdown_options 
+    WHERE category = 'deal_stage' 
+      AND LOWER(option_name) IN ('proposal', 'qualification', 'internal review');
+    
+    DELETE FROM dropdown_options 
+    WHERE category = 'deliverable_type' 
+      AND (LOWER(option_name) LIKE '%pdf proposal%' OR LOWER(option_name) = 'broshure');
+
+    DELETE FROM dropdown_options d1
+    USING dropdown_options d2
+    WHERE d1.category = 'deliverable_type' 
+      AND d2.category = 'deliverable_type'
+      AND LOWER(d1.option_name) = LOWER(d2.option_name)
+      AND d1.id > d2.id;
+  `);
 
   // 3. Insert default automation settings
   await query(`

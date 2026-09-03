@@ -78,11 +78,11 @@ export default function OpportunitiesTab() {
       opportunity_name: '',
       company: '',
       opportunity_type_id: defaultOppType,
-      deliverable_type_id: getOptions('deliverable_type')[0]?.id || '',
+      deliverable_type_id: getOptions('deliverable_type').filter(o => !o.option_name.toLowerCase().includes('pdf'))[0]?.id || '',
       primary_sales_owner: allUsers[2] || allUsers[0] || '',
-      secondary_sales_owners: allUsers[0] || '',
+      secondary_sales_owners: '',
       source_id: '',
-      deal_stage_id: getOptions('deal_stage').find(o => o.option_name === 'Proposal')?.id || getOptions('deal_stage')[0]?.id || '',
+      deal_stage_id: getOptions('deal_stage').find(o => o.option_name === 'Discovery')?.id || getOptions('deal_stage')[0]?.id || '',
       priority_id: getOptions('priority').find(o => o.option_name === 'Medium')?.id || '',
       contract_tenure: 12,
       win_probability: 50,
@@ -109,7 +109,7 @@ export default function OpportunitiesTab() {
       opportunity_type_id: opp.opportunity_type_id || '',
       deliverable_type_id: opp.deliverable_type_id || '',
       primary_sales_owner: opp.primary_sales_owner || '',
-      secondary_sales_owners: opp.secondary_sales_owners || '',
+      secondary_sales_owners: opp.secondary_sales_owners || opp.secondary_sales_owner || '',
       source_id: opp.source_id || '',
       deal_stage_id: opp.deal_stage_id || '',
       priority_id: opp.priority_id || '',
@@ -363,9 +363,11 @@ export default function OpportunitiesTab() {
                         onChange={handleInputChange}
                         required
                       >
-                        {getOptions('deliverable_type').map(opt => (
-                          <option key={opt.id} value={opt.id}>{opt.option_name}</option>
-                        ))}
+                        {getOptions('deliverable_type')
+                          .filter(opt => !opt.option_name.toLowerCase().includes('pdf'))
+                          .map(opt => (
+                            <option key={opt.id} value={opt.id}>{opt.option_name}</option>
+                          ))}
                       </select>
                     </div>
 
@@ -407,9 +409,8 @@ export default function OpportunitiesTab() {
                     <StaffMultiSelect
                       label="Secondary Sales Owners"
                       allUsers={allUsers}
-                      selectedUsers={formData.secondary_sales_owners ? formData.secondary_sales_owners.split(',').map(s => s.trim()).filter(Boolean) : []}
-                      onChange={(updatedList) => setFormData(prev => ({ ...prev, secondary_sales_owners: updatedList.join(', ') }))}
-                      formatUserName={formatUserName}
+                      value={formData.secondary_sales_owners}
+                      onChange={(updatedList) => setFormData(prev => ({ ...prev, secondary_sales_owners: Array.isArray(updatedList) ? updatedList.join(', ') : updatedList }))}
                       placeholder="Select additional sales owners..."
                     />
 
@@ -450,9 +451,8 @@ export default function OpportunitiesTab() {
                     <StaffMultiSelect
                       label="Supporting Presales Team"
                       allUsers={allUsers}
-                      selectedUsers={formData.supporting_presales_members ? formData.supporting_presales_members.split(',').map(s => s.trim()).filter(Boolean) : []}
-                      onChange={(updatedList) => setFormData(prev => ({ ...prev, supporting_presales_members: updatedList.join(', ') }))}
-                      formatUserName={formatUserName}
+                      value={formData.supporting_presales_members}
+                      onChange={(updatedList) => setFormData(prev => ({ ...prev, supporting_presales_members: Array.isArray(updatedList) ? updatedList.join(', ') : updatedList }))}
                       placeholder="Select supporting engineers & architects..."
                     />
 

@@ -7,6 +7,7 @@ export default function StaffMultiSelect({
   label,
   value,
   selectedValues,
+  selectedUsers,
   onChange,
   allUsers = [],
   options = [],
@@ -26,14 +27,16 @@ export default function StaffMultiSelect({
 
   // Normalize selected items into an array of string usernames
   let selectedList = [];
-  if (selectedValues !== undefined && selectedValues !== null) {
-    selectedList = Array.isArray(selectedValues)
-      ? selectedValues
-      : String(selectedValues).split(',').map(s => s.trim()).filter(Boolean);
-  } else if (value !== undefined && value !== null) {
-    selectedList = Array.isArray(value)
-      ? value
-      : String(value).split(',').map(s => s.trim()).filter(Boolean);
+  const rawSelection = selectedValues !== undefined && selectedValues !== null
+    ? selectedValues
+    : selectedUsers !== undefined && selectedUsers !== null
+    ? selectedUsers
+    : value;
+
+  if (rawSelection !== undefined && rawSelection !== null) {
+    selectedList = Array.isArray(rawSelection)
+      ? rawSelection
+      : String(rawSelection).split(',').map(s => s.trim()).filter(Boolean);
   }
 
   const toggleUser = (user) => {

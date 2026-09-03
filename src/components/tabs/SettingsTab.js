@@ -4,11 +4,10 @@ import React, { useState } from 'react';
 import { useApp } from '@/context/AppContext';
 import ResourceProfilesTab from './ResourceProfilesTab';
 import AdminTab from './AdminTab';
-import AuditLogTab from './AuditLogTab';
 
 export default function SettingsTab() {
   const { userRole } = useApp();
-  const [activeSubTab, setActiveSubTab] = useState('users'); // 'users' | 'admin' | 'audit'
+  const [activeSubTab, setActiveSubTab] = useState('users'); // 'users' | 'admin'
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -36,14 +35,6 @@ export default function SettingsTab() {
           >
             ⚙️ Admin Console {userRole !== 'Admin' && '🔒'}
           </button>
-          {userRole === 'Admin' && (
-            <button
-              onClick={() => setActiveSubTab('audit')}
-              className={`tab-item ${activeSubTab === 'audit' ? 'active' : ''}`}
-            >
-              🛡️ Audit Log
-            </button>
-          )}
         </div>
       </div>
 
@@ -73,8 +64,6 @@ export default function SettingsTab() {
           </div>
         )
       )}
-
-      {activeSubTab === 'audit' && <AuditLogTab />}
 
     </div>
   );

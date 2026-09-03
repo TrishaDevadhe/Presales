@@ -8,6 +8,13 @@ export async function GET(request) {
     const category = searchParams.get('category');
     const activeOnly = searchParams.get('activeOnly') !== 'false';
 
+    // Auto-clean any unwanted PDF or deleted deal stage options from DB
+    await query(`
+      DELETE FROM dropdown_options 
+      WHERE (category = 'deliverable_type' AND LOWER(option_name) LIKE '%pdf%')
+         OR (category = 'deal_stage' AND LOWER(option_name) IN ('proposal', 'qualification', 'internal review'));
+    `).catch(() => {});
+
     let sql = 'SELECT * FROM dropdown_options';
     const params = [];
 
@@ -27,7 +34,13 @@ export async function GET(request) {
     sql += ' ORDER BY category ASC, sort_order ASC, option_name ASC';
 
     const result = await query(sql, params);
-    return NextResponse.json(result.rows);
+    const filteredRows = (result.rows || []).filter(o => {
+      if (o.category === 'deliverable_type' && o.option_name.toLowerCase().includes('pdf')) return false;
+      if (o.category === 'deal_stage' && ['proposal', 'qualification', 'internal review'].includes(o.option_name.toLowerCase())) return false;
+      return true;
+    });
+
+    return NextResponse.json(filteredRows);
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -134,6 +147,53 @@ export async function PUT(request) {
     }
 
     return NextResponse.json(updatedOpt);
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+// DELETE a dropdown option
+export async function DELETE(request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    let id = searchParams.get('id');
+    if (!id) {
+      const body = await request.json().catch(() => ({}));
+      id = body.id;
+    }
+
+    if (!id) {
+      return NextResponse.json({ error: 'Option ID is required for deletion' }, { status: 400 });
+    }
+
+    const existingRes = await query('SELECT * FROM dropdown_options WHERE id = $1', [id]);
+    const existing = existingRes.rows[0];
+
+    if (!existing) {
+      return NextResponse.json({ error: 'Option not found' }, { status: 404 });
+    }
+
+    await query('DELETE FROM dropdown_options WHERE id = $1', [id]);
+
+    try {
+      const { logActivity } = await import('@/lib/auditLogger');
+      const realUser = request.headers.get('x-real-user') || 'admin';
+      const actingAsUser = request.headers.get('x-acting-as-user') || null;
+
+      await logActivity({
+        real_user_id: realUser,
+        acting_as_user_id: actingAsUser,
+        entity_type: 'Admin Config',
+        entity_id: parseInt(id, 10),
+        entity_title: `Picklist Option (${existing.category}): ${existing.option_name}`,
+        action_type: 'Deleted',
+        summary_text: `Deleted picklist option in category '${existing.category}': ${existing.option_name}`
+      });
+    } catch (e) {
+      console.error('Audit logging failed for dropdown option deletion:', e);
+    }
+
+    return NextResponse.json({ success: true, message: 'Dropdown option deleted successfully' });
   } catch (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

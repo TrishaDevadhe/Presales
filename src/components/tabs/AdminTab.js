@@ -154,6 +154,30 @@ export default function AdminTab() {
     }
   };
 
+  const handleDropdownDelete = async (optId, optName) => {
+    const confirmDelete = await showConfirm(
+      `Are you sure you want to permanently delete the option "${optName}"?`,
+      'Confirm Option Deletion'
+    );
+    if (!confirmDelete) return;
+
+    try {
+      const res = await fetch(`/api/dropdowns?id=${optId}`, {
+        method: 'DELETE'
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to delete option');
+      }
+
+      setIsDropdownModalOpen(false);
+      refreshDropdowns();
+      showToast(`✓ Dropdown option "${optName}" deleted successfully!`, 'success');
+    } catch (err) {
+      showAlert(err.message, 'Error', 'danger');
+    }
+  };
+
   // -- TASK TEMPLATES HANDLERS --
   const openTemplateCreate = () => {
     setIsTemplateEdit(false);
@@ -347,9 +371,14 @@ export default function AdminTab() {
                         </span>
                       </td>
                       <td style={{ textAlign: 'right' }}>
-                        <button className="btn btn-secondary" style={{ padding: '0.25rem 0.55rem', fontSize: '0.78rem' }} onClick={() => openDropdownEdit(opt)}>
-                          Modify
-                        </button>
+                        <div style={{ display: 'inline-flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
+                          <button className="btn btn-secondary" style={{ padding: '0.25rem 0.55rem', fontSize: '0.78rem' }} onClick={() => openDropdownEdit(opt)}>
+                            Modify
+                          </button>
+                          <button className="btn btn-secondary" style={{ padding: '0.25rem 0.55rem', fontSize: '0.78rem', color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)' }} onClick={() => handleDropdownDelete(opt.id, opt.option_name)}>
+                            🗑️ Delete
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -610,9 +639,21 @@ export default function AdminTab() {
                 </div>
               </div>
 
-              <div className="form-actions">
-                <button type="button" className="btn btn-secondary" onClick={() => setIsDropdownModalOpen(false)}>Cancel</button>
-                <button type="submit" className="btn btn-pill-cobalt">⚡ Save Option</button>
+              <div className="form-actions" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                {isDropdownEdit ? (
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    style={{ color: '#ef4444', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+                    onClick={() => handleDropdownDelete(selectedDropdownOpt.id, selectedDropdownOpt.option_name)}
+                  >
+                    🗑️ Delete Option
+                  </button>
+                ) : <div />}
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <button type="button" className="btn btn-secondary" onClick={() => setIsDropdownModalOpen(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-pill-cobalt">⚡ Save Option</button>
+                </div>
               </div>
 
             </form>

@@ -157,7 +157,12 @@ export function AppProvider({ children }) {
   // Filter dropdowns helper
   const getOptions = (category) => {
     return dropdownOptions
-      .filter(o => o.category === category && o.active === true)
+      .filter(o => {
+        if (o.category !== category || o.active !== true) return false;
+        if (category === 'deliverable_type' && o.option_name.toLowerCase().includes('pdf')) return false;
+        if (category === 'deal_stage' && ['proposal', 'qualification', 'internal review'].includes(o.option_name.toLowerCase())) return false;
+        return true;
+      })
       .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || a.option_name.localeCompare(b.option_name))
       .map(o => ({
         ...o,
@@ -168,7 +173,12 @@ export function AppProvider({ children }) {
   // Include inactive for edits
   const getAllOptions = (category) => {
     return dropdownOptions
-      .filter(o => o.category === category)
+      .filter(o => {
+        if (o.category !== category) return false;
+        if (category === 'deliverable_type' && o.option_name.toLowerCase().includes('pdf')) return false;
+        if (category === 'deal_stage' && ['proposal', 'qualification', 'internal review'].includes(o.option_name.toLowerCase())) return false;
+        return true;
+      })
       .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0) || a.option_name.localeCompare(b.option_name))
       .map(o => ({
         ...o,
