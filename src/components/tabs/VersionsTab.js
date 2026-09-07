@@ -5,7 +5,7 @@ import { useApp } from '@/context/AppContext';
 import { isUserAssociatedWithOpp, isUserAssociatedWithTask } from '@/lib/userAssociation';
 
 export default function VersionsTab() {
-  const { currentUser, userRole, allUsers, getOptions, getOptionBadgeStyle, formatUserName, showToast, showAlert, showConfirm } = useApp();
+  const { currentUser, userRole, allUsers, getOptions, getOptionBadgeStyle, formatUserName, showToast, showAlert, showConfirm, globalSearchQuery } = useApp();
   const [versions, setVersions] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [opportunities, setOpportunities] = useState([]);
@@ -288,6 +288,12 @@ export default function VersionsTab() {
     const status = (task.status_name || '').toLowerCase();
     if (status === 'not started' || status === 'blocked' || status === 'cancelled' || status === 'terminated') return false;
 
+    if (globalSearchQuery) {
+      const q = globalSearchQuery.toLowerCase();
+      const matchTitle = task.title && task.title.toLowerCase().includes(q);
+      const matchOpp = task.opportunity_name && task.opportunity_name.toLowerCase().includes(q);
+      if (!matchTitle && !matchOpp) return false;
+    }
     return true;
   });
 
@@ -297,6 +303,13 @@ export default function VersionsTab() {
     if (userRole !== 'Admin' && opp && !isUserAssociatedWithOpp(opp, currentUser)) return false;
     if (filterOpportunity && String(ver.opportunity_id) !== String(filterOpportunity)) return false;
     if (filterPerson && (ver.reviewed_by || '').toLowerCase() !== filterPerson.toLowerCase()) return false;
+    
+    if (globalSearchQuery) {
+      const q = globalSearchQuery.toLowerCase();
+      const matchSummary = ver.change_summary && ver.change_summary.toLowerCase().includes(q);
+      const matchTrigger = ver.trigger_source_name && ver.trigger_source_name.toLowerCase().includes(q);
+      if (!matchSummary && !matchTrigger) return false;
+    }
     return true;
   });
 
@@ -406,7 +419,7 @@ export default function VersionsTab() {
             className={`tab-item ${activeTab === 'revision-logs' ? 'active' : ''}`}
             onClick={() => setActiveTab('revision-logs')}
           >
-            <span>🔄</span> Revision Logs ({filteredRevisionLogs.length})
+            <span>🔄</span> Revision ({filteredRevisionLogs.length})
           </button>
         </div>
       </div>

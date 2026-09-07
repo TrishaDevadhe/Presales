@@ -54,7 +54,9 @@ export async function POST(request) {
       supporting_presales_members,
       summary,
       risks,
-      special_instructions
+      special_instructions,
+      tcv_amount,
+      tcv_currency
     } = body;
 
     // Validation
@@ -82,8 +84,9 @@ export async function POST(request) {
         opportunity_name, company, opportunity_type_id, deliverable_type_id, primary_sales_owner, secondary_sales_owners,
         source_id, deal_stage_id, priority_id, estimated_deal_value, contract_tenure,
         win_probability, complexity_id, received_date, target_submission_date, internal_review_date,
-        presales_owner, supporting_presales_members, summary, risks, special_instructions
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+        presales_owner, supporting_presales_members, summary, risks, special_instructions,
+        tcv_amount, tcv_currency
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
       RETURNING *`,
       [
         opportunity_name,
@@ -95,7 +98,7 @@ export async function POST(request) {
         source_id || null,
         deal_stage_id || null,
         priority_id || null,
-        parseFloat(estimated_deal_value) || 0.0,
+        parseFloat(estimated_deal_value) || parseFloat(tcv_amount) || 0.0,
         parseInt(contract_tenure, 10) || 0,
         parseInt(win_probability, 10) || 0,
         complexity_id || null,
@@ -106,7 +109,9 @@ export async function POST(request) {
         supporting_presales_members || '',
         summary || '',
         risks || '',
-        special_instructions || ''
+        special_instructions || '',
+        parseFloat(tcv_amount) || 0.0,
+        tcv_currency || 'USD'
       ]
     );
 

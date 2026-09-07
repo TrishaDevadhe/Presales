@@ -10,7 +10,7 @@ import StaffMultiSelect from '../StaffMultiSelect';
 import RecordHistoryView from '../RecordHistoryView';
 
 export default function OpportunitiesTab() {
-  const { currentUser, userRole, allUsers, getOptions, getOptionBadgeStyle, formatUserName, showToast, showAlert, showConfirm } = useApp();
+  const { currentUser, userRole, allUsers, getOptions, getOptionBadgeStyle, formatUserName, showToast, showAlert, showConfirm, globalSearchQuery } = useApp();
   const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -42,7 +42,9 @@ export default function OpportunitiesTab() {
     supporting_presales_members: '',
     summary: '',
     risks: '',
-    special_instructions: ''
+    special_instructions: '',
+    tcv_amount: 0,
+    tcv_currency: 'USD'
   });
 
   const fetchOpportunities = async () => {
@@ -94,7 +96,9 @@ export default function OpportunitiesTab() {
       supporting_presales_members: '',
       summary: '',
       risks: '',
-      special_instructions: ''
+      special_instructions: '',
+      tcv_amount: 0,
+      tcv_currency: 'USD'
     });
     setIsModalOpen(true);
   };
@@ -123,9 +127,19 @@ export default function OpportunitiesTab() {
       supporting_presales_members: opp.supporting_presales_members || '',
       summary: opp.summary || '',
       risks: opp.risks || '',
-      special_instructions: opp.special_instructions || ''
+      special_instructions: opp.special_instructions || '',
+      tcv_amount: opp.tcv_amount !== undefined && opp.tcv_amount !== null ? opp.tcv_amount : (opp.estimated_deal_value || 0),
+      tcv_currency: opp.tcv_currency || 'USD'
     });
     setIsModalOpen(true);
+  };
+
+  const formatTCV = (amount, currency = 'USD') => {
+    const num = parseFloat(amount);
+    if (isNaN(num) || num === 0) return '—';
+    const symbols = { USD: '$', EUR: '€', GBP: '£', INR: '₹', AUD: 'A$', CAD: 'C$', SGD: 'S$', JPY: '¥', AED: 'AED ' };
+    const symbol = symbols[currency] || `${currency} `;
+    return `${symbol}${num.toLocaleString()}`;
   };
 
   const handleInputChange = (e) => {
@@ -176,10 +190,23 @@ export default function OpportunitiesTab() {
     }
   };
 
-  // Filter opportunities for non-admin users based on association
-  const displayOpportunities = userRole === 'Admin'
+  // Filter opportunities for non-admin users based on association + global search query
+  const userFilteredOpps = userRole === 'Admin'
     ? opportunities
     : opportunities.filter(opp => isUserAssociatedWithOpp(opp, currentUser));
+
+  const displayOpportunities = userFilteredOpps.filter(opp => {
+    if (!globalSearchQuery) return true;
+    const q = globalSearchQuery.toLowerCase();
+    return (
+      (opp.opportunity_name && opp.opportunity_name.toLowerCase().includes(q)) ||
+      (opp.company && opp.company.toLowerCase().includes(q)) ||
+      (opp.opportunity_type_name && opp.opportunity_type_name.toLowerCase().includes(q)) ||
+      (opp.deliverable_type_name && opp.deliverable_type_name.toLowerCase().includes(q)) ||
+      (opp.presales_owner && opp.presales_owner.toLowerCase().includes(q)) ||
+      (opp.primary_sales_owner && opp.primary_sales_owner.toLowerCase().includes(q))
+    );
+  });
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -214,6 +241,7 @@ export default function OpportunitiesTab() {
                   <th>Type</th>
                   <th>Deliverable Type</th>
                   <th>Stage</th>
+                  <th>TCV</th>
                   <th>Due Date</th>
                   <th>Presales Owner</th>
                   <th style={{ textAlign: 'right' }}>Actions</th>
@@ -244,6 +272,9 @@ export default function OpportunitiesTab() {
                       <span className="badge" style={getOptionBadgeStyle('deal_stage', opp.deal_stage_name)}>
                         {opp.deal_stage_name || 'Proposal'}
                       </span>
+                    </td>
+                    <td style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
+                      {formatTCV(opp.tcv_amount || opp.estimated_deal_value, opp.tcv_currency)}
                     </td>
                     <td style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
                       {opp.target_submission_date ? opp.target_submission_date.split('T')[0] : 'N/A'}
@@ -467,6 +498,41 @@ export default function OpportunitiesTab() {
                     </span>
                   </div>
                   <div className="form-grid-3">
+
+                    {/* TCV (Total Contract Value) */}
+                    <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                      <label className="form-label">TCV (Total Contract Value)</label>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <select
+                          name="tcv_currency"
+                          className="form-control form-select"
+                          style={{ width: '115px', flexShrink: 0 }}
+                          value={formData.tcv_currency || 'USD'}
+                          onChange={handleInputChange}
+                        >
+                          <option value="USD">USD ($)</option>
+                          <option value="EUR">EUR (€)</option>
+                          <option value="GBP">GBP (£)</option>
+                          <option value="INR">INR (₹)</option>
+                          <option value="AUD">AUD ($)</option>
+                          <option value="CAD">CAD ($)</option>
+                          <option value="SGD">SGD ($)</option>
+                          <option value="JPY">JPY (¥)</option>
+                          <option value="AED">AED (AED)</option>
+                        </select>
+                        <input
+                          type="number"
+                          min="0"
+                          step="any"
+                          name="tcv_amount"
+                          className="form-control"
+                          placeholder="Enter TCV amount (e.g. 150000)"
+                          value={formData.tcv_amount || ''}
+                          onChange={handleInputChange}
+                          style={{ flex: 1 }}
+                        />
+                      </div>
+                    </div>
 
                     <div className="form-group">
                       <label className="form-label">Priority</label>

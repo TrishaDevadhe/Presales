@@ -18,7 +18,7 @@ import {
 } from 'recharts';
 
 export default function DashboardTab() {
-  const { currentUser, getOptionColor, getOptionBadgeStyle, formatUserName } = useApp();
+  const { currentUser, getOptionColor, getOptionBadgeStyle, formatUserName, globalSearchQuery } = useApp();
 
   // Raw fetched datasets
   const [opportunities, setOpportunities] = useState([]);
@@ -199,9 +199,9 @@ export default function DashboardTab() {
             <User size={26} strokeWidth={2.2} />
           </div>
           <div>
-            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
               Welcome back, {userDisplayName}!
-            </h2>
+            </div>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0.2rem 0 0 0' }}>
               Personal Workload, Capacity & Performance Analytics Overview
             </p>

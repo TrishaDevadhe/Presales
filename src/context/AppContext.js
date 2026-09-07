@@ -11,6 +11,7 @@ export function AppProvider({ children }) {
   const [dropdownOptions, setDropdownOptions] = useState([]);
   const [resourceProfiles, setResourceProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [globalSearchQuery, setGlobalSearchQuery] = useState('');
 
   // App-Themed Toast & Modal Dialog States
   const [toast, setToast] = useState(null);
@@ -435,7 +436,9 @@ export function AppProvider({ children }) {
         showToast,
         showAlert,
         showConfirm,
-        showPrompt
+        showPrompt,
+        globalSearchQuery,
+        setGlobalSearchQuery
       }}
     >
       {children}

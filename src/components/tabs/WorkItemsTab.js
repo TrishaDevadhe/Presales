@@ -8,7 +8,7 @@ import RichTextEditor from '../RichTextEditor';
 import RecordHistoryView from '../RecordHistoryView';
 
 export default function WorkItemsTab() {
-  const { currentUser, userRole, allUsers, getOptions, resourceProfiles, getOptionBadgeStyle, formatUserName, showToast, showAlert, showConfirm } = useApp();
+  const { currentUser, userRole, allUsers, getOptions, resourceProfiles, getOptionBadgeStyle, formatUserName, showToast, showAlert, showConfirm, globalSearchQuery } = useApp();
   const [tasks, setTasks] = useState([]);
   const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -392,6 +392,14 @@ export default function WorkItemsTab() {
     if (userRole !== 'Admin' && !isUserAssociatedWithTask(t, currentUser, opportunities)) return false;
     if (filterOpp && t.opportunity_id !== parseInt(filterOpp, 10)) return false;
     if (filterUser && t.assigned_to !== filterUser) return false;
+    if (globalSearchQuery) {
+      const q = globalSearchQuery.toLowerCase();
+      const matchTitle = t.title && t.title.toLowerCase().includes(q);
+      const matchDesc = t.description && t.description.toLowerCase().includes(q);
+      const matchAssigned = t.assigned_to && t.assigned_to.toLowerCase().includes(q);
+      const matchCategory = t.work_category_name && t.work_category_name.toLowerCase().includes(q);
+      if (!matchTitle && !matchDesc && !matchAssigned && !matchCategory) return false;
+    }
     return true;
   });
 

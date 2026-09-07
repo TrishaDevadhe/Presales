@@ -6,7 +6,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
 import LoaderSpinner from '@/components/LoaderSpinner';
 import LoginPage from '@/components/LoginPage';
-import { Sun, Moon, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Sun, Moon, LogOut, ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
 
 // Import Tabs
 import DashboardTab from '@/components/tabs/DashboardTab';
@@ -19,7 +19,7 @@ import SettingsTab from '@/components/tabs/SettingsTab';
 import EditProfileModal from '@/components/EditProfileModal';
 
 export default function Home() {
-  const { currentUser, userRole, isLoggedIn, logout, handleUserChange, loading, allUsers, resourceProfiles } = useApp();
+  const { currentUser, userRole, isLoggedIn, logout, handleUserChange, loading, allUsers, resourceProfiles, globalSearchQuery, setGlobalSearchQuery } = useApp();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [theme, setTheme] = useState('glass-light');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -179,21 +179,21 @@ export default function Home() {
         <div style={{ position: 'fixed', top: '1.5rem', right: '1.5rem', zIndex: 100 }}>
           <button
             onClick={toggleTheme}
-            className="btn btn-secondary"
-            style={{
-              fontSize: '0.82rem',
-              borderRadius: 'var(--radius-pill)',
-              padding: '0.5rem 1rem',
-              boxShadow: 'var(--shadow-md)'
-            }}
+            className="top-theme-toggle-switch"
+            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            aria-label="Toggle Theme"
           >
-            {theme === 'glass-light' ? '🌙 Obsidian Dark' : '💎 Glass Tech'}
+            <span className={`toggle-icon-wrap ${theme === 'dark' ? 'active-dark' : 'active-light'}`}>
+              {theme === 'dark' ? <Moon size={14} /> : <Sun size={14} />}
+            </span>
           </button>
         </div>
         <LoginPage />
       </>
     );
   }
+
+  const isSettingsPage = activeTab === 'settings' || activeTab === 'profiles' || activeTab === 'admin';
 
   return (
     <div className="app-container">
@@ -207,7 +207,7 @@ export default function Home() {
             <div className="brand-logo-icon">N</div>
             {!isSidebarCollapsed && (
               <div className="brand-details">
-                <h1 className="brand-title">NetSales</h1>
+                <span className="brand-title" style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)' }}>NetSales</span>
                 <span className="brand-subtitle">NetSales</span>
               </div>
             )}
@@ -276,12 +276,12 @@ export default function Home() {
             <button
               onClick={() => setActiveTab('versions')}
               className={`nav-item-link ${activeTab === 'versions' ? 'active' : ''}`}
-              title={isSidebarCollapsed ? undefined : "Revision Logs"}
-              data-tooltip="Revision Logs"
+              title={isSidebarCollapsed ? undefined : "Revision"}
+              data-tooltip="Revision"
               style={{ width: '100%', background: 'transparent', textAlign: 'left', cursor: 'pointer' }}
             >
               <span className="nav-item-icon">🔄</span>
-              {!isSidebarCollapsed && <span className="nav-item-text">Revision Logs</span>}
+              {!isSidebarCollapsed && <span className="nav-item-text">Revision</span>}
             </button>
           </li>
           <li>
@@ -312,28 +312,8 @@ export default function Home() {
           )}
         </ul>
 
-        {/* Theme Switcher & User Footer */}
+        {/* User Footer */}
         <div className="sidebar-footer">
-          {/* Minimalistic Theme Switch Toggle */}
-          <div
-            className="minimal-theme-toggle"
-            onClick={toggleTheme}
-            data-tooltip={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            title={isSidebarCollapsed ? undefined : (theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode')}
-          >
-            <div className="toggle-info">
-              {theme === 'dark' ? <Moon size={15} className="toggle-icon" /> : <Sun size={15} className="toggle-icon" />}
-              {!isSidebarCollapsed && (
-                <span className="toggle-text">{theme === 'dark' ? 'Dark Mode' : 'Light Mode'}</span>
-              )}
-            </div>
-            {!isSidebarCollapsed && (
-              <div className={`minimal-switch-track ${theme === 'dark' ? 'checked' : ''}`}>
-                <div className="minimal-switch-thumb" />
-              </div>
-            )}
-          </div>
-
           {/* Minimalistic Active User Profile Section */}
           <div
             className="minimal-user-card"
@@ -367,24 +347,51 @@ export default function Home() {
         </div>
       </aside>
 
-      {/* Main Workspace Workspace */}
+      {/* Main Content Workspace */}
       <main className={`main-content ${isSidebarCollapsed ? 'sidebar-collapsed' : ''}`}>
 
-        {/* Header navigation bar */}
-        {activeTab !== 'dashboard' && (
-          <header className="app-header">
-            <div className="header-title-section">
-              <h2 className="header-title">
-                {activeTab === 'opportunities' && 'Opportunities Pipeline'}
-                {activeTab === 'workitems' && 'Work Items & Task Boards'}
-                {activeTab === 'efforts' && 'Workload Effort Logging'}
-                {activeTab === 'versions' && 'Proposal Revision Logs'}
-                {activeTab === 'feedback' && 'Client Feedback Loop'}
-                {(activeTab === 'settings' || activeTab === 'profiles' || activeTab === 'admin') && 'Settings & Administration'}
-              </h2>
-            </div>
-          </header>
-        )}
+        {/* Universal Top Header Bar (Search Bar & Top-Right Theme Toggle) */}
+        <div className="global-top-header">
+          <div className="top-header-left">
+            {!isSettingsPage ? (
+              <div className="global-search-container">
+                <Search size={16} className="search-icon" />
+                <input
+                  type="text"
+                  className="global-search-input"
+                  placeholder="Search across opportunities, tasks, logs..."
+                  value={globalSearchQuery || ''}
+                  onChange={(e) => setGlobalSearchQuery(e.target.value)}
+                />
+                {globalSearchQuery && (
+                  <button
+                    className="clear-search-btn"
+                    onClick={() => setGlobalSearchQuery('')}
+                    title="Clear search"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+            ) : <div style={{ flex: 1 }} />}
+          </div>
+
+          <div className="top-header-right">
+            {/* Redesigned Dark/Light Mode Switch (No text label, just Sun/Moon toggle) */}
+            <button
+              onClick={toggleTheme}
+              className="top-theme-toggle-switch"
+              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+              aria-label="Toggle Theme"
+            >
+              <div className={`switch-track ${theme === 'dark' ? 'dark-active' : 'light-active'}`}>
+                <div className="switch-thumb">
+                  {theme === 'dark' ? <Moon size={13} className="icon-moon" /> : <Sun size={13} className="icon-sun" />}
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
 
         {/* Active view component */}
         {renderActiveTab()}

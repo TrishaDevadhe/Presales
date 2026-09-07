@@ -55,13 +55,17 @@ export async function initDb() {
       summary TEXT,
       risks TEXT,
       special_instructions TEXT,
+      tcv_amount NUMERIC(15,2) DEFAULT 0.0,
+      tcv_currency VARCHAR(10) DEFAULT 'USD',
       revision_counter INTEGER DEFAULT 0,
       commercial_revision_counter INTEGER DEFAULT 0,
       UNIQUE (company, opportunity_name)
     );
 
-    -- Ensure deliverable_type_id column exists if table was created previously
+    -- Ensure deliverable_type_id, tcv_amount, and tcv_currency columns exist if table was created previously
     ALTER TABLE opportunities ADD COLUMN IF NOT EXISTS deliverable_type_id INTEGER REFERENCES dropdown_options(id) ON DELETE SET NULL;
+    ALTER TABLE opportunities ADD COLUMN IF NOT EXISTS tcv_amount NUMERIC(15,2) DEFAULT 0.0;
+    ALTER TABLE opportunities ADD COLUMN IF NOT EXISTS tcv_currency VARCHAR(10) DEFAULT 'USD';
 
     CREATE TABLE IF NOT EXISTS versions (
       id SERIAL PRIMARY KEY,

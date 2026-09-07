@@ -60,7 +60,9 @@ export async function PUT(request, { params }) {
       supporting_presales_members,
       summary,
       risks,
-      special_instructions
+      special_instructions,
+      tcv_amount,
+      tcv_currency
     } = body;
 
     // Validation
@@ -110,8 +112,10 @@ export async function PUT(request, { params }) {
            supporting_presales_members = $18,
            summary = $19,
            risks = $20,
-           special_instructions = $21
-       WHERE id = $22
+           special_instructions = $21,
+           tcv_amount = $22,
+           tcv_currency = $23
+       WHERE id = $24
        RETURNING *`,
       [
         opportunity_name,
@@ -123,7 +127,7 @@ export async function PUT(request, { params }) {
         source_id || null,
         deal_stage_id || null,
         priority_id || null,
-        parseFloat(estimated_deal_value) || 0.0,
+        parseFloat(estimated_deal_value) || parseFloat(tcv_amount) || 0.0,
         parseInt(contract_tenure, 10) || 0,
         parseInt(win_probability, 10) || 0,
         complexity_id || null,
@@ -135,6 +139,8 @@ export async function PUT(request, { params }) {
         summary || '',
         risks || '',
         special_instructions || '',
+        parseFloat(tcv_amount) || 0.0,
+        tcv_currency || 'USD',
         id
       ]
     );

@@ -141,8 +141,27 @@ const DUMMY_ACCESS_LOGS = [
   }
 ];
 
+const parseUserAgent = (ua) => {
+  if (!ua) return 'Browser Client';
+  let browser = 'Browser';
+  let os = 'Desktop';
+
+  if (ua.includes('Edg/')) browser = 'Edge';
+  else if (ua.includes('Chrome/')) browser = 'Chrome';
+  else if (ua.includes('Safari/')) browser = 'Safari';
+  else if (ua.includes('Firefox/')) browser = 'Firefox';
+
+  if (ua.includes('Windows')) os = 'Windows';
+  else if (ua.includes('Macintosh') || ua.includes('Mac OS')) os = 'macOS';
+  else if (ua.includes('Android')) os = 'Android';
+  else if (ua.includes('iPhone') || ua.includes('iPad')) os = 'iOS';
+  else if (ua.includes('Linux')) os = 'Linux';
+
+  return `${browser} (${os})`;
+};
+
 export default function AuditLogTab() {
-  const { currentUser, userRole, allUsers, formatUserName } = useApp();
+  const { currentUser, userRole, allUsers, formatUserName, globalSearchQuery } = useApp();
 
   const [activeSubTab, setActiveSubTab] = useState('activity'); // 'activity' | 'access'
   const [logs, setLogs] = useState([]);
@@ -282,36 +301,30 @@ export default function AuditLogTab() {
 
   const flaggedFailedUsers = getFailedLoginAlerts();
 
+  const displayLogs = logs.filter(log => {
+    if (!globalSearchQuery) return true;
+    const q = globalSearchQuery.toLowerCase();
+    if (activeSubTab === 'access') {
+      return (
+        (log.username && log.username.toLowerCase().includes(q)) ||
+        (log.event_type && log.event_type.toLowerCase().includes(q)) ||
+        (log.ip_address && log.ip_address.toLowerCase().includes(q)) ||
+        (log.user_agent && log.user_agent.toLowerCase().includes(q)) ||
+        (log.failure_reason && log.failure_reason.toLowerCase().includes(q))
+      );
+    } else {
+      return (
+        (log.real_user_id && log.real_user_id.toLowerCase().includes(q)) ||
+        (log.entity_title && log.entity_title.toLowerCase().includes(q)) ||
+        (log.entity_type && log.entity_type.toLowerCase().includes(q)) ||
+        (log.action_type && log.action_type.toLowerCase().includes(q)) ||
+        (log.summary_text && log.summary_text.toLowerCase().includes(q))
+      );
+    }
+  });
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-
-      {/* PAGE HEADER (Part B: icon badge Danger tint + section-kicker + title) */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        <div
-          className="page-icon-badge"
-          style={{
-            background: 'var(--color-danger-bg)',
-            color: 'var(--color-danger-text)',
-            width: '48px',
-            height: '48px',
-            borderRadius: 'var(--radius-md)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            border: '1px solid rgba(239, 68, 68, 0.25)'
-          }}
-        >
-          <ShieldCheck size={26} />
-        </div>
-        <div>
-          <div className="section-kicker" style={{ color: 'var(--color-danger-text)', fontWeight: 700, fontSize: '0.78rem', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-            System Accountability & Governance
-          </div>
-          <h2 style={{ fontSize: '1.6rem', color: 'var(--text-primary)', fontWeight: 800, margin: 0 }}>
-            Audit Log
-          </h2>
-        </div>
-      </div>
 
       {/* SUB-TABS BAR (.tab-group) */}
       <div className="paper-panel" style={{ padding: '0.6rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
@@ -333,7 +346,7 @@ export default function AuditLogTab() {
         </div>
 
         <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-          Showing <strong>{logs.length}</strong> logged entries
+          Showing <strong>{displayLogs.length}</strong> logged entries
         </div>
       </div>
 
@@ -478,7 +491,7 @@ export default function AuditLogTab() {
           <div className="alert-banner alert-banner-danger" style={{ padding: '1rem' }}>
             {error}
           </div>
-        ) : logs.length === 0 ? (
+        ) : displayLogs.length === 0 ? (
           // Part I Empty States
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4rem 1rem', gap: '0.75rem', color: 'var(--text-muted)' }}>
             {activeSubTab === 'activity' ? <ListChecks size={48} strokeWidth={1.5} /> : <ShieldCheck size={48} strokeWidth={1.5} />}
@@ -502,7 +515,7 @@ export default function AuditLogTab() {
                 </tr>
               </thead>
               <tbody>
-                {logs.map((log) => {
+                {displayLogs.map((log) => {
                   const isExpanded = expandedRowId === log.id;
                   const formattedDate = new Date(log.timestamp).toLocaleString();
                   const hasDiff = log.value_before || log.value_after;
@@ -609,7 +622,7 @@ export default function AuditLogTab() {
                 </tr>
               </thead>
               <tbody>
-                {logs.map((log) => {
+                {displayLogs.map((log) => {
                   const formattedDate = new Date(log.timestamp).toLocaleString();
                   const isFailure = log.event_type === 'Login Failure';
 
@@ -631,8 +644,8 @@ export default function AuditLogTab() {
                       <td style={{ fontSize: '0.83rem', fontFamily: 'monospace', color: 'var(--text-secondary)' }}>
                         {log.ip_address || '127.0.0.1'}
                       </td>
-                      <td style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {log.user_agent || 'Browser Client'}
+                      <td title={log.user_agent || ''} style={{ fontSize: '0.82rem', color: 'var(--text-primary)', fontWeight: 600, maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {parseUserAgent(log.user_agent)}
                       </td>
                       <td style={{ fontSize: '0.83rem', color: 'var(--color-danger-text)', fontWeight: 600 }}>
                         {log.failure_reason || '—'}

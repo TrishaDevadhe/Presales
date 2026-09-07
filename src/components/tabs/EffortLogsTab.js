@@ -5,7 +5,7 @@ import { useApp } from '@/context/AppContext';
 import { isUserAssociatedWithTask, isUserAssociatedWithEffort } from '@/lib/userAssociation';
 
 export default function EffortLogsTab() {
-  const { currentUser, userRole, allUsers, getOptions, getOptionBadgeStyle, formatUserName, showToast, showAlert, showConfirm } = useApp();
+  const { currentUser, userRole, allUsers, getOptions, getOptionBadgeStyle, formatUserName, showToast, showAlert, showConfirm, globalSearchQuery } = useApp();
   const [effortLogs, setEffortLogs] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [opportunities, setOpportunities] = useState([]);
@@ -248,6 +248,13 @@ export default function EffortLogsTab() {
     if (filterPerson && String(task.assigned_to) !== String(filterPerson)) {
       return false;
     }
+    if (globalSearchQuery) {
+      const q = globalSearchQuery.toLowerCase();
+      const matchTitle = task.title && task.title.toLowerCase().includes(q);
+      const matchOpp = task.opportunity_name && task.opportunity_name.toLowerCase().includes(q);
+      const matchAssignee = task.assigned_to && task.assigned_to.toLowerCase().includes(q);
+      if (!matchTitle && !matchOpp && !matchAssignee) return false;
+    }
     return true;
   });
 
@@ -264,6 +271,13 @@ export default function EffortLogsTab() {
     }
     if (filterPerson && String(log.person) !== String(filterPerson)) {
       return false;
+    }
+    if (globalSearchQuery) {
+      const q = globalSearchQuery.toLowerCase();
+      const matchTask = log.task_title && log.task_title.toLowerCase().includes(q);
+      const matchPerson = log.person && log.person.toLowerCase().includes(q);
+      const matchDesc = log.notes && log.notes.toLowerCase().includes(q);
+      if (!matchTask && !matchPerson && !matchDesc) return false;
     }
     return true;
   });

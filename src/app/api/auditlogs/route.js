@@ -106,8 +106,22 @@ export async function POST(req) {
     const body = await req.json();
     const { type, ...payload } = body;
 
+    // Extract real client IP from HTTP headers
+    const forwarded = req.headers.get('x-forwarded-for');
+    const realIp = req.headers.get('x-real-ip');
+    const cfIp = req.headers.get('cf-connecting-ip');
+    const extractedIp = (forwarded ? forwarded.split(',')[0].trim() : (realIp || cfIp)) || '127.0.0.1';
+
+    // Extract user agent header from request
+    const headerUserAgent = req.headers.get('user-agent');
+    const userAgent = headerUserAgent || payload.user_agent || 'Browser Client';
+
     if (type === 'access') {
-      await logAccess(payload);
+      await logAccess({
+        ...payload,
+        ip_address: payload.ip_address && payload.ip_address !== '127.0.0.1' ? payload.ip_address : extractedIp,
+        user_agent: userAgent
+      });
     } else {
       await logActivity(payload);
     }
