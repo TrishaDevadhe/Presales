@@ -193,7 +193,7 @@ export default function Home() {
     );
   }
 
-  const isSettingsPage = activeTab === 'settings' || activeTab === 'profiles' || activeTab === 'admin';
+  const showSearchBar = activeTab !== 'dashboard' && activeTab !== 'settings' && activeTab !== 'profiles' && activeTab !== 'admin';
 
   return (
     <div className="app-container">
@@ -353,7 +353,7 @@ export default function Home() {
         {/* Universal Top Header Bar (Search Bar & Top-Right Theme Toggle) */}
         <div className="global-top-header">
           <div className="top-header-left">
-            {!isSettingsPage ? (
+            {showSearchBar ? (
               <div className="global-search-container">
                 <Search size={16} className="search-icon" />
                 <input

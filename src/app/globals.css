@@ -2730,6 +2730,66 @@ html, body {
   }
 }
 
+/* ==========================================================================
+   ADAPTIVE RESPONSIVE RESOLUTION ENGINE (1366x768 -> 4K+)
+   ========================================================================== */
+
+/* Standard Laptop Resolution Optimization (1366px to 1440px width) */
+@media (max-width: 1440px) {
+  .sidebar {
+    width: 230px !important;
+  }
+  .main-content {
+    margin-left: 230px !important;
+    width: calc(100% - 230px) !important;
+    padding: 1.25rem 1.5rem !important;
+    gap: 1.25rem !important;
+  }
+  .main-content.sidebar-collapsed {
+    margin-left: 80px !important;
+    width: calc(100% - 80px) !important;
+  }
+  .paper-panel, .glass-panel, .glass-card-iso {
+    padding: 1.1rem 1.25rem !important;
+  }
+  .custom-table th {
+    padding: 0.65rem 0.85rem !important;
+    font-size: 0.78rem !important;
+  }
+  .custom-table td {
+    padding: 0.65rem 0.85rem !important;
+    font-size: 0.84rem !important;
+  }
+}
+
+/* Compact Laptop Displays (e.g. 1366x768, 1280x800) */
+@media (max-width: 1366px) {
+  .main-content {
+    padding: 1rem 1.25rem !important;
+    gap: 1rem !important;
+  }
+  .form-control, .form-select {
+    padding: 0.4rem 0.7rem !important;
+    font-size: 0.84rem !important;
+  }
+  .btn {
+    padding: 0.4rem 0.85rem !important;
+    font-size: 0.82rem !important;
+  }
+}
+
+/* Large Displays & 4K Monitors (1920px and above) */
+@media (min-width: 1920px) {
+  .main-content {
+    max-width: 100% !important;
+    padding: 2rem 3rem !important;
+    gap: 2rem !important;
+  }
+  .global-search-container {
+    max-width: 600px !important;
+  }
+}
+
 
 
 
