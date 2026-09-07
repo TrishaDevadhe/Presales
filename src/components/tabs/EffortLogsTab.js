@@ -149,6 +149,26 @@ export default function EffortLogsTab() {
     setIsModalOpen(true);
   };
 
+  // Open general modal for logging hours (unlocked task selection)
+  const openGeneralLogModal = () => {
+    setError(null);
+    setLiveVarianceWarning(null);
+    setIsLockedTaskMode(false);
+    setLockedTask(null);
+    setSelectedOppId('');
+    setFormData({
+      work_item_id: tasks[0]?.id || '',
+      person: currentUser,
+      date: getTodayDateString(),
+      hours_logged: 2,
+      effort_type_id: getOptions('effort_type')[0]?.id || '',
+      activity_type_id: getOptions('work_category')[0]?.id || '',
+      notes: '',
+      mark_completed: false
+    });
+    setIsModalOpen(true);
+  };
+
   const handleOppChange = (e) => {
     const oppId = e.target.value;
     setSelectedOppId(oppId);
@@ -283,23 +303,28 @@ export default function EffortLogsTab() {
   });
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
       
-
+      {/* Top action controls */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+        <button className="btn btn-primary" onClick={openGeneralLogModal}>
+          + Log Hours
+        </button>
+      </div>
 
       {/* Filter Bar */}
-      <div className="paper-panel" style={{ padding: '1rem 1.25rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-        <div style={{ fontWeight: 600, fontSize: '0.88rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.4rem', minWidth: '100px' }}>
-          <span>🔍</span> Filter Views:
+      <div className="paper-panel" style={{ padding: '0.85rem 1.25rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ fontWeight: 600, fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.4rem', minWidth: '90px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+          Filters:
         </div>
 
         {/* Filter by Opportunity */}
         <div style={{ flex: '1', minWidth: '200px' }}>
           <select
-            className="form-control form-select"
+            className="select-control"
             value={filterOpportunity}
             onChange={(e) => setFilterOpportunity(e.target.value)}
-            style={{ fontSize: '0.88rem', padding: '0.45rem 0.8rem' }}
+            style={{ width: '100%' }}
           >
             <option value="">All Opportunities</option>
             {opportunities.map(opp => (
@@ -313,10 +338,10 @@ export default function EffortLogsTab() {
         {/* Filter by Deliverable Type */}
         <div style={{ flex: '1', minWidth: '200px' }}>
           <select
-            className="form-control form-select"
+            className="select-control"
             value={filterDeliverableType}
             onChange={(e) => setFilterDeliverableType(e.target.value)}
-            style={{ fontSize: '0.88rem', padding: '0.45rem 0.8rem' }}
+            style={{ width: '100%' }}
           >
             <option value="">All Deliverable Types</option>
             {getOptions('deliverable_type').map(dt => (
@@ -330,10 +355,10 @@ export default function EffortLogsTab() {
         {/* Filter by Team Member */}
         <div style={{ flex: '1', minWidth: '200px' }}>
           <select
-            className="form-control form-select"
+            className="select-control"
             value={filterPerson}
             onChange={(e) => setFilterPerson(e.target.value)}
-            style={{ fontSize: '0.88rem', padding: '0.45rem 0.8rem' }}
+            style={{ width: '100%' }}
           >
             <option value="">All Team Members</option>
             {allUsers.map(u => (
@@ -352,7 +377,7 @@ export default function EffortLogsTab() {
               setFilterDeliverableType('');
               setFilterPerson('');
             }}
-            style={{ fontSize: '0.82rem', whiteSpace: 'nowrap' }}
+            style={{ whiteSpace: 'nowrap' }}
           >
             Reset Filters
           </button>
@@ -403,8 +428,8 @@ export default function EffortLogsTab() {
                     <th>Work Category</th>
                     <th>Assignee</th>
                     <th>Due Date</th>
-                    <th>Est. Hours</th>
-                    <th>Logged Hours</th>
+                    <th className="num-col">Est. Hours</th>
+                    <th className="num-col">Logged Hours</th>
                     <th style={{ minWidth: '140px' }}>Burn Progress</th>
                     <th>Status</th>
                   </tr>
@@ -439,7 +464,7 @@ export default function EffortLogsTab() {
                           </div>
                         </td>
                         <td>
-                          <span className="badge" style={getOptionBadgeStyle('work_category', task.work_category_name)}>
+                          <span className="badge badge-categorical" style={getOptionBadgeStyle('work_category', task.work_category_name)}>
                             {task.work_category_name || 'General'}
                           </span>
                         </td>
@@ -451,11 +476,11 @@ export default function EffortLogsTab() {
                         <td style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
                           {task.due_date ? task.due_date.split('T')[0] : '-'}
                         </td>
-                        <td style={{ fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
+                        <td className="num-col" style={{ fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
                           {estHours > 0 ? `${estHours} hrs` : '-'}
                         </td>
-                        <td style={{ fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', minWidth: '150px' }}>
+                        <td className="num-col" style={{ fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.75rem', minWidth: '150px' }}>
                             <span style={{ minWidth: '65px', display: 'inline-block' }}>{loggedHours} hrs</span>
                             <button
                               className="btn btn-primary btn-sm"
@@ -576,7 +601,7 @@ export default function EffortLogsTab() {
         <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}>
           <div className="modal-content paper-panel" style={{ maxWidth: '800px', width: '95%' }}>
             <button className="modal-close" onClick={() => setIsModalOpen(false)}>×</button>
-            <h3 style={{ fontSize: '1.35rem', marginBottom: '1.5rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
+            <h3 style={{ fontSize: '1.35rem', marginBottom: '1.5rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem', paddingRight: '3.5rem' }}>
               Log Workload Hours
             </h3>
 

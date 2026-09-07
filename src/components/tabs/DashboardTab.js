@@ -180,42 +180,14 @@ export default function DashboardTab() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
 
-      {/* HEADER BANNER */}
-      <div className="paper-panel" style={{ padding: '1.25rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(16, 185, 129, 0.05) 100%)', border: '1px solid var(--glass-border)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.1rem' }}>
-          <div style={{
-            width: '52px',
-            height: '52px',
-            borderRadius: '14px',
-            background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
-            color: '#ffffff',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 4px 14px rgba(59, 130, 246, 0.35)',
-            border: '1px solid rgba(255, 255, 255, 0.2)',
-            flexShrink: 0
-          }}>
-            <User size={26} strokeWidth={2.2} />
-          </div>
-          <div>
-            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
-              Welcome back, {userDisplayName}!
-            </div>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0.2rem 0 0 0' }}>
-              Personal Workload, Capacity & Performance Analytics Overview
-            </p>
-          </div>
-        </div>
-        
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <span className="badge badge-info" style={{ fontSize: '0.82rem', padding: '0.4rem 0.85rem' }}>
-            Role: {activeProfile.role_name || 'Team Member'}
-          </span>
-          <button className="btn btn-secondary" style={{ padding: '0.4rem 0.85rem', fontSize: '0.82rem' }} onClick={fetchAllData}>
-            🔄 Refresh Data
-          </button>
-        </div>
+      {/* Action controls row */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 'var(--space-3)' }}>
+        <span className="badge badge-categorical">
+          Role: {activeProfile.role_name || 'Team Member'}
+        </span>
+        <button className="btn btn-secondary btn-sm" onClick={fetchAllData}>
+          🔄 Refresh Data
+        </button>
       </div>
 
       {/* 5 USER KPI METRIC CARDS */}
@@ -456,7 +428,7 @@ export default function DashboardTab() {
                     <th>Task Title</th>
                     <th>Opportunity</th>
                     <th>Priority</th>
-                    <th>Est. Hrs</th>
+                    <th className="num-col">Est. Hrs</th>
                     <th>Due Date</th>
                   </tr>
                 </thead>
@@ -478,7 +450,7 @@ export default function DashboardTab() {
                             {t.priority_name || 'Normal'}
                           </span>
                         </td>
-                        <td style={{ fontWeight: 600 }}>{t.estimated_hours}h</td>
+                        <td className="num-col" style={{ fontWeight: 600 }}>{t.estimated_hours}h</td>
                         <td>
                           {t.due_date ? (
                             <span className={`badge ${isOverdue ? 'badge-danger' : daysLeft <= 2 ? 'badge-warning' : 'badge-neutral'}`} style={{ fontSize: '0.72rem' }}>

@@ -407,9 +407,9 @@ export default function WorkItemsTab() {
   const archivedTasks = allFilteredTasks.filter(t => t.status_name === 'Cancelled' || t.status_name === 'Terminated' || t.status_name === 'Blocked');
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
 
-      {/* Header bar with controls */}
+      {/* Top action controls */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
         <button className="btn btn-primary" onClick={openCreateModal}>
           + Add Work Item
@@ -417,15 +417,15 @@ export default function WorkItemsTab() {
       </div>
 
       {/* Filter panel */}
-      <div className="paper-panel" style={{ padding: '1rem 1.5rem', display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-        <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Filters:</span>
+      <div className="paper-panel" style={{ padding: '0.85rem 1.25rem', display: 'flex', gap: '1.25rem', alignItems: 'center' }}>
+        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Filters:</span>
         <div style={{ display: 'flex', gap: '1rem', flex: 1 }}>
           <div className="form-group" style={{ flex: 1 }}>
             <select
-              className="form-control form-select"
+              className="select-control"
               value={filterOpp}
               onChange={(e) => setFilterOpp(e.target.value)}
-              style={{ padding: '0.45rem 0.8rem', fontSize: '0.85rem' }}
+              style={{ width: '100%' }}
             >
               <option value="">All Opportunities</option>
               {opportunities.map(opp => (
@@ -435,10 +435,10 @@ export default function WorkItemsTab() {
           </div>
           <div className="form-group" style={{ flex: 1 }}>
             <select
-              className="form-control form-select"
+              className="select-control"
               value={filterUser}
               onChange={(e) => setFilterUser(e.target.value)}
-              style={{ padding: '0.45rem 0.8rem', fontSize: '0.85rem' }}
+              style={{ width: '100%' }}
             >
               <option value="">All Assignees</option>
               {allUsers.map(u => (
@@ -486,8 +486,8 @@ export default function WorkItemsTab() {
                     <th>Assignee</th>
                     <th>Status</th>
                     <th>Due Date</th>
-                    <th>Estimate</th>
-                    <th style={{ textAlign: 'right' }}>Actions</th>
+                    <th className="num-col">Estimate</th>
+                    <th className="num-col">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -507,7 +507,7 @@ export default function WorkItemsTab() {
                         </div>
                       </td>
                       <td>
-                        <span className="badge" style={getOptionBadgeStyle('work_category', task.work_category_name)}>
+                        <span className="badge badge-categorical" style={getOptionBadgeStyle('work_category', task.work_category_name)}>
                           {task.work_category_name}
                         </span>
                       </td>
@@ -520,10 +520,10 @@ export default function WorkItemsTab() {
                         </span>
                       </td>
                       <td>{task.due_date ? task.due_date.split('T')[0] : 'N/A'}</td>
-                      <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{task.estimated_hours} hrs</td>
-                      <td style={{ textAlign: 'right' }}>
+                      <td className="num-col" style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{task.estimated_hours} hrs</td>
+                      <td className="num-col">
                         <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
-                          <button className="btn btn-secondary" style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem' }} onClick={() => openEditModal(task)}>
+                          <button className="btn btn-ghost btn-sm" onClick={() => openEditModal(task)}>
                             Edit
                           </button>
                         </div>
@@ -561,7 +561,7 @@ export default function WorkItemsTab() {
                     <th>Status</th>
                     <th>Cancellation / Blocker Reason</th>
                     <th>Due Date</th>
-                    <th style={{ textAlign: 'right' }}>Actions</th>
+                    <th className="num-col">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -576,7 +576,7 @@ export default function WorkItemsTab() {
                         </div>
                       </td>
                       <td>
-                        <span className="badge" style={getOptionBadgeStyle('work_category', task.work_category_name)}>
+                        <span className="badge badge-categorical" style={getOptionBadgeStyle('work_category', task.work_category_name)}>
                           {task.work_category_name}
                         </span>
                       </td>
@@ -630,7 +630,7 @@ export default function WorkItemsTab() {
         <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}>
           <div className="modal-content paper-panel" style={{ maxWidth: '1400px', width: '95%' }}>
             <button className="modal-close" onClick={() => setIsModalOpen(false)}>×</button>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem', paddingRight: '3.5rem' }}>
               <h3 style={{ fontSize: '1.35rem', color: 'var(--text-primary)', fontWeight: 700, margin: 0 }}>
                 {isEditMode ? 'Edit Work Item' : 'Create New Work Item'}
               </h3>
@@ -1214,7 +1214,7 @@ export default function WorkItemsTab() {
           <div className="modal-content paper-panel" style={{ maxWidth: '700px', width: '95%', maxHeight: '90vh', overflowY: 'auto' }}>
             <button className="modal-close" onClick={() => setIsViewDetailsModalOpen(false)}>×</button>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.85rem', marginBottom: '1.25rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.85rem', marginBottom: '1.25rem', paddingRight: '3.5rem' }}>
               <h3 style={{ fontSize: '1.3rem', color: 'var(--text-primary)', fontWeight: 700, margin: 0 }}>
                 📦 Archived Task Details
               </h3>

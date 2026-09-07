@@ -209,9 +209,9 @@ export default function OpportunitiesTab() {
   });
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
       
-      {/* Header bar with controls */}
+      {/* Top action controls */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
         <button className="btn btn-primary" onClick={openCreateModal}>
           + Add Opportunity
@@ -241,10 +241,10 @@ export default function OpportunitiesTab() {
                   <th>Type</th>
                   <th>Deliverable Type</th>
                   <th>Stage</th>
-                  <th>TCV</th>
+                  <th className="num-col">TCV</th>
                   <th>Due Date</th>
                   <th>Presales Owner</th>
-                  <th style={{ textAlign: 'right' }}>Actions</th>
+                  <th className="num-col">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -259,12 +259,12 @@ export default function OpportunitiesTab() {
                       </div>
                     </td>
                     <td>
-                      <span className="badge" style={getOptionBadgeStyle('opportunity_type', opp.opportunity_type_name)}>
+                      <span className="badge badge-categorical" style={getOptionBadgeStyle('opportunity_type', opp.opportunity_type_name)}>
                         {opp.opportunity_type_name || 'N/A'}
                       </span>
                     </td>
                     <td>
-                      <span className="badge" style={getOptionBadgeStyle('deliverable_type', opp.deliverable_type_name)}>
+                      <span className="badge badge-categorical" style={getOptionBadgeStyle('deliverable_type', opp.deliverable_type_name)}>
                         {opp.deliverable_type_name || 'N/A'}
                       </span>
                     </td>
@@ -273,7 +273,7 @@ export default function OpportunitiesTab() {
                         {opp.deal_stage_name || 'Proposal'}
                       </span>
                     </td>
-                    <td style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
+                    <td className="num-col" style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
                       {formatTCV(opp.tcv_amount || opp.estimated_deal_value, opp.tcv_currency)}
                     </td>
                     <td style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
@@ -282,9 +282,9 @@ export default function OpportunitiesTab() {
                     <td>
                       <strong style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{formatUserName(opp.presales_owner) || 'Unassigned'}</strong>
                     </td>
-                    <td style={{ textAlign: 'right' }}>
+                    <td className="num-col">
                       <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
-                        <button className="btn btn-secondary" style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem' }} onClick={() => openEditModal(opp)}>
+                        <button className="btn btn-ghost btn-sm" onClick={() => openEditModal(opp)}>
                           Edit
                         </button>
                       </div>
@@ -302,7 +302,7 @@ export default function OpportunitiesTab() {
         <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}>
           <div className="modal-content paper-panel" style={{ maxWidth: '1400px', width: '95%', maxHeight: '90vh', overflowY: 'auto' }}>
             <button className="modal-close" onClick={() => setIsModalOpen(false)}>×</button>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem', paddingRight: '3.5rem' }}>
               <h3 style={{ fontSize: '1.35rem', color: 'var(--text-primary)', fontWeight: 700, margin: 0 }}>
                 {isEditMode ? 'Modify Opportunity' : 'Register New Opportunity'}
               </h3>

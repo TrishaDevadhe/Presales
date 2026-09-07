@@ -10,18 +10,10 @@ export default function SettingsTab() {
   const [activeSubTab, setActiveSubTab] = useState('users'); // 'users' | 'admin'
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
       
-      {/* Settings Sub-Tab Navigation Header */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: '1rem',
-        paddingBottom: '0.75rem',
-        borderBottom: '1px solid var(--border-subtle)'
-      }}>
+      {/* Sub-tab navigation */}
+      <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center' }}>
         <div className="tab-group">
           <button
             onClick={() => setActiveSubTab('users')}

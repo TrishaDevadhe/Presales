@@ -155,10 +155,10 @@ export default function ResourceProfilesTab() {
                   <th>Role</th>
                   <th>Seniority</th>
                   <th>Department</th>
-                  <th>Weekly Capacity</th>
+                  <th className="num-col">Weekly Capacity</th>
                   <th>Primary Focus Area</th>
                   <th>Skills / Expertise</th>
-                  <th style={{ textAlign: 'right' }}>Actions</th>
+                  <th className="num-col">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -178,26 +178,26 @@ export default function ResourceProfilesTab() {
                       </span>
                     </td>
                     <td>
-                      <span className="badge" style={getOptionBadgeStyle('role', prof.role_name)}>
+                      <span className="badge badge-categorical" style={getOptionBadgeStyle('role', prof.role_name)}>
                         {prof.role_name}
                       </span>
                     </td>
-                    <td><span className="badge" style={getOptionBadgeStyle('seniority', prof.seniority_name)}>{prof.seniority_name}</span></td>
-                    <td><span className="badge" style={getOptionBadgeStyle('department', prof.department_name)}>{prof.department_name}</span></td>
-                    <td style={{ fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>{prof.weekly_capacity_hours} hrs</td>
+                    <td><span className="badge badge-categorical" style={getOptionBadgeStyle('seniority', prof.seniority_name)}>{prof.seniority_name}</span></td>
+                    <td><span className="badge badge-categorical" style={getOptionBadgeStyle('department', prof.department_name)}>{prof.department_name}</span></td>
+                    <td className="num-col" style={{ fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>{prof.weekly_capacity_hours} hrs</td>
                     <td style={{ fontSize: '0.88rem', color: 'var(--text-primary)' }}>{prof.standard_focus_area || 'Core Presales'}</td>
                     <td>
                       <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap', maxWidth: '280px' }}>
                         {prof.skills ? prof.skills.split(',').map((skill, idx) => (
-                          <span key={idx} className="badge badge-neutral" style={{ fontSize: '0.72rem', padding: '0.15rem 0.45rem' }}>
+                          <span key={idx} className="badge badge-categorical" style={{ fontSize: '0.72rem', padding: '0.15rem 0.45rem' }}>
                             {skill.trim()}
                           </span>
                         )) : <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>None</span>}
                       </div>
                     </td>
-                    <td style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                    <td className="num-col" style={{ whiteSpace: 'nowrap' }}>
                       <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end', alignItems: 'center' }}>
-                        <button className="btn btn-secondary" style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem' }} onClick={() => openEditModal(prof)}>
+                        <button className="btn btn-ghost btn-sm" onClick={() => openEditModal(prof)}>
                           Edit Profile
                         </button>
                       </div>
@@ -215,7 +215,7 @@ export default function ResourceProfilesTab() {
         <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}>
           <div className="modal-content paper-panel" style={{ maxWidth: '1000px', width: '95%' }}>
             <button className="modal-close" onClick={() => setIsModalOpen(false)}>×</button>
-            <h3 style={{ fontSize: '1.35rem', marginBottom: '1.5rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
+            <h3 style={{ fontSize: '1.35rem', marginBottom: '1.5rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem', paddingRight: '3.5rem' }}>
               {isEditMode ? `Edit Profile: ${formatUserName(formData.username)}` : 'Register Team Member Profile'}
             </h3>
 

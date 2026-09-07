@@ -329,7 +329,38 @@ export function AppProvider({ children }) {
     return match ? match.color : null;
   };
 
+  const CATEGORICAL_FIELDS = [
+    'deliverable_type',
+    'work_category',
+    'activity_type',
+    'effort_type',
+    'source',
+    'lead_source',
+    'role',
+    'seniority',
+    'department',
+    'trigger_source',
+    'reason_category',
+    'opportunity_type',
+    'deliverable'
+  ];
+
   const getOptionBadgeStyle = (category, valueOrName, fallbackColor = '#3b82f6') => {
+    if (category && CATEGORICAL_FIELDS.includes(category.toString().toLowerCase())) {
+      return {
+        backgroundColor: 'var(--bg-secondary)',
+        color: 'var(--text-secondary)',
+        border: '1px solid var(--border-subtle)',
+        whiteSpace: 'nowrap',
+        wordBreak: 'keep-all',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+        fontWeight: 500
+      };
+    }
+
     const color = getOptionColor(category, valueOrName) || fallbackColor;
     return {
       backgroundColor: hexToRgba(color, 0.14) || 'rgba(59, 130, 246, 0.14)',

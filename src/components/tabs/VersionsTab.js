@@ -330,21 +330,30 @@ export default function VersionsTab() {
   });
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+
+      {/* Top action controls */}
+      {filteredWorkItems.length > 0 && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+          <button className="btn btn-primary" onClick={() => openReviseModal(filteredWorkItems[0])}>
+            + Create Revision
+          </button>
+        </div>
+      )}
 
       {/* Filter Views Panel */}
-      <div className="paper-panel" style={{ padding: '1rem 1.25rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-        <div style={{ fontWeight: 600, fontSize: '0.88rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.4rem', minWidth: '100px' }}>
-          <span>🔍</span> Filter Views:
+      <div className="paper-panel" style={{ padding: '0.85rem 1.25rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ fontWeight: 600, fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.4rem', minWidth: '90px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+          Filters:
         </div>
 
         {/* Filter by Opportunity */}
         <div style={{ flex: '1', minWidth: '200px' }}>
           <select
-            className="form-control form-select"
+            className="select-control"
             value={filterOpportunity}
             onChange={(e) => setFilterOpportunity(e.target.value)}
-            style={{ fontSize: '0.88rem', padding: '0.45rem 0.8rem' }}
+            style={{ width: '100%' }}
           >
             <option value="">All Opportunities</option>
             {opportunities.map(opp => (
@@ -358,10 +367,10 @@ export default function VersionsTab() {
         {/* Filter by Deliverable Type */}
         <div style={{ flex: '1', minWidth: '200px' }}>
           <select
-            className="form-control form-select"
+            className="select-control"
             value={filterDeliverableType}
             onChange={(e) => setFilterDeliverableType(e.target.value)}
-            style={{ fontSize: '0.88rem', padding: '0.45rem 0.8rem' }}
+            style={{ width: '100%' }}
           >
             <option value="">All Deliverable Types</option>
             {getOptions('deliverable_type').map(dt => (
@@ -375,10 +384,10 @@ export default function VersionsTab() {
         {/* Filter by Team Member */}
         <div style={{ flex: '1', minWidth: '200px' }}>
           <select
-            className="form-control form-select"
+            className="select-control"
             value={filterPerson}
             onChange={(e) => setFilterPerson(e.target.value)}
-            style={{ fontSize: '0.88rem', padding: '0.45rem 0.8rem' }}
+            style={{ width: '100%' }}
           >
             <option value="">All Team Members</option>
             {allUsers.map(u => (
@@ -397,7 +406,7 @@ export default function VersionsTab() {
               setFilterDeliverableType('');
               setFilterPerson('');
             }}
-            style={{ fontSize: '0.82rem', whiteSpace: 'nowrap' }}
+            style={{ whiteSpace: 'nowrap' }}
           >
             Reset Filters
           </button>
@@ -449,7 +458,7 @@ export default function VersionsTab() {
                     <th>Assignee</th>
                     <th>Version #</th>
                     <th>Status</th>
-                    <th style={{ textAlign: 'right' }}>Action</th>
+                    <th className="num-col">Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -464,7 +473,7 @@ export default function VersionsTab() {
                           </div>
                         </td>
                         <td>
-                          <span className="badge" style={getOptionBadgeStyle('work_category', task.work_category_name)}>
+                          <span className="badge badge-categorical" style={getOptionBadgeStyle('work_category', task.work_category_name)}>
                             {task.work_category_name || 'N/A'}
                           </span>
                         </td>
@@ -481,10 +490,9 @@ export default function VersionsTab() {
                             {task.status_name || 'Not Started'}
                           </span>
                         </td>
-                        <td style={{ textAlign: 'right' }}>
+                        <td className="num-col">
                           <button
-                            className="btn btn-pill-cobalt"
-                            style={{ padding: '0.35rem 0.85rem', fontSize: '0.8rem' }}
+                            className="btn btn-ghost btn-sm"
                             onClick={() => openReviseModal(task)}
                           >
                             🔄 Revise Work Item
@@ -517,7 +525,7 @@ export default function VersionsTab() {
                     <th>Revising Person</th>
                     <th>Trigger Source</th>
                     <th>Revision Description</th>
-                    <th>Rework Hours</th>
+                    <th className="num-col">Rework Hours</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -538,14 +546,14 @@ export default function VersionsTab() {
                         </strong>
                       </td>
                       <td>
-                        <span className="badge" style={getOptionBadgeStyle('trigger_source', ver.trigger_source_name)}>
+                        <span className="badge badge-categorical" style={getOptionBadgeStyle('trigger_source', ver.trigger_source_name)}>
                           {ver.trigger_source_name || 'Revision'}
                         </span>
                       </td>
                       <td style={{ maxWidth: '320px', fontSize: '0.88rem', color: 'var(--text-primary)' }}>
                         {ver.change_summary}
                       </td>
-                      <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                      <td className="num-col" style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
                         {ver.estimated_rework_hours || 0} hrs
                       </td>
                     </tr>
@@ -563,7 +571,7 @@ export default function VersionsTab() {
           <div className="modal-content paper-panel" style={{ maxWidth: '650px', width: '95%', maxHeight: '90vh', overflowY: 'auto' }}>
             <button className="modal-close" onClick={() => setIsReviseModalOpen(false)}>×</button>
 
-            <h3 style={{ fontSize: '1.25rem', marginBottom: '1.25rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem', fontWeight: 700 }}>
+            <h3 style={{ fontSize: '1.25rem', marginBottom: '1.25rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem', paddingRight: '3.5rem', fontWeight: 700 }}>
               {reviseFormData.is_terminated ? '🚫 Terminate Work Item' : '🔄 Revise Work Item'}
             </h3>
 

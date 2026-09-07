@@ -174,9 +174,9 @@ export default function FeedbackTab() {
       });
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
       
-      {/* Header bar */}
+      {/* Top action controls */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
         <button className="btn btn-primary" onClick={openCreateModal} disabled={opportunities.length === 0}>
           {opportunities.length === 0 ? 'Register opportunity first' : '+ Register Feedback'}
@@ -200,8 +200,8 @@ export default function FeedbackTab() {
                   <th>Severity</th>
                   <th>Feedback Detail</th>
                   <th>Owner</th>
-                  <th>Due Date</th>
-                  <th style={{ textAlign: 'right' }}>Actions</th>
+                  <th>Status</th>
+                  <th className="num-col">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -213,11 +213,11 @@ export default function FeedbackTab() {
                         {fb.company} {fb.version_number ? `(v${fb.version_number})` : ''}
                       </div>
                     </td>
-                    <td><span className="badge" style={getOptionBadgeStyle('feedback_from', fb.feedback_from_name)}>{fb.feedback_from_name}</span></td>
-                    <td><span className="badge" style={getOptionBadgeStyle('feedback_type', fb.feedback_type_name)}>{fb.feedback_type_name}</span></td>
+                    <td><span className="badge badge-categorical" style={getOptionBadgeStyle('feedback_from', fb.feedback_from_name)}>{fb.feedback_from_name}</span></td>
+                    <td><span className="badge badge-categorical" style={getOptionBadgeStyle('feedback_type', fb.feedback_type_name)}>{fb.feedback_type_name}</span></td>
                     <td>
                       <span className={`badge ${fb.severity_name === 'Critical' || fb.severity_name === 'High' ? 'badge-danger' : 'badge-neutral'}`}>
-                        {fb.severity_name || 'Medium'}
+                        {fb.severity_name === 'Critical' ? '🚨 Critical' : fb.severity_name === 'High' ? '⚠️ High' : 'ℹ️ Medium'}
                       </span>
                     </td>
                     <td style={{ fontSize: '0.9rem', maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-secondary)' }} title={fb.feedback_text.replace(/<[^>]*>/g, '')}>
@@ -243,9 +243,9 @@ export default function FeedbackTab() {
                         {fb.status_name}
                       </span>
                     </td>
-                    <td style={{ textAlign: 'right' }}>
+                    <td className="num-col">
                         {fb.status_name !== 'Resolved' && (
-                          <button className="btn btn-secondary" style={{ padding: '0.3rem 0.65rem', fontSize: '0.8rem', color: 'var(--color-success-text)' }} onClick={() => handleResolve(fb)}>
+                          <button className="btn btn-ghost btn-sm" style={{ color: 'var(--color-success-text)' }} onClick={() => handleResolve(fb)}>
                             Resolve
                           </button>
                         )}
@@ -263,7 +263,7 @@ export default function FeedbackTab() {
         <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsModalOpen(false); }}>
           <div className="modal-content paper-panel" style={{ maxWidth: '1200px', width: '95%' }}>
             <button className="modal-close" onClick={() => setIsModalOpen(false)}>×</button>
-            <h3 style={{ fontSize: '1.35rem', marginBottom: '1.5rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
+            <h3 style={{ fontSize: '1.35rem', marginBottom: '1.5rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem', paddingRight: '3.5rem' }}>
               Register Client Feedback & Revisions
             </h3>
 

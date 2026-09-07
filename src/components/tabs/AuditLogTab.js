@@ -324,35 +324,29 @@ export default function AuditLogTab() {
   });
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
 
-      {/* SUB-TABS BAR (.tab-group) */}
-      <div className="paper-panel" style={{ padding: '0.6rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-        <div className="tab-group" style={{ background: 'var(--bg-secondary)', padding: '0.25rem', borderRadius: 'var(--radius-md)' }}>
+      {/* Sub-tab navigation */}
+      <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center' }}>
+        <div className="tab-group">
           <button
             onClick={() => { setActiveSubTab('activity'); setExpandedRowId(null); }}
             className={`tab-item ${activeSubTab === 'activity' ? 'active' : ''}`}
-            style={{ fontSize: '0.88rem', padding: '0.5rem 1.25rem' }}
           >
             📋 Activity Log
           </button>
           <button
             onClick={() => { setActiveSubTab('access'); setExpandedRowId(null); }}
             className={`tab-item ${activeSubTab === 'access' ? 'active' : ''}`}
-            style={{ fontSize: '0.88rem', padding: '0.5rem 1.25rem' }}
           >
             🛡️ Access Log
           </button>
         </div>
-
-        <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-          Showing <strong>{displayLogs.length}</strong> logged entries
-        </div>
       </div>
 
       {/* FILTER ROW (Same filter-bar styling as Work Items / Effort Logs) */}
-      <div className="paper-panel" style={{ padding: '1rem 1.25rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-        <span style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+      <div className="paper-panel" style={{ padding: '0.85rem 1.25rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
           <Filter size={14} /> Filters:
         </span>
 
@@ -360,10 +354,10 @@ export default function AuditLogTab() {
         <div className="form-group" style={{ margin: 0, minWidth: '150px' }}>
           <input
             type="date"
-            className="form-control"
+            className="select-control"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            style={{ padding: '0.4rem 0.65rem', fontSize: '0.82rem' }}
+            style={{ width: '100%', height: '40px' }}
             placeholder="From Date"
           />
         </div>
@@ -372,10 +366,10 @@ export default function AuditLogTab() {
         <div className="form-group" style={{ margin: 0, minWidth: '150px' }}>
           <input
             type="date"
-            className="form-control"
+            className="select-control"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            style={{ padding: '0.4rem 0.65rem', fontSize: '0.82rem' }}
+            style={{ width: '100%', height: '40px' }}
             placeholder="To Date"
           />
         </div>
@@ -383,7 +377,7 @@ export default function AuditLogTab() {
         {/* User Filter */}
         <div className="form-group" style={{ margin: 0, minWidth: '160px' }}>
           <select
-            className="form-control form-select"
+            className="form-control form-select select-control"
             value={filterUser}
             onChange={(e) => setFilterUser(e.target.value)}
             style={{ padding: '0.4rem 0.65rem', fontSize: '0.82rem' }}

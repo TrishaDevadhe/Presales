@@ -128,7 +128,7 @@ export default function EditProfileModal({ isOpen, onClose }) {
         <button className="modal-close" onClick={onClose}>×</button>
 
         {/* Modal Header */}
-        <div className="form-section-header" style={{ marginBottom: '1.25rem', paddingBottom: '0.85rem', borderBottom: '1px solid var(--glass-border)' }}>
+        <div className="form-section-header" style={{ marginBottom: '1.25rem', paddingBottom: '0.85rem', borderBottom: '1px solid var(--glass-border)', paddingRight: '3.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
             <div style={{
               width: '44px',
