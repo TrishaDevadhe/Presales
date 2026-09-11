@@ -13,11 +13,15 @@ import OpportunityDetailsView from '../OpportunityDetailsView';
 export default function OpportunitiesTab() {
   const { currentUser, userRole, allUsers, getOptions, getOptionBadgeStyle, formatUserName, showToast, showAlert, showConfirm, globalSearchQuery } = useApp();
   const [opportunities, setOpportunities] = useState([]);
+  const [workItems, setWorkItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   // View state
   const [selectedViewOpp, setSelectedViewOpp] = useState(null);
+
+  // Hover Popover State for Opportunity Status / Completion Bar
+  const [hoveredOppData, setHoveredOppData] = useState(null);
 
   // Modals state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -65,11 +69,18 @@ export default function OpportunitiesTab() {
   const fetchOpportunities = async () => {
     try {
       setLoading(true);
-      const res = await fetch('/api/opportunities');
-      const data = await res.json();
-      setOpportunities(data);
+      const [oppsRes, tasksRes] = await Promise.all([
+        fetch('/api/opportunities'),
+        fetch('/api/workitems')
+      ]);
+      const [oppsData, tasksData] = await Promise.all([
+        oppsRes.json(),
+        tasksRes.json()
+      ]);
+      setOpportunities(Array.isArray(oppsData) ? oppsData : []);
+      setWorkItems(Array.isArray(tasksData) ? tasksData : []);
     } catch (e) {
-      console.error('Error fetching opportunities:', e);
+      console.error('Error fetching opportunities or work items:', e);
       setError('Failed to load opportunities');
     } finally {
       setLoading(false);
@@ -79,6 +90,66 @@ export default function OpportunitiesTab() {
   useEffect(() => {
     fetchOpportunities();
   }, []);
+
+  // Clear hover tooltip on window scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      setHoveredOppData(null);
+    };
+    window.addEventListener('scroll', handleScroll, true);
+    return () => window.removeEventListener('scroll', handleScroll, true);
+  }, []);
+
+  const getProgressColor = (percent) => {
+    if (percent === 0) return 'var(--text-muted, #94a3b8)';
+    if (percent < 25) return 'var(--color-danger, #ef4444)';
+    if (percent < 50) return 'var(--color-warning, #f59e0b)';
+    if (percent < 75) return '#2563eb';
+    if (percent < 100) return 'var(--accent-primary, #6366f1)';
+    return 'var(--color-success, #10b981)';
+  };
+
+  const getTooltipCoords = (data) => {
+    if (!data || !data.anchorRect) return { top: 0, left: 0 };
+    const tooltipWidth = 380;
+    const tooltipHeight = 250;
+
+    let left;
+    if (data.clientX !== undefined && data.clientX !== null) {
+      left = data.clientX - (tooltipWidth / 2);
+    } else {
+      left = data.anchorRect.left + (data.anchorRect.width / 2) - (tooltipWidth / 2);
+    }
+
+    if (left < 16) left = 16;
+    if (typeof window !== 'undefined' && left + tooltipWidth > window.innerWidth - 16) {
+      left = window.innerWidth - tooltipWidth - 16;
+    }
+
+    let top = (data.clientY !== undefined && data.clientY !== null ? data.clientY : data.anchorRect.top) - tooltipHeight - 14;
+    if (top < 16) {
+      top = (data.anchorRect.bottom || data.clientY) + 14;
+    }
+
+    return { top, left };
+  };
+
+  const handleHoverTrigger = (opp, stats, e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setHoveredOppData({
+      opp,
+      ...stats,
+      anchorRect: rect,
+      clientX: e.clientX,
+      clientY: e.clientY
+    });
+  };
+
+  const handleMouseMove = (e) => {
+    if (hoveredOppData) {
+      setHoveredOppData(prev => prev ? ({ ...prev, clientX: e.clientX, clientY: e.clientY }) : null);
+    }
+  };
 
   // Filter Opportunity Types to "New Business", "Renewal", and "Change Request"
   const allowedOpportunityTypes = getOptions('opportunity_type').filter(opt => {
@@ -257,7 +328,15 @@ export default function OpportunitiesTab() {
   });
 
   if (selectedViewOpp) {
-    return <OpportunityDetailsView opportunity={selectedViewOpp} onBack={() => setSelectedViewOpp(null)} />;
+    return (
+      <OpportunityDetailsView 
+        opportunity={selectedViewOpp} 
+        onBack={() => {
+          setSelectedViewOpp(null);
+          fetchOpportunities();
+        }} 
+      />
+    );
   }
 
   return (
@@ -300,54 +379,284 @@ export default function OpportunitiesTab() {
                 </tr>
               </thead>
               <tbody>
-                {displayOpportunities.map((opp) => (
-                  <tr key={opp.id} onClick={() => setSelectedViewOpp(opp)} style={{ cursor: 'pointer' }}>
-                    <td>
-                      <div>
-                        <strong style={{ color: 'var(--text-primary)', fontSize: '0.95rem' }}>{opp.opportunity_name}</strong>
-                      </div>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
-                        🏢 {opp.company}
-                      </div>
-                    </td>
-                    <td>
-                      <span className="badge badge-categorical" style={getOptionBadgeStyle('opportunity_type', opp.opportunity_type_name)}>
-                        {opp.opportunity_type_name || 'N/A'}
-                      </span>
-                    </td>
-                    <td>
-                      <span className="badge badge-categorical" style={getOptionBadgeStyle('deliverable_type', opp.deliverable_type_name)}>
-                        {opp.deliverable_type_name || 'N/A'}
-                      </span>
-                    </td>
-                    <td>
-                      <span className="badge" style={getOptionBadgeStyle('deal_stage', opp.deal_stage_name)}>
-                        {opp.deal_stage_name || 'Proposal'}
-                      </span>
-                    </td>
-                    <td className="num-col" style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
-                      {formatTCV(opp.tcv_amount || opp.estimated_deal_value, opp.tcv_currency)}
-                    </td>
-                    <td style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-                      {opp.target_submission_date ? opp.target_submission_date.split('T')[0] : 'N/A'}
-                    </td>
-                    <td>
-                      <strong style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{formatUserName(opp.presales_owner) || 'Unassigned'}</strong>
-                    </td>
-                    <td className="num-col">
-                      <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
-                        <button className="btn btn-ghost btn-sm" onClick={(e) => { e.stopPropagation(); openEditModal(opp); }}>
-                          Edit
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {displayOpportunities.map((opp) => {
+                  const oppTasks = workItems.filter(t => t.opportunity_id === opp.id);
+                  const totalWorkItems = oppTasks.length;
+                  const completedWorkItems = oppTasks.filter(t => t.status_name === 'Completed').length;
+                  const inProgressWorkItems = oppTasks.filter(t => t.status_name === 'In Progress').length;
+                  const notStartedWorkItems = oppTasks.filter(t => t.status_name === 'Not Started').length;
+                  const completionPercentage = totalWorkItems > 0 ? Math.round((completedWorkItems / totalWorkItems) * 100) : 0;
+                  const oppStats = {
+                    totalWorkItems,
+                    completedWorkItems,
+                    inProgressWorkItems,
+                    notStartedWorkItems,
+                    completionPercentage,
+                    tasks: oppTasks
+                  };
+
+                  return (
+                    <React.Fragment key={opp.id}>
+                      <tr 
+                        className="opportunity-main-row" 
+                        onClick={() => setSelectedViewOpp(opp)} 
+                        style={{ cursor: 'pointer' }}
+                      >
+                        <td>
+                          <div>
+                            <strong style={{ color: 'var(--text-primary)', fontSize: '0.95rem' }}>{opp.opportunity_name}</strong>
+                          </div>
+                          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>
+                            🏢 {opp.company}
+                          </div>
+                        </td>
+                        <td>
+                          <span className="badge badge-categorical" style={getOptionBadgeStyle('opportunity_type', opp.opportunity_type_name)}>
+                            {opp.opportunity_type_name || 'N/A'}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="badge badge-categorical" style={getOptionBadgeStyle('deliverable_type', opp.deliverable_type_name)}>
+                            {opp.deliverable_type_name || 'N/A'}
+                          </span>
+                        </td>
+                        <td>
+                          <span 
+                            className="badge" 
+                            style={{ 
+                              ...getOptionBadgeStyle('deal_stage', opp.deal_stage_name),
+                              cursor: 'pointer'
+                            }}
+                            onMouseEnter={(e) => handleHoverTrigger(opp, oppStats, e)}
+                            onMouseLeave={() => setHoveredOppData(null)}
+                            title="Hover to view Opportunity completion & status"
+                          >
+                            {opp.deal_stage_name || 'Proposal'}
+                          </span>
+                        </td>
+                        <td className="num-col" style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
+                          {formatTCV(opp.tcv_amount || opp.estimated_deal_value, opp.tcv_currency)}
+                        </td>
+                        <td style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                          {opp.target_submission_date ? opp.target_submission_date.split('T')[0] : 'N/A'}
+                        </td>
+                        <td>
+                          <strong style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{formatUserName(opp.presales_owner) || 'Unassigned'}</strong>
+                        </td>
+                        <td className="num-col">
+                          <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
+                            <button className="btn btn-ghost btn-sm" onClick={(e) => { e.stopPropagation(); openEditModal(opp); }}>
+                              Edit
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+
+                      {/* Partitioning status bar row */}
+                      <tr 
+                        className="opportunity-partition-row"
+                        onClick={() => setSelectedViewOpp(opp)}
+                        onMouseEnter={(e) => handleHoverTrigger(opp, oppStats, e)}
+                        onMouseMove={handleMouseMove}
+                        onMouseLeave={() => setHoveredOppData(null)}
+                      >
+                        <td colSpan={8}>
+                          <div 
+                            className="opportunity-partition-bar-container"
+                            title={`Work Item Completion: ${completionPercentage}% (${completedWorkItems} of ${totalWorkItems} completed)`}
+                          >
+                            <div 
+                              style={{
+                                height: '100%',
+                                width: totalWorkItems === 0 ? '0%' : `${completionPercentage}%`,
+                                backgroundColor: getProgressColor(completionPercentage),
+                                borderRadius: '0 2px 2px 0',
+                                transition: 'width 0.4s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease',
+                                boxShadow: completionPercentage > 0 ? `0 0 8px ${getProgressColor(completionPercentage)}88` : 'none'
+                              }}
+                            />
+                          </div>
+                        </td>
+                      </tr>
+                    </React.Fragment>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
       </div>
+
+      {/* Floating Opportunity Status Hover Card */}
+      {hoveredOppData && (
+        <div
+          className="opportunity-status-hover-card"
+          style={{
+            position: 'fixed',
+            left: `${getTooltipCoords(hoveredOppData).left}px`,
+            top: `${getTooltipCoords(hoveredOppData).top}px`,
+            width: '380px',
+            backgroundColor: 'var(--bg-primary, #ffffff)',
+            border: '1px solid var(--border-subtle, rgba(226, 232, 240, 0.85))',
+            borderRadius: 'var(--radius-md, 14px)',
+            boxShadow: '0 20px 35px -5px rgba(15, 23, 42, 0.25), 0 8px 16px -4px rgba(15, 23, 42, 0.12)',
+            padding: '1.25rem',
+            zIndex: 99999,
+            pointerEvents: 'none',
+            backdropFilter: 'blur(16px)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.85rem'
+          }}
+        >
+          {/* Card Header matching user screenshot */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>
+              Work Item Completion
+            </span>
+            {hoveredOppData.opp.deal_stage_name && (
+              <span 
+                className="badge" 
+                style={{
+                  ...getOptionBadgeStyle('deal_stage', hoveredOppData.opp.deal_stage_name),
+                  fontSize: '0.75rem',
+                  padding: '0.2rem 0.6rem'
+                }}
+              >
+                {hoveredOppData.opp.deal_stage_name}
+              </span>
+            )}
+          </div>
+
+          {/* Metric and Subtitle */}
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '0.45rem' }}>
+              <div style={{ 
+                fontSize: '2.25rem', 
+                fontWeight: 800, 
+                color: getProgressColor(hoveredOppData.completionPercentage), 
+                lineHeight: 1,
+                letterSpacing: '-0.03em'
+              }}>
+                {hoveredOppData.completionPercentage}%
+              </div>
+              <div style={{ fontSize: '0.86rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                {hoveredOppData.totalWorkItems === 0
+                  ? 'No work items assigned'
+                  : `${hoveredOppData.completedWorkItems} of ${hoveredOppData.totalWorkItems} completed`}
+              </div>
+            </div>
+
+            {/* Visual Progress Bar matching image */}
+            <div style={{
+              width: '100%',
+              height: '10px',
+              backgroundColor: 'var(--border-subtle, #e2e8f0)',
+              borderRadius: '9999px',
+              overflow: 'hidden',
+              position: 'relative'
+            }}>
+              <div style={{
+                height: '100%',
+                width: `${hoveredOppData.completionPercentage}%`,
+                backgroundColor: getProgressColor(hoveredOppData.completionPercentage),
+                borderRadius: '9999px',
+                transition: 'width 0.4s ease'
+              }} />
+            </div>
+          </div>
+
+          {/* Opportunity Details: Name, Company, Stage, Owner, Target Date */}
+          <div style={{
+            borderTop: '1px solid var(--border-subtle, rgba(226, 232, 240, 0.6))',
+            paddingTop: '0.75rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.4rem',
+            fontSize: '0.8rem'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '230px' }}>
+                💼 {hoveredOppData.opp.opportunity_name}
+              </span>
+              <span style={{ color: 'var(--text-secondary)', fontSize: '0.78rem' }}>
+                🏢 {hoveredOppData.opp.company}
+              </span>
+            </div>
+
+            {/* Task status breakdown badges */}
+            {hoveredOppData.totalWorkItems > 0 ? (
+              <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.2rem', flexWrap: 'wrap' }}>
+                <span style={{ 
+                  fontSize: '0.72rem', 
+                  padding: '0.15rem 0.45rem', 
+                  borderRadius: '4px', 
+                  background: 'var(--color-success-bg, rgba(16, 185, 129, 0.12))', 
+                  color: 'var(--color-success-text, #047857)',
+                  fontWeight: 600
+                }}>
+                  ✓ {hoveredOppData.completedWorkItems} Completed
+                </span>
+                <span style={{ 
+                  fontSize: '0.72rem', 
+                  padding: '0.15rem 0.45rem', 
+                  borderRadius: '4px', 
+                  background: 'var(--color-info-bg, rgba(37, 99, 235, 0.12))', 
+                  color: 'var(--color-info-text, #1e40af)',
+                  fontWeight: 600
+                }}>
+                  ⏳ {hoveredOppData.inProgressWorkItems} In Progress
+                </span>
+                <span style={{ 
+                  fontSize: '0.72rem', 
+                  padding: '0.15rem 0.45rem', 
+                  borderRadius: '4px', 
+                  background: 'rgba(107, 114, 128, 0.12)', 
+                  color: 'var(--text-secondary, #4b5563)',
+                  fontWeight: 600
+                }}>
+                  ⏹ {hoveredOppData.notStartedWorkItems} Not Started
+                </span>
+              </div>
+            ) : (
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', fontStyle: 'italic', marginTop: '0.2rem' }}>
+                No work items assigned to this opportunity yet.
+              </div>
+            )}
+
+            {/* Tasks mini preview */}
+            {hoveredOppData.tasks && hoveredOppData.tasks.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', marginTop: '0.25rem', paddingTop: '0.35rem', borderTop: '1px dashed var(--border-subtle, rgba(226, 232, 240, 0.5))' }}>
+                {hoveredOppData.tasks.slice(0, 3).map(task => (
+                  <div key={task.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.74rem' }}>
+                    <span style={{ color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '230px' }}>
+                      {task.status_name === 'Completed' ? '✓ ' : '• '} {task.title}
+                    </span>
+                    <span style={{ 
+                      color: task.status_name === 'Completed' ? 'var(--color-success, #10b981)' : task.status_name === 'In Progress' ? 'var(--color-info, #2563eb)' : 'var(--text-muted)', 
+                      fontWeight: 600, 
+                      fontSize: '0.7rem' 
+                    }}>
+                      {task.status_name}
+                    </span>
+                  </div>
+                ))}
+                {hoveredOppData.tasks.length > 3 && (
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                    +{hoveredOppData.tasks.length - 3} more work items
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Footer row: Presales Owner & Due Date */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '0.74rem', marginTop: '0.25rem', borderTop: '1px solid var(--border-subtle, rgba(226, 232, 240, 0.5))', paddingTop: '0.4rem' }}>
+              <span>👤 {formatUserName(hoveredOppData.opp.presales_owner) || 'Unassigned'}</span>
+              <span>📅 Due: {hoveredOppData.opp.target_submission_date ? hoveredOppData.opp.target_submission_date.split('T')[0] : 'N/A'}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* CREATE / EDIT OPPORTUNITY OVERLAY MODAL */}
       {isModalOpen && (
