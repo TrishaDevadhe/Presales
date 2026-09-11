@@ -282,7 +282,12 @@ export async function initDb() {
     ['role', 'Admin', 1, '#ef4444'],
     ['role', 'Presales Owner', 2, '#8b5cf6'],
     ['role', 'Sales Owner', 3, '#3b82f6'],
-    ['role', 'Team Member', 4, '#10b981']
+    ['role', 'Team Member', 4, '#10b981'],
+    ['role', 'Finance', 5, '#059669'],
+    ['department', 'Finance', 1, '#059669'],
+    ['department', 'Presales Solutions', 2, '#8b5cf6'],
+    ['department', 'Enterprise Sales', 3, '#3b82f6'],
+    ['department', 'Delivery / Consulting', 4, '#10b981']
   ];
 
   const valuesPlaceholders = defaultOptions.map((_, i) => 
@@ -341,7 +346,8 @@ export async function initDb() {
     { username: 'vartika_jadon', name: 'Vartika Jadon', role: 'Team Member', seniority: 'Consultant', dept: 'Delivery / Consulting', cap: 35.0, focus: 'Demo Prep, Frontend' },
     { username: 'alice_williams', name: 'Alice Williams', role: 'Team Member', seniority: 'Associate', dept: 'Delivery / Consulting', cap: 40.0, focus: 'Pricing, Excel Modeling' },
     { username: 'vikrant_dhuriya', name: 'Vikrant Dhuriya', role: 'Team Member', seniority: 'Consultant', dept: 'Delivery / Consulting', cap: 40.0, focus: 'Solution Architecture & Integration' },
-    { username: 'divyam_malliwal', name: 'Divyam Malliwal', role: 'Team Member', seniority: 'Consultant', dept: 'Delivery / Consulting', cap: 40.0, focus: 'Technical Consulting & Delivery' }
+    { username: 'divyam_malliwal', name: 'Divyam Malliwal', role: 'Team Member', seniority: 'Consultant', dept: 'Delivery / Consulting', cap: 40.0, focus: 'Technical Consulting & Delivery' },
+    { username: 'david_miller', name: 'David Miller (Finance)', role: 'Finance', seniority: 'Senior Consultant', dept: 'Finance', cap: 40.0, focus: 'Commercial Pricing & Financial Approvals' }
   ];
 
   const passwordMap = {
@@ -352,7 +358,8 @@ export async function initDb() {
     vikrant_dhuriya: 'vikrant123',
     divyam_malliwal: 'divyam123',
     john_smith: 'john123',
-    alice_williams: 'alice123'
+    alice_williams: 'alice123',
+    david_miller: 'finance123'
   };
 
   for (const u of userRoles) {

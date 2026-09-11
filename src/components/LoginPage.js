@@ -65,7 +65,8 @@ export default function LoginPage() {
         alice_williams: 'alice123',
         john_smith: 'john123',
         vikrant_dhuriya: 'vikrant123',
-        divyam_malliwal: 'divyam123'
+        divyam_malliwal: 'divyam123',
+        david_miller: 'finance123'
       };
 
       const dbPassword = userProfile && userProfile.password ? userProfile.password.trim() : null;

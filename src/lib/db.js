@@ -155,6 +155,31 @@ async function ensureDbInitialized() {
             INSERT INTO dropdown_options (category, option_name, sort_order, color)
             VALUES ('deliverable_type', 'Non RFP Response', 2, '#3b82f6')
             ON CONFLICT (category, option_name) DO NOTHING;
+
+            -- Ensure Finance department & Finance role options exist
+            INSERT INTO dropdown_options (category, option_name, sort_order, color)
+            VALUES 
+              ('department', 'Finance', 4, '#059669'),
+              ('role', 'Finance', 5, '#059669')
+            ON CONFLICT (category, option_name) DO NOTHING;
+
+            -- Ensure david_miller exists in resource_profiles
+            INSERT INTO resource_profiles (username, name, role_id, seniority_id, skills, department_id, weekly_capacity_hours, standard_focus, password, is_active)
+            SELECT 'david_miller', 'David Miller (Finance)',
+                   (SELECT id FROM dropdown_options WHERE category = 'role' AND option_name = 'Finance' LIMIT 1),
+                   (SELECT id FROM dropdown_options WHERE category = 'seniority' AND option_name = 'Senior Consultant' LIMIT 1),
+                   'Financial Modeling, Commercial Pricing, Revenue Recognition, TCV Analysis',
+                   (SELECT id FROM dropdown_options WHERE category = 'department' AND option_name = 'Finance' LIMIT 1),
+                   40.0, 'Commercial Approvals & Pricing Review', 'finance123', true
+            WHERE NOT EXISTS (SELECT 1 FROM resource_profiles WHERE username = 'david_miller');
+
+            UPDATE resource_profiles 
+            SET name = 'David Miller (Finance)', 
+                role_id = COALESCE(role_id, (SELECT id FROM dropdown_options WHERE category = 'role' AND option_name = 'Finance' LIMIT 1)),
+                department_id = COALESCE(department_id, (SELECT id FROM dropdown_options WHERE category = 'department' AND option_name = 'Finance' LIMIT 1)),
+                password = COALESCE(password, 'finance123'),
+                is_active = true
+            WHERE username = 'david_miller';
           `);
         } catch (alterErr) {
           console.error('Error running migrations in ensureDbInitialized:', alterErr);

@@ -29,7 +29,8 @@ export function AppProvider({ children }) {
     { username: 'vartika_jadon', name: 'Vartika Jadon', role: 'Team Member' },
     { username: 'alice_williams', name: 'Alice Williams', role: 'Team Member' },
     { username: 'vikrant_dhuriya', name: 'Vikrant Dhuriya', role: 'Team Member' },
-    { username: 'divyam_malliwal', name: 'Divyam Malliwal', role: 'Team Member' }
+    { username: 'divyam_malliwal', name: 'Divyam Malliwal', role: 'Team Member' },
+    { username: 'david_miller', name: 'David Miller (Finance)', role: 'Finance' }
   ];
 
   const capitalizeOptionName = (str) => {
