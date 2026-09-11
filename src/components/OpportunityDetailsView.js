@@ -66,12 +66,12 @@ export default function OpportunityDetailsView({ opportunity, onBack }) {
       </div>
 
       {/* Opportunity Details Card */}
-      <div className="paper-panel">
+      <div className="paper-panel" style={{ padding: '1.5rem' }}>
         <h3 style={{ fontSize: '1.25rem', marginBottom: '1.25rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
           {opportunity.opportunity_name}
         </h3>
         
-        <div className="form-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: '1.5rem' }}>
+        <div className="form-grid-4">
           <div>
             <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Client</div>
             <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{opportunity.company || 'N/A'}</div>
@@ -129,7 +129,7 @@ export default function OpportunityDetailsView({ opportunity, onBack }) {
       </div>
 
       {/* Progress Bar Section */}
-      <div className="paper-panel">
+      <div className="paper-panel" style={{ padding: '1.5rem' }}>
         <h3 style={{ fontSize: '1.15rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
           Work Item Completion
         </h3>
@@ -166,7 +166,7 @@ export default function OpportunityDetailsView({ opportunity, onBack }) {
       </div>
 
       {/* Work Items Table */}
-      <div className="paper-panel" style={{ overflowX: 'auto' }}>
+      <div className="paper-panel" style={{ padding: '1.5rem' }}>
         <h3 style={{ fontSize: '1.15rem', marginBottom: '1rem', color: 'var(--text-primary)' }}>
           Associated Work Items
         </h3>
@@ -178,8 +178,8 @@ export default function OpportunityDetailsView({ opportunity, onBack }) {
             No work items assigned to this opportunity yet.
           </div>
         ) : (
-          <div className="table-container">
-            <table className="custom-table">
+          <div className="table-container" style={{ overflowX: 'auto', width: '100%' }}>
+            <table className="custom-table" style={{ minWidth: '700px' }}>
               <thead>
                 <tr>
                   <th>Task Name</th>
