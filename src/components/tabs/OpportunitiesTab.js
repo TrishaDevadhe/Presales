@@ -21,6 +21,15 @@ export default function OpportunitiesTab() {
   const [selectedOpp, setSelectedOpp] = useState(null);
   const [modalSubTab, setModalSubTab] = useState('details'); // 'details' | 'history'
 
+  const STANDARD_PROJECT_TYPES = [
+    'Lumenore Licence',
+    'Netlink Services',
+    'Lumenore Professional Services'
+  ];
+
+  const [projectTypeSelect, setProjectTypeSelect] = useState('');
+  const [customProjectType, setCustomProjectType] = useState('');
+
   // Form state
   const [formData, setFormData] = useState({
     opportunity_name: '',
@@ -29,6 +38,8 @@ export default function OpportunitiesTab() {
     deliverable_type_id: '',
     primary_sales_owner: '',
     secondary_sales_owners: '',
+    delivery_team: '',
+    project_type: '',
     source_id: '',
     deal_stage_id: '',
     priority_id: '',
@@ -65,16 +76,18 @@ export default function OpportunitiesTab() {
     fetchOpportunities();
   }, []);
 
-  // Filter Opportunity Types to ONLY "New Business" and "Renewal"
+  // Filter Opportunity Types to "New Business", "Renewal", and "Change Request"
   const allowedOpportunityTypes = getOptions('opportunity_type').filter(opt => {
     const name = opt.option_name.toLowerCase().trim();
-    return name === 'new business' || name === 'renewal';
+    return name === 'new business' || name === 'renewal' || name === 'change request';
   });
 
   const openCreateModal = () => {
     setIsEditMode(false);
     setSelectedOpp(null);
     setModalSubTab('details');
+    setProjectTypeSelect('');
+    setCustomProjectType('');
     const defaultOppType = allowedOpportunityTypes[0]?.id || getOptions('opportunity_type')[0]?.id || '';
     setFormData({
       opportunity_name: '',
@@ -83,6 +96,8 @@ export default function OpportunitiesTab() {
       deliverable_type_id: getOptions('deliverable_type').filter(o => !o.option_name.toLowerCase().includes('pdf'))[0]?.id || '',
       primary_sales_owner: allUsers[2] || allUsers[0] || '',
       secondary_sales_owners: '',
+      delivery_team: '',
+      project_type: '',
       source_id: '',
       deal_stage_id: getOptions('deal_stage').find(o => o.option_name === 'Discovery')?.id || getOptions('deal_stage')[0]?.id || '',
       priority_id: getOptions('priority').find(o => o.option_name === 'Medium')?.id || '',
@@ -107,6 +122,17 @@ export default function OpportunitiesTab() {
     setIsEditMode(true);
     setSelectedOpp(opp);
     setModalSubTab('details');
+    const curProjType = opp.project_type || '';
+    if (STANDARD_PROJECT_TYPES.includes(curProjType)) {
+      setProjectTypeSelect(curProjType);
+      setCustomProjectType('');
+    } else if (curProjType) {
+      setProjectTypeSelect('Other');
+      setCustomProjectType(curProjType);
+    } else {
+      setProjectTypeSelect('');
+      setCustomProjectType('');
+    }
     setFormData({
       opportunity_name: opp.opportunity_name,
       company: opp.company,
@@ -114,6 +140,8 @@ export default function OpportunitiesTab() {
       deliverable_type_id: opp.deliverable_type_id || '',
       primary_sales_owner: opp.primary_sales_owner || '',
       secondary_sales_owners: opp.secondary_sales_owners || opp.secondary_sales_owner || '',
+      delivery_team: opp.delivery_team || '',
+      project_type: curProjType,
       source_id: opp.source_id || '',
       deal_stage_id: opp.deal_stage_id || '',
       priority_id: opp.priority_id || '',
@@ -148,6 +176,22 @@ export default function OpportunitiesTab() {
       ...prev,
       [name]: value
     }));
+  };
+
+  const handleProjectTypeSelectChange = (e) => {
+    const val = e.target.value;
+    setProjectTypeSelect(val);
+    if (val === 'Other') {
+      setFormData(prev => ({ ...prev, project_type: customProjectType }));
+    } else {
+      setFormData(prev => ({ ...prev, project_type: val }));
+    }
+  };
+
+  const handleCustomProjectTypeChange = (e) => {
+    const val = e.target.value;
+    setCustomProjectType(val);
+    setFormData(prev => ({ ...prev, project_type: val }));
   };
 
   const handleRichTextChange = (name, val) => {
@@ -384,6 +428,34 @@ export default function OpportunitiesTab() {
                       </select>
                     </div>
 
+                    {/* Project Type */}
+                    <div className="form-group">
+                      <label className="form-label">Project Type</label>
+                      <select
+                        name="project_type_select"
+                        className="form-control form-select"
+                        value={projectTypeSelect}
+                        onChange={handleProjectTypeSelectChange}
+                      >
+                        <option value="">Select Project Type</option>
+                        {STANDARD_PROJECT_TYPES.map(pt => (
+                          <option key={pt} value={pt}>{pt}</option>
+                        ))}
+                        <option value="Other">Other (Custom)</option>
+                      </select>
+                      {projectTypeSelect === 'Other' && (
+                        <input
+                          type="text"
+                          name="custom_project_type"
+                          className="form-control"
+                          style={{ marginTop: '0.5rem' }}
+                          placeholder="Enter custom project type..."
+                          value={customProjectType}
+                          onChange={handleCustomProjectTypeChange}
+                        />
+                      )}
+                    </div>
+
                     {/* Deliverable Type option */}
                     <div className="form-group">
                       <label className="form-label">Deliverable Type <span className="required">*</span></label>
@@ -415,6 +487,22 @@ export default function OpportunitiesTab() {
                         <option value="">Select Status</option>
                         {getOptions('deal_stage').map(opt => (
                           <option key={opt.id} value={opt.id}>{opt.option_name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Delivery Team */}
+                    <div className="form-group">
+                      <label className="form-label">Delivery Team</label>
+                      <select
+                        name="delivery_team"
+                        className="form-control form-select"
+                        value={formData.delivery_team || ''}
+                        onChange={handleInputChange}
+                      >
+                        <option value="">Select Delivery Team</option>
+                        {allUsers.map(u => (
+                          <option key={u} value={u}>{formatUserName(u)}</option>
                         ))}
                       </select>
                     </div>

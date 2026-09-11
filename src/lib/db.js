@@ -136,6 +136,25 @@ async function ensureDbInitialized() {
             UPDATE resource_profiles 
             SET password = SPLIT_PART(username, '_', 1) || '123' 
             WHERE password IS NULL;
+
+            ALTER TABLE opportunities ADD COLUMN IF NOT EXISTS delivery_team VARCHAR(255);
+            ALTER TABLE opportunities ADD COLUMN IF NOT EXISTS project_type VARCHAR(255);
+
+            UPDATE dropdown_options
+            SET option_name = 'RFP Response'
+            WHERE category = 'deliverable_type' AND option_name = 'RFP';
+
+            INSERT INTO dropdown_options (category, option_name, sort_order, color)
+            VALUES ('opportunity_type', 'Change Request', 3, '#8b5cf6')
+            ON CONFLICT (category, option_name) DO NOTHING;
+
+            INSERT INTO dropdown_options (category, option_name, sort_order, color)
+            VALUES ('deal_stage', 'POC(Proof Of Concept)', 3, '#8b5cf6')
+            ON CONFLICT (category, option_name) DO NOTHING;
+
+            INSERT INTO dropdown_options (category, option_name, sort_order, color)
+            VALUES ('deliverable_type', 'Non RFP Response', 2, '#3b82f6')
+            ON CONFLICT (category, option_name) DO NOTHING;
           `);
         } catch (alterErr) {
           console.error('Error running migrations in ensureDbInitialized:', alterErr);

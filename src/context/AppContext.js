@@ -251,6 +251,9 @@ export function AppProvider({ children }) {
   // Title Case Option Text Helper
   const formatOptionLabel = (str) => {
     if (!str || typeof str !== 'string') return str;
+    if (str.toLowerCase().includes('poc')) {
+      return str.replace(/poc/i, 'POC');
+    }
     return str
       .replace(/_/g, ' ')
       .trim()

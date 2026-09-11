@@ -40,6 +40,8 @@ export async function POST(request) {
       deliverable_type_id,
       primary_sales_owner,
       secondary_sales_owners,
+      delivery_team,
+      project_type,
       source_id,
       deal_stage_id,
       priority_id,
@@ -82,11 +84,12 @@ export async function POST(request) {
     const oppResult = await query(
       `INSERT INTO opportunities (
         opportunity_name, company, opportunity_type_id, deliverable_type_id, primary_sales_owner, secondary_sales_owners,
+        delivery_team, project_type,
         source_id, deal_stage_id, priority_id, estimated_deal_value, contract_tenure,
         win_probability, complexity_id, received_date, target_submission_date, internal_review_date,
         presales_owner, supporting_presales_members, summary, risks, special_instructions,
         tcv_amount, tcv_currency
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)
       RETURNING *`,
       [
         opportunity_name,
@@ -95,6 +98,8 @@ export async function POST(request) {
         deliverable_type_id || null,
         primary_sales_owner,
         secondary_sales_owners || '',
+        delivery_team || null,
+        project_type || null,
         source_id || null,
         deal_stage_id || null,
         priority_id || null,

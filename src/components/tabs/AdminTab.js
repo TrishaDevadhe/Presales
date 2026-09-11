@@ -89,7 +89,7 @@ export default function AdminTab() {
     fetchAutomationSettings();
   }, []);
 
-  const allowedDeliverableNames = ['rfp', 'proposal', 'presentation deck', 'brochure'];
+  const allowedDeliverableNames = ['rfp', 'rfp response', 'non rfp response', 'proposal', 'presentation deck', 'brochure'];
 
   const getDeliverableOptions = () => {
     const opts = getOptions('deliverable_type');

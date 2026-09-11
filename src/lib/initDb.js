@@ -57,15 +57,19 @@ export async function initDb() {
       special_instructions TEXT,
       tcv_amount NUMERIC(15,2) DEFAULT 0.0,
       tcv_currency VARCHAR(10) DEFAULT 'USD',
+      delivery_team VARCHAR(255),
+      project_type VARCHAR(255),
       revision_counter INTEGER DEFAULT 0,
       commercial_revision_counter INTEGER DEFAULT 0,
       UNIQUE (company, opportunity_name)
     );
 
-    -- Ensure deliverable_type_id, tcv_amount, and tcv_currency columns exist if table was created previously
+    -- Ensure deliverable_type_id, tcv_amount, tcv_currency, delivery_team, and project_type columns exist if table was created previously
     ALTER TABLE opportunities ADD COLUMN IF NOT EXISTS deliverable_type_id INTEGER REFERENCES dropdown_options(id) ON DELETE SET NULL;
     ALTER TABLE opportunities ADD COLUMN IF NOT EXISTS tcv_amount NUMERIC(15,2) DEFAULT 0.0;
     ALTER TABLE opportunities ADD COLUMN IF NOT EXISTS tcv_currency VARCHAR(10) DEFAULT 'USD';
+    ALTER TABLE opportunities ADD COLUMN IF NOT EXISTS delivery_team VARCHAR(255);
+    ALTER TABLE opportunities ADD COLUMN IF NOT EXISTS project_type VARCHAR(255);
 
     CREATE TABLE IF NOT EXISTS versions (
       id SERIAL PRIMARY KEY,
@@ -205,6 +209,7 @@ export async function initDb() {
   const defaultOptions = [
     ['opportunity_type', 'Renewal', 1, '#3b82f6'],
     ['opportunity_type', 'New Business', 2, '#10b981'],
+    ['opportunity_type', 'Change Request', 3, '#8b5cf6'],
     ['source', 'Inbound Inquiry', 1, '#10b981'],
     ['source', 'Sales Outreach', 2, '#3b82f6'],
     ['source', 'Partner Channel', 3, '#8b5cf6'],
@@ -212,8 +217,9 @@ export async function initDb() {
     ['source', 'Referral', 5, '#f59e0b'],
     ['deal_stage', 'Discovery', 1, '#3b82f6'],
     ['deal_stage', 'Submitted to Client', 2, '#06b6d4'],
-    ['deal_stage', 'Won', 3, '#10b981'],
-    ['deal_stage', 'Lost', 4, '#ef4444'],
+    ['deal_stage', 'POC(Proof Of Concept)', 3, '#8b5cf6'],
+    ['deal_stage', 'Won', 4, '#10b981'],
+    ['deal_stage', 'Lost', 5, '#ef4444'],
     ['priority', 'Low', 1, '#22c55e'],
     ['priority', 'Medium', 2, '#eab308'],
     ['priority', 'High', 3, '#f97316'],
@@ -227,10 +233,11 @@ export async function initDb() {
     ['work_category', 'Technical Scoping', 3, '#8b5cf6'],
     ['work_category', 'Pricing', 4, '#06b6d4'],
     ['work_category', 'Documentation', 5, '#10b981'],
-    ['deliverable_type', 'RFP', 1, '#ef4444'],
-    ['deliverable_type', 'Proposal', 2, '#f97316'],
-    ['deliverable_type', 'Presentation Deck', 3, '#22c55e'],
-    ['deliverable_type', 'Brochure', 4, '#2563eb'],
+    ['deliverable_type', 'RFP Response', 1, '#ef4444'],
+    ['deliverable_type', 'Non RFP Response', 2, '#3b82f6'],
+    ['deliverable_type', 'Proposal', 3, '#f97316'],
+    ['deliverable_type', 'Presentation Deck', 4, '#22c55e'],
+    ['deliverable_type', 'Brochure', 5, '#2563eb'],
     ['estimation_confidence', 'High', 1, '#22c55e'],
     ['estimation_confidence', 'Medium', 2, '#eab308'],
     ['estimation_confidence', 'Low', 3, '#ef4444'],
@@ -297,6 +304,10 @@ export async function initDb() {
     WHERE deal_stage_id IN (
       SELECT id FROM dropdown_options WHERE category = 'deal_stage' AND LOWER(option_name) IN ('proposal', 'qualification', 'internal review')
     );
+
+    UPDATE dropdown_options
+    SET option_name = 'RFP Response'
+    WHERE category = 'deliverable_type' AND option_name = 'RFP';
 
     DELETE FROM dropdown_options 
     WHERE category = 'deal_stage' 
@@ -369,9 +380,9 @@ export async function initDb() {
     INSERT INTO task_templates (deliverable_type_id, task_name, default_estimated_hours, default_role_id, sequence)
     SELECT d.id, t.task_name, t.hours, r.id, t.seq
     FROM (VALUES 
-      ('RFP', 'RFP Scope & Compliance Matrix Review', 6.0, 'Presales Owner', 1),
-      ('RFP', 'Technical Scoping & Architecture Design', 16.0, 'Team Member', 2),
-      ('RFP', 'RFP Response Drafting & Content Assembly', 12.0, 'Team Member', 3),
+      ('RFP Response', 'RFP Scope & Compliance Matrix Review', 6.0, 'Presales Owner', 1),
+      ('RFP Response', 'Technical Scoping & Architecture Design', 16.0, 'Team Member', 2),
+      ('RFP Response', 'RFP Response Drafting & Content Assembly', 12.0, 'Team Member', 3),
       ('Proposal', 'Requirements Scoping & Executive Summary', 8.0, 'Presales Owner', 1),
       ('Proposal', 'Commercial & Pricing Model Development', 10.0, 'Team Member', 2),
       ('Proposal', 'Proposal Document Review & Final Polish', 6.0, 'Presales Owner', 3),
