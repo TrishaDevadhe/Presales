@@ -8,12 +8,16 @@ import CompanyAutocomplete from '../CompanyAutocomplete';
 import StaffMultiSelect from '../StaffMultiSelect';
 
 import RecordHistoryView from '../RecordHistoryView';
+import OpportunityDetailsView from '../OpportunityDetailsView';
 
 export default function OpportunitiesTab() {
   const { currentUser, userRole, allUsers, getOptions, getOptionBadgeStyle, formatUserName, showToast, showAlert, showConfirm, globalSearchQuery } = useApp();
   const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // View state
+  const [selectedViewOpp, setSelectedViewOpp] = useState(null);
 
   // Modals state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -252,6 +256,10 @@ export default function OpportunitiesTab() {
     );
   });
 
+  if (selectedViewOpp) {
+    return <OpportunityDetailsView opportunity={selectedViewOpp} onBack={() => setSelectedViewOpp(null)} />;
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
       
@@ -293,7 +301,7 @@ export default function OpportunitiesTab() {
               </thead>
               <tbody>
                 {displayOpportunities.map((opp) => (
-                  <tr key={opp.id}>
+                  <tr key={opp.id} onClick={() => setSelectedViewOpp(opp)} style={{ cursor: 'pointer' }}>
                     <td>
                       <div>
                         <strong style={{ color: 'var(--text-primary)', fontSize: '0.95rem' }}>{opp.opportunity_name}</strong>
@@ -328,7 +336,7 @@ export default function OpportunitiesTab() {
                     </td>
                     <td className="num-col">
                       <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
-                        <button className="btn btn-ghost btn-sm" onClick={() => openEditModal(opp)}>
+                        <button className="btn btn-ghost btn-sm" onClick={(e) => { e.stopPropagation(); openEditModal(opp); }}>
                           Edit
                         </button>
                       </div>
