@@ -58,7 +58,8 @@ export async function POST(request) {
       risks,
       special_instructions,
       tcv_amount,
-      tcv_currency
+      tcv_currency,
+      finance_status
     } = body;
 
     // Validation
@@ -88,8 +89,8 @@ export async function POST(request) {
         source_id, deal_stage_id, priority_id, estimated_deal_value, contract_tenure,
         win_probability, complexity_id, received_date, target_submission_date, internal_review_date,
         presales_owner, supporting_presales_members, summary, risks, special_instructions,
-        tcv_amount, tcv_currency
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25)
+        tcv_amount, tcv_currency, finance_status
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)
       RETURNING *`,
       [
         opportunity_name,
@@ -116,7 +117,8 @@ export async function POST(request) {
         risks || '',
         special_instructions || '',
         parseFloat(tcv_amount) || 0.0,
-        tcv_currency || 'USD'
+        tcv_currency || 'USD',
+        finance_status || 'Pending'
       ]
     );
 
@@ -231,6 +233,92 @@ export async function POST(request) {
           ]
         );
       }
+    }
+
+    
+    // AUTOMATION: Always generate Finance Review & Commercial Approval work item assigned to finance_team with full opportunity details
+    try {
+      // Fetch names for dropdown options for complete details
+      const [typeRes, delivRes, sourceRes, stageRes, prioRes, compRes] = await Promise.all([
+        opportunity_type_id ? query('SELECT option_name FROM dropdown_options WHERE id = $1', [opportunity_type_id]) : { rows: [] },
+        deliverable_type_id ? query('SELECT option_name FROM dropdown_options WHERE id = $1', [deliverable_type_id]) : { rows: [] },
+        source_id ? query('SELECT option_name FROM dropdown_options WHERE id = $1', [source_id]) : { rows: [] },
+        deal_stage_id ? query('SELECT option_name FROM dropdown_options WHERE id = $1', [deal_stage_id]) : { rows: [] },
+        priority_id ? query('SELECT option_name FROM dropdown_options WHERE id = $1', [priority_id]) : { rows: [] },
+        complexity_id ? query('SELECT option_name FROM dropdown_options WHERE id = $1', [complexity_id]) : { rows: [] }
+      ]);
+
+      const oppTypeName = typeRes.rows[0]?.option_name || 'N/A';
+      const delivTypeName = delivRes.rows[0]?.option_name || 'N/A';
+      const sourceName = sourceRes.rows[0]?.option_name || 'N/A';
+      const dealStageName = stageRes.rows[0]?.option_name || 'N/A';
+      const priorityName = prioRes.rows[0]?.option_name || 'N/A';
+      const complexityName = compRes.rows[0]?.option_name || 'N/A';
+
+      const notStartedStatus = await query("SELECT id FROM dropdown_options WHERE category = 'task_status' AND option_name = 'Not Started' LIMIT 1");
+      const pricingCategory = await query("SELECT id FROM dropdown_options WHERE category = 'work_category' AND (option_name = 'Pricing' OR option_name = 'Proposal Writing') ORDER BY id ASC LIMIT 1");
+
+      const detailedDescription = `=== OPPORTUNITY REVIEW DETAILS FOR FINANCE TEAM APPROVAL ===
+
+Opportunity Name: ${opportunity_name}
+Company Name: ${company}
+Opportunity Type: ${oppTypeName}
+Deliverable Type: ${delivTypeName}
+Source: ${sourceName}
+Deal Stage: ${dealStageName}
+Priority: ${priorityName}
+Complexity: ${complexityName}
+
+FINANCIAL & COMMERCIAL METRICS:
+Estimated Deal Value: $${parseFloat(estimated_deal_value || tcv_amount || 0).toLocaleString()}
+TCV (Total Contract Value): ${tcv_currency || 'USD'} $${parseFloat(tcv_amount || estimated_deal_value || 0).toLocaleString()}
+Contract Tenure: ${contract_tenure || 0} Months
+Win Probability: ${win_probability || 0}%
+
+KEY MILESTONE DATES:
+Received Date: ${received_date}
+Internal Review Date: ${internal_review_date || 'N/A'}
+Target Submission Date: ${target_submission_date}
+
+OWNERSHIP & TEAMS:
+Primary Sales Owner: ${primary_sales_owner}
+Secondary Sales Owners: ${secondary_sales_owners || 'None'}
+Presales Lead Owner: ${presales_owner}
+Supporting Presales Members: ${supporting_presales_members || 'None'}
+Delivery Team: ${delivery_team || 'N/A'}
+Project Type: ${project_type || 'N/A'}
+
+EXECUTION SUMMARY & SCOPE:
+${summary || 'N/A'}
+
+IDENTIFIED RISKS & DEPENDENCIES:
+${risks || 'N/A'}
+
+SPECIAL INSTRUCTIONS / NOTES:
+${special_instructions || 'N/A'}`;
+
+      await query(
+        `INSERT INTO work_items (
+          opportunity_id, work_category_id, deliverable_type_id, title, description, assigned_to,
+          reviewer, priority_id, start_date, due_date, estimated_hours, status_id
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+        [
+          opportunity.id,
+          pricingCategory.rows[0]?.id || null,
+          deliverable_type_id || null,
+          `Finance Review & Commercial Approval`,
+          detailedDescription,
+          'finance_team',
+          presales_owner || primary_sales_owner || 'admin',
+          priority_id || null,
+          received_date,
+          internal_review_date || target_submission_date,
+          4.0,
+          notStartedStatus.rows[0]?.id || null
+        ]
+      );
+    } catch (finErr) {
+      console.error('Error generating Finance Team approval work item:', finErr);
     }
 
     return NextResponse.json(opportunity, { status: 201 });

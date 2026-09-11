@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
-import { isUserAssociatedWithTask } from '@/lib/userAssociation';
+import { isUserAssociatedWithTask, isFinanceUser } from '@/lib/userAssociation';
 import RichTextEditor from '../RichTextEditor';
 
 import RecordHistoryView from '../RecordHistoryView';
@@ -270,6 +270,15 @@ export default function WorkItemsTab() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
+
+    const checkOppId = formData.opportunity_id || (selectedTask && selectedTask.opportunity_id);
+    if (checkOppId && !isFinanceUser(currentUser, userRole, resourceProfiles) && userRole !== 'Admin') {
+      const opp = opportunities.find(o => String(o.id) === String(checkOppId));
+      if (opp && opp.finance_status !== 'Approved') {
+        setError(`🔒 Work cannot be saved on opportunity "${opp.opportunity_name}" because it is not approved by Finance (Status: ${opp.finance_status || 'Pending'}).`);
+        return;
+      }
+    }
 
     if (isEditMode) {
       if (!formData.title || !formData.work_category_id || !formData.assigned_to) {

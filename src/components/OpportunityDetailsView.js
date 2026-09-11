@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 
-export default function OpportunityDetailsView({ opportunity, onBack }) {
+export default function OpportunityDetailsView({ opportunity, isFinanceUser, onUpdateFinanceStatus, onBack }) {
   const { getOptions, formatUserName, getOptionBadgeStyle } = useApp();
   const [workItems, setWorkItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -56,20 +56,68 @@ export default function OpportunityDetailsView({ opportunity, onBack }) {
     return 'var(--color-success, #10b981)';
   };
 
+  const finStatus = opportunity.finance_status || 'Pending';
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
       {/* Header with Back Button */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem' }}>
         <button className="btn btn-ghost" onClick={onBack} style={{ padding: '0.5rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 600 }}>
           ← Back to Opportunities
         </button>
       </div>
 
+      {/* Finance Status Banner for Non-Finance Users */}
+      {finStatus !== 'Approved' && !isFinanceUser && (
+        <div style={{ padding: '1rem 1.25rem', backgroundColor: 'rgba(245, 158, 11, 0.12)', border: '1px solid #f59e0b', borderRadius: '8px', color: '#b45309', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <span style={{ fontSize: '1.4rem' }}>🔒</span>
+          <div>
+            <strong style={{ fontSize: '0.95rem', display: 'block', color: '#92400e' }}>Finance Approval Pending</strong>
+            <span style={{ fontSize: '0.85rem' }}>This opportunity requires approval from the Finance department before team members can work on assigned items.</span>
+          </div>
+        </div>
+      )}
+
       {/* Opportunity Details Card */}
       <div className="paper-panel" style={{ padding: '1.5rem' }}>
-        <h3 style={{ fontSize: '1.25rem', marginBottom: '1.25rem', color: 'var(--text-primary)', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
-          {opportunity.opportunity_name}
-        </h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
+          <h3 style={{ fontSize: '1.25rem', margin: 0, color: 'var(--text-primary)' }}>
+            {opportunity.opportunity_name}
+          </h3>
+          {isFinanceUser && onUpdateFinanceStatus && (
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginRight: '0.25rem' }}>Finance Decision:</span>
+              <button
+                className="btn btn-sm"
+                style={{
+                  padding: '0.35rem 0.75rem',
+                  fontWeight: 600,
+                  backgroundColor: finStatus === 'Approved' ? '#10b981' : 'transparent',
+                  color: finStatus === 'Approved' ? '#ffffff' : '#10b981',
+                  border: '1.5px solid #10b981',
+                  borderRadius: '6px'
+                }}
+                onClick={() => onUpdateFinanceStatus(opportunity.id, 'Approved')}
+              >
+                ✓ Approved
+              </button>
+              <button
+                className="btn btn-sm"
+                style={{
+                  padding: '0.35rem 0.75rem',
+                  fontWeight: 600,
+                  backgroundColor: finStatus === 'Rejected' ? '#ef4444' : 'transparent',
+                  color: finStatus === 'Rejected' ? '#ffffff' : '#ef4444',
+                  border: '1.5px solid #ef4444',
+                  borderRadius: '6px'
+                }}
+                onClick={() => onUpdateFinanceStatus(opportunity.id, 'Rejected')}
+              >
+                ✕ Rejected
+              </button>
+            </div>
+          )}
+        </div>
         
         <div className="form-grid-4">
           <div>
@@ -101,6 +149,18 @@ export default function OpportunityDetailsView({ opportunity, onBack }) {
             </div>
           </div>
 
+          <div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Finance Status</div>
+            <div>
+              {finStatus === 'Approved' ? (
+                <span className="badge" style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid #10b981', fontWeight: 600 }}>✓ Approved</span>
+              ) : finStatus === 'Rejected' ? (
+                <span className="badge" style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid #ef4444', fontWeight: 600 }}>✕ Rejected</span>
+              ) : (
+                <span className="badge" style={{ backgroundColor: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', border: '1px solid #f59e0b', fontWeight: 600 }}>⏳ Pending Approval</span>
+              )}
+            </div>
+          </div>
           <div>
             <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>TCV</div>
             <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>

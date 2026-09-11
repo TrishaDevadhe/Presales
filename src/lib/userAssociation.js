@@ -58,3 +58,17 @@ export function isUserAssociatedWithEffort(log, username, tasksList = [], opport
 
   return false;
 }
+
+export function isFinanceUser(username, userRole, resourceProfiles = []) {
+  if (!username) return false;
+  const user = username.toLowerCase().trim();
+  if (userRole === 'Finance Team' || user === 'finance_team') return true;
+  if (Array.isArray(resourceProfiles) && resourceProfiles.length > 0) {
+    const prof = resourceProfiles.find(p => p.username && p.username.toLowerCase().trim() === user);
+    if (prof && prof.department_name && prof.department_name.toLowerCase().includes('finance')) {
+      return true;
+    }
+  }
+  return false;
+}
+

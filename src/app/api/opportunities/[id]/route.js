@@ -64,7 +64,8 @@ export async function PUT(request, { params }) {
       risks,
       special_instructions,
       tcv_amount,
-      tcv_currency
+      tcv_currency,
+      finance_status
     } = body;
 
     // Validation
@@ -118,8 +119,9 @@ export async function PUT(request, { params }) {
            risks = $22,
            special_instructions = $23,
            tcv_amount = $24,
-           tcv_currency = $25
-       WHERE id = $26
+           tcv_currency = $25,
+           finance_status = COALESCE($26, finance_status)
+       WHERE id = $27
        RETURNING *`,
       [
         opportunity_name,
@@ -147,6 +149,7 @@ export async function PUT(request, { params }) {
         special_instructions || '',
         parseFloat(tcv_amount) || 0.0,
         tcv_currency || 'USD',
+        finance_status || null,
         id
       ]
     );
@@ -248,3 +251,55 @@ export async function DELETE(request, { params }) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
+// PATCH (partial update for finance_status or specific attributes)
+export async function PATCH(request, { params }) {
+  const id = params.id;
+  try {
+    const body = await request.json();
+    const { finance_status } = body;
+
+    if (!finance_status) {
+      return NextResponse.json({ error: 'finance_status is required for PATCH update' }, { status: 400 });
+    }
+
+    const existingRes = await query('SELECT * FROM opportunities WHERE id = $1', [id]);
+    if (existingRes.rows.length === 0) {
+      return NextResponse.json({ error: 'Opportunity not found' }, { status: 404 });
+    }
+    const existing = existingRes.rows[0];
+
+    const result = await query(
+      `UPDATE opportunities SET finance_status = $1 WHERE id = $2 RETURNING *`,
+      [finance_status, id]
+    );
+
+    const updatedOpp = result.rows[0];
+
+    try {
+      const { logActivity } = await import('@/lib/auditLogger');
+      const realUser = request.headers.get('x-real-user') || body.real_user_id || 'finance_team';
+      const actingAsUser = request.headers.get('x-acting-as-user') || body.acting_as_user_id || null;
+
+      await logActivity({
+        real_user_id: realUser,
+        acting_as_user_id: actingAsUser,
+        entity_type: 'Opportunity',
+        entity_id: updatedOpp.id,
+        entity_title: `${updatedOpp.company} - ${updatedOpp.opportunity_name}`,
+        action_type: 'Finance Approval Updated',
+        field_changed: 'Finance Status',
+        value_before: existing.finance_status || 'Pending',
+        value_after: finance_status,
+        summary_text: `Finance Status updated: ${existing.finance_status || 'Pending'} → ${finance_status}`
+      });
+    } catch (e) {
+      console.error('Audit logging failed for finance status update:', e);
+    }
+
+    return NextResponse.json(updatedOpp);
+  } catch (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+

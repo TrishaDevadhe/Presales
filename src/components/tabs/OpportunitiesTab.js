@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
-import { isUserAssociatedWithOpp } from '@/lib/userAssociation';
+import { isUserAssociatedWithOpp, isFinanceUser } from '@/lib/userAssociation';
 import RichTextEditor from '../RichTextEditor';
 import CompanyAutocomplete from '../CompanyAutocomplete';
 import StaffMultiSelect from '../StaffMultiSelect';
@@ -11,7 +11,8 @@ import RecordHistoryView from '../RecordHistoryView';
 import OpportunityDetailsView from '../OpportunityDetailsView';
 
 export default function OpportunitiesTab() {
-  const { currentUser, userRole, allUsers, getOptions, getOptionBadgeStyle, formatUserName, showToast, showAlert, showConfirm, globalSearchQuery } = useApp();
+  const { currentUser, userRole, allUsers, resourceProfiles, getOptions, getOptionBadgeStyle, formatUserName, showToast, showAlert, showConfirm, globalSearchQuery } = useApp();
+  const isFinance = isFinanceUser(currentUser, userRole, resourceProfiles);
   const [opportunities, setOpportunities] = useState([]);
   const [workItems, setWorkItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -309,8 +310,37 @@ export default function OpportunitiesTab() {
     }
   };
 
-  // Filter opportunities for non-admin users based on association + global search query
-  const userFilteredOpps = userRole === 'Admin'
+  const handleUpdateFinanceStatus = async (oppId, newStatus) => {
+    try {
+      const res = await fetch(`/api/opportunities/${oppId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ finance_status: newStatus })
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to update finance approval status');
+      }
+      setOpportunities(prev => prev.map(o => o.id === oppId ? { ...o, finance_status: newStatus } : o));
+      if (selectedViewOpp && selectedViewOpp.id === oppId) {
+        setSelectedViewOpp(prev => prev ? { ...prev, finance_status: newStatus } : null);
+      }
+      showToast(`✓ Finance status updated to "${newStatus}"`, 'success');
+    } catch (err) {
+      showToast(`Failed to update finance status: ${err.message}`, 'error');
+    }
+  };
+
+  // Filter opportunities:
+  // For Finance users: show ALL active opportunities (deal stage is not 'Won', 'Lost', 'Dropped')
+  // For Admin users: show all opportunities
+  // For other users: show associated opportunities
+  const userFilteredOpps = isFinance
+    ? opportunities.filter(opp => {
+        const stage = (opp.deal_stage_name || '').toLowerCase().trim();
+        return stage !== 'won' && stage !== 'lost' && stage !== 'dropped';
+      })
+    : userRole === 'Admin'
     ? opportunities
     : opportunities.filter(opp => isUserAssociatedWithOpp(opp, currentUser));
 
@@ -323,14 +353,28 @@ export default function OpportunitiesTab() {
       (opp.opportunity_type_name && opp.opportunity_type_name.toLowerCase().includes(q)) ||
       (opp.deliverable_type_name && opp.deliverable_type_name.toLowerCase().includes(q)) ||
       (opp.presales_owner && opp.presales_owner.toLowerCase().includes(q)) ||
-      (opp.primary_sales_owner && opp.primary_sales_owner.toLowerCase().includes(q))
+      (opp.primary_sales_owner && opp.primary_sales_owner.toLowerCase().includes(q)) ||
+      (opp.finance_status && opp.finance_status.toLowerCase().includes(q))
     );
   });
+
+  const getFinanceStatusBadge = (status) => {
+    const val = status || 'Pending';
+    if (val === 'Approved') {
+      return <span className="badge" style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#10b981', border: '1px solid #10b981', fontWeight: 600 }}>✓ Approved</span>;
+    }
+    if (val === 'Rejected') {
+      return <span className="badge" style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid #ef4444', fontWeight: 600 }}>✕ Rejected</span>;
+    }
+    return <span className="badge" style={{ backgroundColor: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', border: '1px solid #f59e0b', fontWeight: 600 }}>⏳ Pending</span>;
+  };
 
   if (selectedViewOpp) {
     return (
       <OpportunityDetailsView 
         opportunity={selectedViewOpp} 
+        isFinanceUser={isFinance}
+        onUpdateFinanceStatus={handleUpdateFinanceStatus}
         onBack={() => {
           setSelectedViewOpp(null);
           fetchOpportunities();
@@ -356,9 +400,13 @@ export default function OpportunitiesTab() {
         ) : displayOpportunities.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '3.5rem 1.5rem', color: 'var(--text-secondary)' }}>
             <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>💼</div>
-            <h4 style={{ fontSize: '1.1rem', color: 'var(--text-primary)', marginBottom: '0.4rem' }}>No Associated Opportunities Found</h4>
+            <h4 style={{ fontSize: '1.1rem', color: 'var(--text-primary)', marginBottom: '0.4rem' }}>
+              {isFinance ? 'No Active Opportunities Found' : 'No Associated Opportunities Found'}
+            </h4>
             <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
-              {userRole === 'Admin'
+              {isFinance
+                ? 'There are currently no active opportunities requiring finance review.'
+                : userRole === 'Admin'
                 ? 'No opportunities found. Click "+ Add Opportunity" to create one.'
                 : `You are currently not listed as a sales owner or presales member on any active opportunity.`}
             </p>
@@ -372,10 +420,11 @@ export default function OpportunitiesTab() {
                   <th>Type</th>
                   <th>Deliverable Type</th>
                   <th>Stage</th>
+                  <th>Finance Status</th>
                   <th className="num-col">TCV</th>
                   <th>Due Date</th>
                   <th>Presales Owner</th>
-                  <th className="num-col">Actions</th>
+                  <th className="num-col">{isFinance ? 'Finance Approval' : 'Actions'}</th>
                 </tr>
               </thead>
               <tbody>
@@ -434,6 +483,9 @@ export default function OpportunitiesTab() {
                             {opp.deal_stage_name || 'Proposal'}
                           </span>
                         </td>
+                        <td>
+                          {getFinanceStatusBadge(opp.finance_status)}
+                        </td>
                         <td className="num-col" style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
                           {formatTCV(opp.tcv_amount || opp.estimated_deal_value, opp.tcv_currency)}
                         </td>
@@ -444,11 +496,58 @@ export default function OpportunitiesTab() {
                           <strong style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{formatUserName(opp.presales_owner) || 'Unassigned'}</strong>
                         </td>
                         <td className="num-col">
-                          <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
-                            <button className="btn btn-ghost btn-sm" onClick={(e) => { e.stopPropagation(); openEditModal(opp); }}>
-                              Edit
-                            </button>
-                          </div>
+                          {isFinance ? (
+                            <div style={{ display: 'inline-flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
+                              <button
+                                className="btn btn-sm"
+                                style={{
+                                  padding: '0.3rem 0.65rem',
+                                  fontSize: '0.8rem',
+                                  fontWeight: 600,
+                                  backgroundColor: opp.finance_status === 'Approved' ? '#10b981' : 'transparent',
+                                  color: opp.finance_status === 'Approved' ? '#ffffff' : '#10b981',
+                                  border: '1.5px solid #10b981',
+                                  borderRadius: '6px',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s ease'
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleUpdateFinanceStatus(opp.id, 'Approved');
+                                }}
+                                title="Approve opportunity"
+                              >
+                                ✓ Approved
+                              </button>
+                              <button
+                                className="btn btn-sm"
+                                style={{
+                                  padding: '0.3rem 0.65rem',
+                                  fontSize: '0.8rem',
+                                  fontWeight: 600,
+                                  backgroundColor: opp.finance_status === 'Rejected' ? '#ef4444' : 'transparent',
+                                  color: opp.finance_status === 'Rejected' ? '#ffffff' : '#ef4444',
+                                  border: '1.5px solid #ef4444',
+                                  borderRadius: '6px',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s ease'
+                                }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleUpdateFinanceStatus(opp.id, 'Rejected');
+                                }}
+                                title="Reject opportunity"
+                              >
+                                ✕ Rejected
+                              </button>
+                            </div>
+                          ) : (
+                            <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
+                              <button className="btn btn-ghost btn-sm" onClick={(e) => { e.stopPropagation(); openEditModal(opp); }}>
+                                Edit
+                              </button>
+                            </div>
+                          )}
                         </td>
                       </tr>
 
@@ -460,7 +559,7 @@ export default function OpportunitiesTab() {
                         onMouseMove={handleMouseMove}
                         onMouseLeave={() => setHoveredOppData(null)}
                       >
-                        <td colSpan={8}>
+                        <td colSpan={9}>
                           <div 
                             className="opportunity-partition-bar-container"
                             title={`Work Item Completion: ${completionPercentage}% (${completedWorkItems} of ${totalWorkItems} completed)`}

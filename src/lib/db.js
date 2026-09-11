@@ -133,12 +133,68 @@ async function ensureDbInitialized() {
             UPDATE resource_profiles SET name = 'Vikrant Dhuriya', password = 'vikrant123' WHERE username = 'vikrant_dhuriya';
             UPDATE resource_profiles SET name = 'Divyam Malliwal', password = 'divyam123' WHERE username = 'divyam_malliwal';
 
+            -- Ensure Finance Team role and profile exist
+            INSERT INTO dropdown_options (category, option_name, sort_order, color)
+            VALUES ('role', 'Finance Team', 5, '#f59e0b')
+            ON CONFLICT (category, option_name) DO NOTHING;
+
+            INSERT INTO resource_profiles (username, name, role_id, seniority_id, skills, department_id, weekly_capacity_hours, standard_focus, password)
+            SELECT 'finance_team', 'Finance Team', 
+                   (SELECT id FROM dropdown_options WHERE category = 'role' AND option_name = 'Finance Team' LIMIT 1), 
+                   (SELECT id FROM dropdown_options WHERE category = 'seniority' AND option_name = 'Senior Consultant' LIMIT 1), 
+                   'Financial & Commercial Review, Deal Approvals', 
+                   (SELECT id FROM dropdown_options WHERE category = 'department' AND option_name = 'Presales Solutions' LIMIT 1), 
+                   40.0, 'Financial & Commercial Review, Deal Approvals', 'finance123'
+            WHERE NOT EXISTS (SELECT 1 FROM resource_profiles WHERE username = 'finance_team');
+
+            UPDATE resource_profiles 
+            SET name = 'Finance Team', password = 'finance123', role_id = (SELECT id FROM dropdown_options WHERE category = 'role' AND option_name = 'Finance Team' LIMIT 1) 
+            WHERE username = 'finance_team';
+
+            -- Ensure every existing opportunity has a Finance Review work item assigned to finance_team
+            INSERT INTO work_items (
+              opportunity_id, work_category_id, deliverable_type_id, title, description, assigned_to,
+              priority_id, start_date, due_date, estimated_hours, status_id
+            )
+            SELECT 
+              o.id,
+              COALESCE(o.deliverable_type_id, (SELECT id FROM dropdown_options WHERE category = 'work_category' AND option_name = 'Pricing' LIMIT 1)),
+              o.deliverable_type_id,
+              'Finance Review & Commercial Approval',
+              '=== OPPORTUNITY REVIEW DETAILS FOR FINANCE TEAM ===' || CHR(10) ||
+              'Company: ' || COALESCE(o.company, 'N/A') || CHR(10) ||
+              'Opportunity Name: ' || COALESCE(o.opportunity_name, 'N/A') || CHR(10) ||
+              'Estimated Deal Value: $' || COALESCE(o.estimated_deal_value::text, '0.00') || CHR(10) ||
+              'TCV Amount: ' || COALESCE(o.tcv_currency, 'USD') || ' $' || COALESCE(o.tcv_amount::text, '0.00') || CHR(10) ||
+              'Contract Tenure: ' || COALESCE(o.contract_tenure::text, '0') || ' Months' || CHR(10) ||
+              'Win Probability: ' || COALESCE(o.win_probability::text, '0') || '%' || CHR(10) ||
+              'Received Date: ' || COALESCE(o.received_date::text, 'N/A') || CHR(10) ||
+              'Target Submission Date: ' || COALESCE(o.target_submission_date::text, 'N/A') || CHR(10) ||
+              'Primary Sales Owner: ' || COALESCE(o.primary_sales_owner, 'N/A') || CHR(10) ||
+              'Presales Owner: ' || COALESCE(o.presales_owner, 'N/A') || CHR(10) ||
+              'Summary: ' || COALESCE(o.summary, 'N/A') || CHR(10) ||
+              'Risks: ' || COALESCE(o.risks, 'N/A'),
+              'finance_team',
+              o.priority_id,
+              o.received_date,
+              o.target_submission_date,
+              4.0,
+              (SELECT id FROM dropdown_options WHERE category = 'task_status' AND option_name = 'Not Started' LIMIT 1)
+            FROM opportunities o
+            WHERE NOT EXISTS (
+              SELECT 1 FROM work_items w 
+              WHERE w.opportunity_id = o.id AND (w.assigned_to = 'finance_team' OR LOWER(w.title) LIKE '%finance%')
+            );
+
+
             UPDATE resource_profiles 
             SET password = SPLIT_PART(username, '_', 1) || '123' 
             WHERE password IS NULL;
 
             ALTER TABLE opportunities ADD COLUMN IF NOT EXISTS delivery_team VARCHAR(255);
             ALTER TABLE opportunities ADD COLUMN IF NOT EXISTS project_type VARCHAR(255);
+            ALTER TABLE opportunities ADD COLUMN IF NOT EXISTS finance_status VARCHAR(50) DEFAULT 'Pending';
+            UPDATE opportunities SET finance_status = 'Pending' WHERE finance_status IS NULL;
 
             UPDATE dropdown_options
             SET option_name = 'RFP Response'

@@ -65,7 +65,8 @@ export default function LoginPage() {
         alice_williams: 'alice123',
         john_smith: 'john123',
         vikrant_dhuriya: 'vikrant123',
-        divyam_malliwal: 'divyam123'
+        divyam_malliwal: 'divyam123',
+        finance_team: 'finance123'
       };
 
       const dbPassword = userProfile && userProfile.password ? userProfile.password.trim() : null;
@@ -78,7 +79,8 @@ export default function LoginPage() {
                       (inputPass.startsWith('-') && inputPass.substring(1) === expectedPassword) ||
                       (cleanUser === 'admin' && (inputPass === 'admin123' || inputPass === '-admin123')) ||
                       (cleanUser === 'vikrant_dhuriya' && (inputPass === 'vikrant123' || inputPass === '-vikrant123')) ||
-                      (cleanUser === 'divyam_malliwal' && (inputPass === 'divyam123' || inputPass === '-divyam123'));
+                      (cleanUser === 'divyam_malliwal' && (inputPass === 'divyam123' || inputPass === '-divyam123')) ||
+                      (cleanUser === 'finance_team' && (inputPass === 'finance123' || inputPass === '-finance123'));
 
       if (!isValid) {
         fetch('/api/auditlogs', {
@@ -120,7 +122,8 @@ export default function LoginPage() {
     { role: 'Admin', scope: 'Full System Control', badgeColor: 'rgba(239, 68, 68, 0.15)', color: '#EF4444', access: 'All Tab Modules, Picklists, Settings & Impersonation' },
     { role: 'Sales Owner', scope: 'Deals & Pipeline', badgeColor: 'rgba(59, 130, 246, 0.15)', color: '#3B82F6', access: 'Opportunities, Pipeline management & Client Requests' },
     { role: 'Presales Owner', scope: 'Scoping & Capacity', badgeColor: 'rgba(16, 185, 129, 0.15)', color: '#10B981', access: 'Work Items, Proposal Revisions & Resource Allocation' },
-    { role: 'Team Member', scope: 'Delivery & Hours', badgeColor: 'rgba(245, 158, 11, 0.15)', color: '#F59E0B', access: 'Work Item Boards, Effort Logs & Client Feedback' }
+    { role: 'Team Member', scope: 'Delivery & Hours', badgeColor: 'rgba(245, 158, 11, 0.15)', color: '#F59E0B', access: 'Work Item Boards, Effort Logs & Client Feedback' },
+    { role: 'Finance Team', scope: 'Financial Approvals', badgeColor: 'rgba(245, 158, 11, 0.15)', color: '#F59E0B', access: 'Opportunity Financial Scoping, Commercial Review & Approvals' }
   ];
 
   return (
