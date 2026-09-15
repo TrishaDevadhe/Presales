@@ -24,8 +24,8 @@ export default function EditProfileModal({ isOpen, onClose }) {
     if (isOpen && currentUser && resourceProfiles) {
       const prof = resourceProfiles.find(p => p.username.toLowerCase() === currentUser.toLowerCase()) || {};
       setOriginalUser(currentUser);
-      const defaultName = prof.name || (currentUser === 'admin' ? 'Adhesh(admin)' : prof.username || currentUser);
-      const defaultPwd = prof.password || (currentUser === 'admin' ? '-admin123' : '');
+      const defaultName = prof.name || prof.username || currentUser;
+      const defaultPwd = prof.password || '';
       setFormData({
         name: defaultName,
         username: prof.username || currentUser,

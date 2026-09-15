@@ -46,14 +46,14 @@ async function ensureDbInitialized() {
             ALTER TABLE resource_profiles ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
             UPDATE resource_profiles SET is_active = true WHERE is_active IS NULL;
 
-            -- Update Admin credentials
+            -- Update Admin credentials if missing
             UPDATE resource_profiles 
-            SET name = 'Adhesh(admin)', password = 'admin123' 
-            WHERE username = 'admin';
+            SET name = COALESCE(name, 'Adhesh'), password = COALESCE(password, 'admin123') 
+            WHERE username = 'admin' AND (name IS NULL OR password IS NULL);
 
             -- Rename bob_jones -> vartika_jadon if bob_jones exists
             UPDATE resource_profiles 
-            SET username = 'vartika_jadon', name = 'Vartika Jadon', password = 'vartika123' 
+            SET username = 'vartika_jadon', name = COALESCE(name, 'Vartika Jadon'), password = COALESCE(password, 'vartika123') 
             WHERE username = 'bob_jones';
 
             -- Ensure jane_doe exists
@@ -65,12 +65,6 @@ async function ensureDbInitialized() {
                    (SELECT id FROM dropdown_options WHERE category = 'department' AND option_name = 'Presales Solutions' LIMIT 1), 
                    45.0, 'RFPs, Cloud Architecture', 'jane123'
             WHERE NOT EXISTS (SELECT 1 FROM resource_profiles WHERE username = 'jane_doe');
-
-            -- Explicitly set passwords and names for existing/updated profiles
-            UPDATE resource_profiles SET name = 'Adhesh(admin)', password = 'admin123' WHERE username = 'admin';
-            UPDATE resource_profiles SET name = 'Vartika Jadon', password = 'vartika123' WHERE username = 'vartika_jadon';
-            UPDATE resource_profiles SET name = 'Jane Doe', password = 'jane123' WHERE username = 'jane_doe';
-            UPDATE resource_profiles SET name = 'Alice Williams', password = 'alice123' WHERE username = 'alice_williams';
 
             -- Insert vikrant_dhuriya if not exists
             INSERT INTO resource_profiles (username, name, role_id, seniority_id, skills, department_id, weekly_capacity_hours, standard_focus, password)
@@ -124,14 +118,14 @@ async function ensureDbInitialized() {
                    40.0, 'RFPs, Cloud Architecture', 'trisha123'
             WHERE NOT EXISTS (SELECT 1 FROM resource_profiles WHERE username = 'trisha_devadhe');
 
-            -- Explicitly set passwords and names for existing/updated profiles
-            UPDATE resource_profiles SET name = 'Adhesh(admin)', password = 'admin123' WHERE username = 'admin';
-            UPDATE resource_profiles SET name = 'Vartika Jadon', password = 'vartika123' WHERE username = 'vartika_jadon';
-            UPDATE resource_profiles SET name = 'Jane Doe', password = 'jane123' WHERE username = 'jane_doe';
-            UPDATE resource_profiles SET name = 'Trisha Devadhe', password = 'trisha123', role_id = (SELECT id FROM dropdown_options WHERE category = 'role' AND option_name = 'Team Member' LIMIT 1) WHERE username = 'trisha_devadhe';
-            UPDATE resource_profiles SET name = 'Alice Williams', password = 'alice123' WHERE username = 'alice_williams';
-            UPDATE resource_profiles SET name = 'Vikrant Dhuriya', password = 'vikrant123' WHERE username = 'vikrant_dhuriya';
-            UPDATE resource_profiles SET name = 'Divyam Malliwal', password = 'divyam123' WHERE username = 'divyam_malliwal';
+            -- Explicitly set passwords and names only if not yet populated
+            UPDATE resource_profiles SET name = COALESCE(name, 'Adhesh'), password = COALESCE(password, 'admin123') WHERE username = 'admin' AND (name IS NULL OR password IS NULL);
+            UPDATE resource_profiles SET name = COALESCE(name, 'Vartika Jadon'), password = COALESCE(password, 'vartika123') WHERE username = 'vartika_jadon' AND (name IS NULL OR password IS NULL);
+            UPDATE resource_profiles SET name = COALESCE(name, 'Jane Doe'), password = COALESCE(password, 'jane123') WHERE username = 'jane_doe' AND (name IS NULL OR password IS NULL);
+            UPDATE resource_profiles SET name = COALESCE(name, 'Trisha Devadhe'), password = COALESCE(password, 'trisha123'), role_id = COALESCE(role_id, (SELECT id FROM dropdown_options WHERE category = 'role' AND option_name = 'Team Member' LIMIT 1)) WHERE username = 'trisha_devadhe' AND (name IS NULL OR password IS NULL);
+            UPDATE resource_profiles SET name = COALESCE(name, 'Alice Williams'), password = COALESCE(password, 'alice123') WHERE username = 'alice_williams' AND (name IS NULL OR password IS NULL);
+            UPDATE resource_profiles SET name = COALESCE(name, 'Vikrant Dhuriya'), password = COALESCE(password, 'vikrant123') WHERE username = 'vikrant_dhuriya' AND (name IS NULL OR password IS NULL);
+            UPDATE resource_profiles SET name = COALESCE(name, 'Divyam Malliwal'), password = COALESCE(password, 'divyam123') WHERE username = 'divyam_malliwal' AND (name IS NULL OR password IS NULL);
 
             -- Ensure Finance Team role and profile exist
             INSERT INTO dropdown_options (category, option_name, sort_order, color)
@@ -148,8 +142,8 @@ async function ensureDbInitialized() {
             WHERE NOT EXISTS (SELECT 1 FROM resource_profiles WHERE username = 'finance_team');
 
             UPDATE resource_profiles 
-            SET name = 'Finance Team', password = 'finance123', role_id = (SELECT id FROM dropdown_options WHERE category = 'role' AND option_name = 'Finance Team' LIMIT 1) 
-            WHERE username = 'finance_team';
+            SET name = COALESCE(name, 'Finance Team'), password = COALESCE(password, 'finance123'), role_id = COALESCE(role_id, (SELECT id FROM dropdown_options WHERE category = 'role' AND option_name = 'Finance Team' LIMIT 1)) 
+            WHERE username = 'finance_team' AND (name IS NULL OR password IS NULL);
 
             -- Ensure every existing opportunity has a Finance Review work item assigned to finance_team
             INSERT INTO work_items (

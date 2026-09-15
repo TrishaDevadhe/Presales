@@ -11,13 +11,38 @@ export function isUserAssociatedWithOpp(opp, username) {
   const secondarySales = (opp.secondary_sales_owners || '').toLowerCase().trim();
   const presalesOwner = (opp.presales_owner || '').toLowerCase().trim();
   const supporting = (opp.supporting_presales_members || '').toLowerCase().trim();
+  const deliveryTeam = (opp.delivery_team || '').toLowerCase().trim();
 
   return (
     primarySales === user ||
     secondarySales.includes(user) ||
     presalesOwner === user ||
-    supporting.includes(user)
+    supporting.includes(user) ||
+    deliveryTeam === user ||
+    deliveryTeam.includes(user)
   );
+}
+
+export function getUserRoleInOpp(opp, username) {
+  if (!opp || !username) return 'Team Member';
+  const user = username.toLowerCase().trim();
+
+  const presalesOwner = (opp.presales_owner || '').toLowerCase().trim();
+  if (presalesOwner === user) return 'Presales Lead';
+
+  const primarySales = (opp.primary_sales_owner || '').toLowerCase().trim();
+  if (primarySales === user) return 'Primary Sales Owner';
+
+  const deliveryTeam = (opp.delivery_team || '').toLowerCase().trim();
+  if (deliveryTeam === user || deliveryTeam.includes(user)) return 'Delivery Team';
+
+  const secondarySales = (opp.secondary_sales_owners || '').toLowerCase().trim();
+  if (secondarySales.includes(user)) return 'Sales Owner';
+
+  const supporting = (opp.supporting_presales_members || '').toLowerCase().trim();
+  if (supporting.includes(user)) return 'Supporting Presales';
+
+  return 'Associated Member';
 }
 
 export function isUserAssociatedWithTask(task, username, opportunitiesList = []) {

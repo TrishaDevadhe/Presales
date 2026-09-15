@@ -22,7 +22,7 @@ export function AppProvider({ children }) {
 
   // Available mock users and roles
   const users = [
-    { username: 'admin', name: 'Adhesh(admin)', role: 'Admin' },
+    { username: 'admin', name: 'Adhesh', role: 'Admin' },
     { username: 'jane_doe', name: 'Jane Doe', role: 'Presales Owner' },
     { username: 'trisha_devadhe', name: 'Trisha Devadhe', role: 'Team Member' },
     { username: 'john_smith', name: 'John Smith', role: 'Sales Owner' },
@@ -227,12 +227,9 @@ export function AppProvider({ children }) {
   const formatUserName = (username) => {
     if (!username || typeof username !== 'string') return username || '';
     const str = username.trim();
-    if (str.toLowerCase() === 'admin' || str === 'admin') {
-      return 'Adhesh(admin)';
-    }
-    const prof = resourceProfiles.find(p => p.username && p.username.toLowerCase() === str.toLowerCase());
+    const prof = (resourceProfiles || []).find(p => p.username && p.username.toLowerCase() === str.toLowerCase());
     if (prof && prof.name) return prof.name;
-    const mock = users.find(u => u.username && u.username.toLowerCase() === str.toLowerCase());
+    const mock = (users || []).find(u => u.username && u.username.toLowerCase() === str.toLowerCase());
     if (mock && mock.name) return mock.name;
     return str;
   };

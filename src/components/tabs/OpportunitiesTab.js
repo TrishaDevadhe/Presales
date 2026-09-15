@@ -9,8 +9,10 @@ import StaffMultiSelect from '../StaffMultiSelect';
 
 import RecordHistoryView from '../RecordHistoryView';
 import OpportunityDetailsView from '../OpportunityDetailsView';
+import OpportunityImportModal from '../OpportunityImportModal';
+import { getOpportunityDeadlineInfo, getUserOpportunityAlerts } from '@/lib/opportunityAlerts.js';
 
-export default function OpportunitiesTab() {
+export default function OpportunitiesTab({ targetOppFromNotification, onClearTargetOpp, onOpportunitiesUpdated }) {
   const { currentUser, userRole, allUsers, resourceProfiles, getOptions, getOptionBadgeStyle, formatUserName, showToast, showAlert, showConfirm, globalSearchQuery } = useApp();
   const isFinance = isFinanceUser(currentUser, userRole, resourceProfiles);
   const [opportunities, setOpportunities] = useState([]);
@@ -29,6 +31,19 @@ export default function OpportunitiesTab() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedOpp, setSelectedOpp] = useState(null);
   const [modalSubTab, setModalSubTab] = useState('details'); // 'details' | 'history'
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [showUrgentOnly, setShowUrgentOnly] = useState(false);
+
+  const userAlerts = getUserOpportunityAlerts(opportunities, currentUser, userRole);
+
+  // If navigated directly from notification center to a specific opportunity
+  useEffect(() => {
+    if (targetOppFromNotification) {
+      const matched = opportunities.find(o => o.id === targetOppFromNotification.id) || targetOppFromNotification;
+      setSelectedViewOpp(matched);
+      if (onClearTargetOpp) onClearTargetOpp();
+    }
+  }, [targetOppFromNotification, opportunities, onClearTargetOpp]);
 
   const STANDARD_PROJECT_TYPES = [
     'Lumenore Licence',
@@ -80,6 +95,9 @@ export default function OpportunitiesTab() {
       ]);
       setOpportunities(Array.isArray(oppsData) ? oppsData : []);
       setWorkItems(Array.isArray(tasksData) ? tasksData : []);
+      if (onOpportunitiesUpdated) {
+        onOpportunitiesUpdated();
+      }
     } catch (e) {
       console.error('Error fetching opportunities or work items:', e);
       setError('Failed to load opportunities');
@@ -238,6 +256,11 @@ export default function OpportunitiesTab() {
     setIsModalOpen(true);
   };
 
+  const handleImportSuccess = (result) => {
+    fetchOpportunities();
+    showToast(`✓ Successfully imported ${result.importedCount} opportunities!`, 'success');
+  };
+
   const formatTCV = (amount, currency = 'USD') => {
     const num = parseFloat(amount);
     if (isNaN(num) || num === 0) return '—';
@@ -345,6 +368,10 @@ export default function OpportunitiesTab() {
     : opportunities.filter(opp => isUserAssociatedWithOpp(opp, currentUser));
 
   const displayOpportunities = userFilteredOpps.filter(opp => {
+    if (showUrgentOnly) {
+      const isUrgent = userAlerts.allAlerts.some(a => a.opportunityId === opp.id);
+      if (!isUrgent) return false;
+    }
     if (!globalSearchQuery) return true;
     const q = globalSearchQuery.toLowerCase();
     return (
@@ -386,8 +413,72 @@ export default function OpportunitiesTab() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
       
+      {/* Urgent Opportunities Warning Banner for Directly Associated User */}
+      {userAlerts.totalCount > 0 && (
+        <div style={{
+          background: userAlerts.overdueCount > 0 
+            ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(245, 158, 11, 0.08) 100%)' 
+            : 'rgba(245, 158, 11, 0.08)',
+          border: `1.5px solid ${userAlerts.overdueCount > 0 ? '#ef4444' : '#f59e0b'}`,
+          borderRadius: 'var(--radius-md, 10px)',
+          padding: '0.85rem 1.25rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '0.75rem'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <span style={{ fontSize: '1.4rem' }}>{userAlerts.overdueCount > 0 ? '⚠️' : '⏳'}</span>
+            <div>
+              <strong style={{ color: 'var(--text-primary)', fontSize: '0.92rem', display: 'block' }}>
+                {userAlerts.overdueCount > 0 && userAlerts.approachingCount > 0
+                  ? `Urgent Action Required: You have ${userAlerts.overdueCount} overdue and ${userAlerts.approachingCount} upcoming deadline opportunity(s)`
+                  : userAlerts.overdueCount > 0
+                  ? `Urgent Action Required: You have ${userAlerts.overdueCount} opportunity(s) that crossed their submission deadline!`
+                  : `Deadline Approaching: You have ${userAlerts.approachingCount} opportunity(s) due soon!`}
+              </strong>
+              <span style={{ fontSize: '0.81rem', color: 'var(--text-secondary)' }}>
+                These notifications apply exclusively to active opportunities where you are designated as the sales owner, presales lead, or delivery team.
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="btn btn-sm"
+            onClick={() => setShowUrgentOnly(prev => !prev)}
+            style={{
+              fontSize: '0.82rem',
+              fontWeight: 700,
+              padding: '0.35rem 0.85rem',
+              borderRadius: '6px',
+              border: `1.5px solid ${userAlerts.overdueCount > 0 ? '#ef4444' : '#f59e0b'}`,
+              backgroundColor: showUrgentOnly ? (userAlerts.overdueCount > 0 ? '#ef4444' : '#f59e0b') : '#ffffff',
+              color: showUrgentOnly ? '#ffffff' : (userAlerts.overdueCount > 0 ? '#dc2626' : '#d97706'),
+              cursor: 'pointer',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            {showUrgentOnly ? '✕ Show All Pipeline' : `Filter to My Urgent Opportunities (${userAlerts.totalCount})`}
+          </button>
+        </div>
+      )}
+
       {/* Top action controls */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '0.75rem' }}>
+        <button 
+          className="btn btn-outline" 
+          onClick={() => setIsImportModalOpen(true)}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.45rem',
+            fontWeight: 600
+          }}
+        >
+          <span>📥</span>
+          <span>Import Excel / CSV</span>
+        </button>
         <button className="btn btn-primary" onClick={openCreateModal}>
           + Add Opportunity
         </button>
@@ -490,7 +581,31 @@ export default function OpportunitiesTab() {
                           {formatTCV(opp.tcv_amount || opp.estimated_deal_value, opp.tcv_currency)}
                         </td>
                         <td style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
-                          {opp.target_submission_date ? opp.target_submission_date.split('T')[0] : 'N/A'}
+                          <div>{opp.target_submission_date ? opp.target_submission_date.split('T')[0] : 'N/A'}</div>
+                          {(() => {
+                            const deadlineAlert = getOpportunityDeadlineInfo(opp);
+                            if (!deadlineAlert) return null;
+                            const isOverdue = deadlineAlert.type === 'overdue' || deadlineAlert.diffDays === 0;
+                            return (
+                              <div
+                                style={{
+                                  marginTop: '0.2rem',
+                                  fontSize: '0.72rem',
+                                  fontWeight: 700,
+                                  color: isOverdue ? '#dc2626' : '#d97706',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.2rem',
+                                  backgroundColor: isOverdue ? 'rgba(239, 68, 68, 0.12)' : 'rgba(245, 158, 11, 0.12)',
+                                  padding: '0.12rem 0.45rem',
+                                  borderRadius: '4px'
+                                }}
+                                title={deadlineAlert.message}
+                              >
+                                {deadlineAlert.badgeText}
+                              </div>
+                            );
+                          })()}
                         </td>
                         <td>
                           <strong style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{formatUserName(opp.presales_owner) || 'Unassigned'}</strong>
@@ -791,6 +906,50 @@ export default function OpportunitiesTab() {
             {error && (
               <div className="alert-banner alert-banner-danger" style={{ marginBottom: '1.25rem' }}>
                 <div>{error}</div>
+              </div>
+            )}
+
+            {!isEditMode && (
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.06) 0%, rgba(6, 182, 212, 0.08) 100%)',
+                border: '1px solid rgba(37, 99, 235, 0.22)',
+                borderRadius: '8px',
+                padding: '0.75rem 1.1rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: '1.25rem',
+                flexWrap: 'wrap',
+                gap: '0.75rem'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                  <span style={{ fontSize: '1.3rem' }}>📊</span>
+                  <div>
+                    <strong style={{ fontSize: '0.88rem', color: 'var(--text-primary)', display: 'block' }}>
+                      Importing past opportunities dealt before this app?
+                    </strong>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                      Instead of typing each record manually, upload your spreadsheet to import multiple entries at once.
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline"
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setIsImportModalOpen(true);
+                  }}
+                  style={{
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    padding: '0.35rem 0.85rem',
+                    background: '#ffffff',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  📥 Import from Excel
+                </button>
               </div>
             )}
 
@@ -1195,6 +1354,15 @@ export default function OpportunitiesTab() {
           </div>
         </div>
       )}
+
+      {/* BATCH IMPORT OPPORTUNITIES MODAL */}
+      <OpportunityImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onSuccess={handleImportSuccess}
+        dropdownOptions={getOptions('opportunity_type')}
+        users={resourceProfiles}
+      />
 
     </div>
   );

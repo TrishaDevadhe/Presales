@@ -17,6 +17,7 @@ import VersionsTab from '@/components/tabs/VersionsTab';
 import AuditLogTab from '@/components/tabs/AuditLogTab';
 import SettingsTab from '@/components/tabs/SettingsTab';
 import EditProfileModal from '@/components/EditProfileModal';
+import NotificationCenter from '@/components/NotificationCenter';
 
 export default function Home() {
   const { currentUser, userRole, isLoggedIn, logout, handleUserChange, loading, allUsers, resourceProfiles, globalSearchQuery, setGlobalSearchQuery } = useApp();
@@ -24,11 +25,38 @@ export default function Home() {
   const [theme, setTheme] = useState('glass-light');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [globalOpportunities, setGlobalOpportunities] = useState([]);
+  const [targetOppFromNotification, setTargetOppFromNotification] = useState(null);
+
+  const fetchGlobalOpportunities = async () => {
+    try {
+      const res = await fetch('/api/opportunities');
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setGlobalOpportunities(data);
+      }
+    } catch (err) {
+      console.error('Error fetching opportunities for notifications:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      fetchGlobalOpportunities();
+    }
+  }, [isLoggedIn]);
+
+  const handleNavigateToOpp = (opp) => {
+    setActiveTab('opportunities');
+    if (opp) {
+      setTargetOppFromNotification(opp);
+    }
+  };
 
   const activeProfile = (resourceProfiles || []).find(
     (p) => p.username && p.username.toLowerCase() === (currentUser || '').toLowerCase()
   );
-  const userDisplayName = activeProfile?.name || (currentUser === 'admin' ? 'Adhesh(admin)' : (currentUser ? formatUserName(currentUser) : 'User'));
+  const userDisplayName = activeProfile?.name || (currentUser ? formatUserName(currentUser) : 'User');
 
   // Inactivity session timeout: 30 minutes warning, 60 seconds countdown
   const [showTimeoutWarning, setShowTimeoutWarning] = useState(false);
@@ -116,9 +144,15 @@ export default function Home() {
   const renderActiveTab = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <DashboardTab />;
+        return <DashboardTab onNavigateToOpp={handleNavigateToOpp} />;
       case 'opportunities':
-        return <OpportunitiesTab />;
+        return (
+          <OpportunitiesTab
+            targetOppFromNotification={targetOppFromNotification}
+            onClearTargetOpp={() => setTargetOppFromNotification(null)}
+            onOpportunitiesUpdated={fetchGlobalOpportunities}
+          />
+        );
       case 'workitems':
         return <WorkItemsTab />;
       case 'efforts':
@@ -376,7 +410,15 @@ export default function Home() {
             ) : <div style={{ flex: 1 }} />}
           </div>
 
-          <div className="top-header-right">
+          <div className="top-header-right" style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+            {/* Opportunity Deadline Notifications for directly related user */}
+            <NotificationCenter
+              opportunities={globalOpportunities}
+              currentUser={currentUser}
+              userRole={userRole}
+              onNavigateToOpp={handleNavigateToOpp}
+            />
+
             {/* Redesigned Dark/Light Mode Switch (No text label, just Sun/Moon toggle) */}
             <button
               onClick={toggleTheme}

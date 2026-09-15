@@ -336,7 +336,7 @@ export async function initDb() {
 
   // 4. Insert default user profiles
   const userRoles = [
-    { username: 'admin', name: 'Adhesh(admin)', role: 'Admin', seniority: 'Principal Consultant', dept: 'Presales Solutions', cap: 40.0, focus: 'Management, Solution Architecture' },
+    { username: 'admin', name: 'Adhesh', role: 'Admin', seniority: 'Principal Consultant', dept: 'Presales Solutions', cap: 40.0, focus: 'Management, Solution Architecture' },
     { username: 'jane_doe', name: 'Jane Doe', role: 'Presales Owner', seniority: 'Senior Consultant', dept: 'Presales Solutions', cap: 45.0, focus: 'RFPs, Cloud Architecture' },
     { username: 'trisha_devadhe', name: 'Trisha Devadhe', role: 'Team Member', seniority: 'Senior Consultant', dept: 'Presales Solutions', cap: 40.0, focus: 'RFPs, Cloud Architecture' },
     { username: 'john_smith', name: 'John Smith', role: 'Sales Owner', seniority: 'Principal Consultant', dept: 'Enterprise Sales', cap: 40.0, focus: 'Sales, Relationship Management' },
@@ -374,7 +374,7 @@ export async function initDb() {
          $8,
          $9
        )
-       ON CONFLICT (username) DO UPDATE SET name = EXCLUDED.name, password = EXCLUDED.password;`,
+       ON CONFLICT (username) DO UPDATE SET name = COALESCE(resource_profiles.name, EXCLUDED.name), password = COALESCE(resource_profiles.password, EXCLUDED.password);`,
       [u.username, u.name, u.role, u.seniority, u.focus, u.dept, u.cap, u.focus, defaultPassword]
     );
   }

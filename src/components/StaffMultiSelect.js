@@ -20,7 +20,7 @@ export default function StaffMultiSelect({
   const getUserLabel = (u) => {
     if (!u) return '';
     if (formatUserName) return formatUserName(u);
-    return u === 'admin' || u === 'Adhesh(admin)' || u === 'Adhesh(Admin)' ? 'Adhesh(admin)' : `@${u}`;
+    return `@${u}`;
   };
 
   const usersList = options.length > 0 ? options : allUsers;

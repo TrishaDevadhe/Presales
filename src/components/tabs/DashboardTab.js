@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
-import { User } from 'lucide-react';
+import { User, AlertTriangle, Clock } from 'lucide-react';
 import {
   ResponsiveContainer,
   BarChart,
@@ -16,8 +16,9 @@ import {
   Pie,
   Cell
 } from 'recharts';
+import { getUserOpportunityAlerts } from '@/lib/opportunityAlerts.js';
 
-export default function DashboardTab() {
+export default function DashboardTab({ onNavigateToOpp }) {
   const { currentUser, getOptionColor, getOptionBadgeStyle, formatUserName, globalSearchQuery } = useApp();
 
   // Raw fetched datasets
@@ -97,7 +98,7 @@ export default function DashboardTab() {
   // ----------------------------------------------------
   const userLower = (currentUser || '').toLowerCase();
   const activeProfile = profiles.find(p => (p.username || '').toLowerCase() === userLower) || {};
-  const userDisplayName = activeProfile.name || (currentUser === 'admin' ? 'Adhesh (Admin)' : (currentUser ? formatUserName(currentUser) : 'User'));
+  const userDisplayName = activeProfile.name || (currentUser ? formatUserName(currentUser) : 'User');
 
   // 1. My Tasks & Active Tasks
   const myTasks = tasks.filter(t => (t.assigned_to || '').toLowerCase() === userLower);
@@ -172,8 +173,12 @@ export default function DashboardTab() {
   const myOpportunities = opportunities.filter(o => 
     (o.presales_owner || '').toLowerCase() === userLower ||
     (o.primary_sales_owner || '').toLowerCase() === userLower ||
-    (o.supporting_presales_members || '').toLowerCase().includes(userLower)
+    (o.supporting_presales_members || '').toLowerCase().includes(userLower) ||
+    (o.delivery_team || '').toLowerCase() === userLower ||
+    (o.delivery_team || '').toLowerCase().includes(userLower)
   );
+
+  const userAlerts = getUserOpportunityAlerts(opportunities, currentUser);
 
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4'];
 
@@ -189,6 +194,110 @@ export default function DashboardTab() {
           🔄 Refresh Data
         </button>
       </div>
+
+      {/* URGENT OPPORTUNITY DEADLINES NOTIFICATION WIDGET */}
+      {userAlerts.totalCount > 0 && (
+        <div className="paper-panel" style={{
+          borderLeft: `5px solid ${userAlerts.overdueCount > 0 ? '#ef4444' : '#f59e0b'}`,
+          padding: '1.25rem 1.5rem',
+          background: userAlerts.overdueCount > 0 
+            ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(245, 158, 11, 0.03) 100%)' 
+            : 'rgba(245, 158, 11, 0.04)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.85rem'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+              <span style={{ fontSize: '1.4rem' }}>{userAlerts.overdueCount > 0 ? '⚠️' : '⏳'}</span>
+              <div>
+                <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  Urgent Opportunity Deadlines ({userAlerts.totalCount})
+                </h4>
+                <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                  {userAlerts.overdueCount > 0 && userAlerts.approachingCount > 0
+                    ? `You have ${userAlerts.overdueCount} opportunity(s) overdue and ${userAlerts.approachingCount} opportunity(s) approaching submission deadline.`
+                    : userAlerts.overdueCount > 0
+                    ? `You have ${userAlerts.overdueCount} opportunity(s) that crossed their target submission deadline.`
+                    : `You have ${userAlerts.approachingCount} opportunity(s) approaching their target submission deadline.`}
+                </p>
+              </div>
+            </div>
+            {onNavigateToOpp && (
+              <button
+                type="button"
+                className="btn btn-sm btn-outline"
+                onClick={() => onNavigateToOpp(null)}
+                style={{
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  borderColor: userAlerts.overdueCount > 0 ? '#ef4444' : '#f59e0b',
+                  color: userAlerts.overdueCount > 0 ? '#dc2626' : '#d97706',
+                  background: '#ffffff'
+                }}
+              >
+                Go to Opportunities →
+              </button>
+            )}
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '0.75rem' }}>
+            {userAlerts.allAlerts.slice(0, 4).map(alert => {
+              const isOverdue = alert.type === 'overdue';
+              return (
+                <div
+                  key={alert.opportunityId}
+                  onClick={() => onNavigateToOpp && onNavigateToOpp(alert.rawOpp)}
+                  style={{
+                    padding: '0.75rem 0.95rem',
+                    borderRadius: '8px',
+                    backgroundColor: '#ffffff',
+                    border: `1px solid ${isOverdue ? 'rgba(239, 68, 68, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`,
+                    cursor: onNavigateToOpp ? 'pointer' : 'default',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.35rem',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
+                    <strong style={{ fontSize: '0.88rem', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {alert.opportunityName}
+                    </strong>
+                    <span style={{
+                      fontSize: '0.68rem',
+                      fontWeight: 700,
+                      padding: '0.12rem 0.45rem',
+                      borderRadius: '4px',
+                      backgroundColor: isOverdue ? 'rgba(239, 68, 68, 0.12)' : 'rgba(245, 158, 11, 0.12)',
+                      color: isOverdue ? '#dc2626' : '#d97706',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {alert.badgeText}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                    🏢 {alert.company} • Stage: <strong>{alert.dealStageName}</strong>
+                  </div>
+                  <div style={{ fontSize: '0.76rem', color: isOverdue ? '#b91c1c' : '#b45309', fontWeight: 600 }}>
+                    {alert.message}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          {userAlerts.allAlerts.length > 4 && onNavigateToOpp && (
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'right' }}>
+              <span
+                onClick={() => onNavigateToOpp(null)}
+                style={{ cursor: 'pointer', textDecoration: 'underline', color: 'var(--accent-secondary)' }}
+              >
+                +{userAlerts.allAlerts.length - 4} more urgent opportunities in pipeline →
+              </span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 5 USER KPI METRIC CARDS */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
