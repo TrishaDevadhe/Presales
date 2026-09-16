@@ -60,7 +60,22 @@ export default function OpportunityDetailsView({ opportunity, isFinanceUser, onU
   const finStatus = opportunity.finance_status || 'Pending';
   
   const stageName = (opportunity.deal_stage_name || '').toLowerCase().trim();
-  const isLostOrDropped = stageName === 'lost' || stageName === 'dropped';
+  const isWon = stageName === 'won';
+  const isLostOrDropped = stageName === 'lost' || stageName === 'dropped' || isOpportunityClosed(opportunity.deal_stage_name);
+
+  const getOpportunityBarInfo = () => {
+    if (isWon) {
+      return { width: '100%', color: '#10b981', displayPercent: '100%' };
+    }
+    if (isLostOrDropped) {
+      return { width: '100%', color: '#ef4444', displayPercent: '100%' };
+    }
+    return {
+      width: totalWorkItems === 0 ? '0%' : `${completionPercentage}%`,
+      color: '#f59e0b',
+      displayPercent: `${completionPercentage}%`
+    };
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
@@ -200,33 +215,36 @@ export default function OpportunityDetailsView({ opportunity, isFinanceUser, onU
         
         {loading ? (
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Loading work items...</p>
-        ) : (
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '0.5rem' }}>
-              <div style={{ fontSize: '2rem', fontWeight: 800, color: isLostOrDropped ? 'var(--text-muted, #9ca3af)' : getProgressColor(completionPercentage), lineHeight: 1 }}>
-                {completionPercentage}%
+        ) : (() => {
+          const barInfo = getOpportunityBarInfo();
+          return (
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '0.5rem' }}>
+                <div style={{ fontSize: '2rem', fontWeight: 800, color: barInfo.color, lineHeight: 1 }}>
+                  {barInfo.displayPercent}
+                </div>
+                <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
+                  {totalWorkItems === 0 ? (
+                    'No work items assigned to this opportunity yet.'
+                  ) : (
+                    `${completedWorkItems} of ${totalWorkItems} completed`
+                  )}
+                </div>
               </div>
-              <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
-                {totalWorkItems === 0 ? (
-                  'No work items assigned to this opportunity yet.'
-                ) : (
-                  `${completedWorkItems} of ${totalWorkItems} completed`
-                )}
+              
+              <div style={{ width: '100%', height: '12px', backgroundColor: 'var(--glass-border)', borderRadius: 'var(--radius-pill)', overflow: 'hidden' }}>
+                <div 
+                  style={{ 
+                    height: '100%', 
+                    width: barInfo.width, 
+                    backgroundColor: barInfo.color,
+                    transition: 'width 0.5s ease-in-out, background-color 0.5s ease-in-out'
+                  }} 
+                />
               </div>
             </div>
-            
-            <div style={{ width: '100%', height: '12px', backgroundColor: 'var(--glass-border)', borderRadius: 'var(--radius-pill)', overflow: 'hidden' }}>
-              <div 
-                style={{ 
-                  height: '100%', 
-                  width: `${completionPercentage}%`, 
-                  backgroundColor: isLostOrDropped ? 'var(--text-muted, #9ca3af)' : getProgressColor(completionPercentage),
-                  transition: 'width 0.5s ease-in-out, background-color 0.5s ease-in-out'
-                }} 
-              />
-            </div>
-          </div>
-        )}
+          );
+        })()}
       </div>
 
       {/* Work Items Table */}

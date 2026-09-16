@@ -2945,3 +2945,36 @@ html, body {
   pointer-events: none;
   z-index: 10;
 }
+
+/* ==========================================================================
+   Dark Mode UI Enhancements for Opportunity Alerts & Notifications
+   ========================================================================== */
+[data-theme="dark"] .notification-popover {
+  background-color: var(--bg-secondary) !important;
+  border-color: var(--glass-border) !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+}
+
+[data-theme="dark"] .notification-alert-card {
+  border-top-color: var(--glass-border) !important;
+  border-right-color: var(--glass-border) !important;
+  border-bottom-color: var(--glass-border) !important;
+}
+
+[data-theme="dark"] .notification-alert-card:hover {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+[data-theme="dark"] .opportunity-deadline-banner {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+
+[data-theme="dark"] .dashboard-urgent-widget {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+}
+
+[data-theme="dark"] .locked-option {
+  opacity: 0.45 !important;
+  background-color: rgba(255, 255, 255, 0.02) !important;
+}
+

@@ -142,9 +142,10 @@ export default function NotificationCenter({
             flexDirection: 'column',
             zIndex: 10000,
             borderRadius: 'var(--radius-lg, 12px)',
-            border: '1px solid var(--border-subtle, rgba(226, 232, 240, 0.9))',
-            boxShadow: '0 20px 35px -5px rgba(15, 23, 42, 0.2), 0 10px 18px -4px rgba(15, 23, 42, 0.1)',
-            backgroundColor: 'var(--bg-primary, #ffffff)',
+            border: '1px solid var(--glass-border, rgba(226, 232, 240, 0.9))',
+            boxShadow: 'var(--shadow-lg, 0 20px 35px -5px rgba(15, 23, 42, 0.2))',
+            backgroundColor: 'var(--bg-secondary, #ffffff)',
+            backdropFilter: 'blur(16px)',
             animation: 'fadeInOverlay 0.18s ease-out forwards'
           }}
         >
@@ -153,7 +154,7 @@ export default function NotificationCenter({
             style={{
               padding: '1rem 1.15rem 0.75rem 1.15rem',
               borderBottom: '1px solid var(--border-subtle, rgba(226, 232, 240, 0.8))',
-              background: 'linear-gradient(135deg, rgba(30, 58, 138, 0.04) 0%, rgba(37, 99, 235, 0.05) 100%)'
+              background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(59, 130, 246, 0.04) 100%)'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
@@ -169,8 +170,9 @@ export default function NotificationCenter({
                       fontWeight: 700,
                       padding: '0.15rem 0.5rem',
                       borderRadius: '12px',
-                      backgroundColor: overdueCount > 0 ? 'rgba(239, 68, 68, 0.12)' : 'rgba(245, 158, 11, 0.12)',
-                      color: overdueCount > 0 ? '#dc2626' : '#d97706'
+                      backgroundColor: overdueCount > 0 ? 'var(--color-danger-bg)' : 'var(--color-warning-bg)',
+                      color: overdueCount > 0 ? 'var(--color-danger-text)' : 'var(--color-warning-text)',
+                      border: `1px solid ${overdueCount > 0 ? 'rgba(239, 68, 68, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`
                     }}
                   >
                     {totalActive} urgent
@@ -200,7 +202,7 @@ export default function NotificationCenter({
                   fontWeight: filterType === 'all' ? 700 : 500,
                   borderRadius: '6px',
                   border: filterType === 'all' ? '1px solid var(--accent-secondary, #2563eb)' : '1px solid transparent',
-                  backgroundColor: filterType === 'all' ? 'rgba(37, 99, 235, 0.1)' : 'transparent',
+                  backgroundColor: filterType === 'all' ? 'var(--color-info-bg, rgba(37, 99, 235, 0.1))' : 'transparent',
                   color: filterType === 'all' ? 'var(--accent-secondary, #2563eb)' : 'var(--text-secondary)',
                   cursor: 'pointer'
                 }}
@@ -215,9 +217,9 @@ export default function NotificationCenter({
                   fontSize: '0.76rem',
                   fontWeight: filterType === 'overdue' ? 700 : 500,
                   borderRadius: '6px',
-                  border: filterType === 'overdue' ? '1px solid #ef4444' : '1px solid transparent',
-                  backgroundColor: filterType === 'overdue' ? 'rgba(239, 68, 68, 0.12)' : 'transparent',
-                  color: filterType === 'overdue' ? '#dc2626' : 'var(--text-secondary)',
+                  border: filterType === 'overdue' ? '1px solid var(--color-danger-text, #ef4444)' : '1px solid transparent',
+                  backgroundColor: filterType === 'overdue' ? 'var(--color-danger-bg)' : 'transparent',
+                  color: filterType === 'overdue' ? 'var(--color-danger-text, #dc2626)' : 'var(--text-secondary)',
                   cursor: 'pointer'
                 }}
               >
@@ -231,9 +233,9 @@ export default function NotificationCenter({
                   fontSize: '0.76rem',
                   fontWeight: filterType === 'approaching' ? 700 : 500,
                   borderRadius: '6px',
-                  border: filterType === 'approaching' ? '1px solid #f59e0b' : '1px solid transparent',
-                  backgroundColor: filterType === 'approaching' ? 'rgba(245, 158, 11, 0.12)' : 'transparent',
-                  color: filterType === 'approaching' ? '#d97706' : 'var(--text-secondary)',
+                  border: filterType === 'approaching' ? '1px solid var(--color-warning-text, #f59e0b)' : '1px solid transparent',
+                  backgroundColor: filterType === 'approaching' ? 'var(--color-warning-bg)' : 'transparent',
+                  color: filterType === 'approaching' ? 'var(--color-warning-text, #d97706)' : 'var(--text-secondary)',
                   cursor: 'pointer'
                 }}
               >
@@ -281,11 +283,12 @@ export default function NotificationCenter({
               displayList.map(item => {
                 const isOverdue = item.type === 'overdue';
                 const borderColor = isOverdue ? '#ef4444' : '#f59e0b';
-                const bgColor = isOverdue ? 'rgba(239, 68, 68, 0.04)' : 'rgba(245, 158, 11, 0.04)';
+                const bgColor = isOverdue ? 'var(--color-danger-bg)' : 'var(--color-warning-bg)';
 
                 return (
                   <div
                     key={item.opportunityId}
+                    className="notification-alert-card"
                     onClick={() => handleItemClick(item.rawOpp)}
                     style={{
                       padding: '0.85rem',
@@ -301,11 +304,11 @@ export default function NotificationCenter({
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.transform = 'translateX(2px)';
-                      e.currentTarget.style.backgroundColor = isOverdue ? 'rgba(239, 68, 68, 0.08)' : 'rgba(245, 158, 11, 0.08)';
+                      e.currentTarget.style.filter = 'brightness(1.1)';
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.transform = 'translateX(0)';
-                      e.currentTarget.style.backgroundColor = bgColor;
+                      e.currentTarget.style.filter = 'none';
                     }}
                   >
                     {/* Top Row: Opportunity Name & Dismiss button */}
@@ -340,7 +343,7 @@ export default function NotificationCenter({
                       marginTop: '0.45rem',
                       fontSize: '0.8rem',
                       fontWeight: 600,
-                      color: isOverdue ? '#b91c1c' : '#b45309',
+                      color: isOverdue ? 'var(--color-danger-text, #dc2626)' : 'var(--color-warning-text, #d97706)',
                       display: 'flex',
                       alignItems: 'center',
                       gap: '0.35rem'
@@ -356,8 +359,9 @@ export default function NotificationCenter({
                         fontWeight: 600,
                         padding: '0.15rem 0.45rem',
                         borderRadius: '4px',
-                        backgroundColor: isOverdue ? 'rgba(239, 68, 68, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-                        color: isOverdue ? '#dc2626' : '#d97706'
+                        backgroundColor: isOverdue ? 'var(--color-danger-bg)' : 'var(--color-warning-bg)',
+                        color: isOverdue ? 'var(--color-danger-text, #dc2626)' : 'var(--color-warning-text, #d97706)',
+                        border: `1px solid ${isOverdue ? 'rgba(239, 68, 68, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`
                       }}>
                         {item.badgeText}
                       </span>
@@ -367,8 +371,9 @@ export default function NotificationCenter({
                         fontWeight: 500,
                         padding: '0.15rem 0.45rem',
                         borderRadius: '4px',
-                        backgroundColor: 'var(--bg-secondary, #f1f5f9)',
-                        color: 'var(--text-secondary)'
+                        backgroundColor: 'var(--bg-tertiary, #1F2937)',
+                        color: 'var(--text-secondary)',
+                        border: '1px solid var(--border-subtle)'
                       }}>
                         👤 Role: {item.userRoleInOpp}
                       </span>
@@ -378,8 +383,9 @@ export default function NotificationCenter({
                         fontWeight: 500,
                         padding: '0.15rem 0.45rem',
                         borderRadius: '4px',
-                        backgroundColor: 'var(--bg-secondary, #f1f5f9)',
-                        color: 'var(--text-secondary)'
+                        backgroundColor: 'var(--bg-tertiary, #1F2937)',
+                        color: 'var(--text-secondary)',
+                        border: '1px solid var(--border-subtle)'
                       }}>
                         Stage: {item.dealStageName}
                       </span>
@@ -408,7 +414,7 @@ export default function NotificationCenter({
               style={{
                 padding: '0.65rem 1.15rem',
                 borderTop: '1px solid var(--border-subtle, rgba(226, 232, 240, 0.8))',
-                background: 'var(--bg-secondary, #f8fafc)',
+                background: 'var(--bg-primary, #0B0F19)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',

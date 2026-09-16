@@ -1,6 +1,6 @@
 import { query } from '@/lib/db';
 import { NextResponse } from 'next/server';
-import { isOpportunityClosed } from '@/lib/opportunityUtils';
+import { isOpportunityClosed, isOpportunityLockedForWork } from '@/lib/opportunityUtils';
 
 // GET a single work item
 export async function GET(request, { params }) {
@@ -107,8 +107,8 @@ export async function PUT(request, { params }) {
     } = body;
 
     // Validation
-    if (!work_category_id || !title || !assigned_to || !start_date || !due_date || !status_id) {
-      return NextResponse.json({ error: 'Work Category, Title, Assigned To, Start Date, Due Date, and Status are required' }, { status: 400 });
+    if (!opportunity_id || !work_category_id || !title || !assigned_to || !start_date || !due_date || !status_id) {
+      return NextResponse.json({ error: 'Opportunity, Work Category, Title, Assigned To, Start Date, Due Date, and Status are required' }, { status: 400 });
     }
 
     const existingRes = await query(
@@ -123,16 +123,16 @@ export async function PUT(request, { params }) {
     // Check if the old opportunity is closed
     if (existing.opportunity_id) {
       const oppRes = await query('SELECT ds.option_name AS deal_stage_name FROM opportunities o LEFT JOIN dropdown_options ds ON o.deal_stage_id = ds.id WHERE o.id = $1', [existing.opportunity_id]);
-      if (oppRes.rows.length > 0 && isOpportunityClosed(oppRes.rows[0].deal_stage_name)) {
-        return NextResponse.json({ error: 'This action is not allowed because the associated opportunity is Dropped/Lost.' }, { status: 403 });
+      if (oppRes.rows.length > 0 && isOpportunityLockedForWork(oppRes.rows[0].deal_stage_name)) {
+        return NextResponse.json({ error: `This action is not allowed because the associated opportunity is ${oppRes.rows[0].deal_stage_name}.` }, { status: 403 });
       }
     }
 
     // Check if the new opportunity is closed (if changing opportunity)
     if (opportunity_id && opportunity_id !== existing.opportunity_id) {
       const oppRes = await query('SELECT ds.option_name AS deal_stage_name FROM opportunities o LEFT JOIN dropdown_options ds ON o.deal_stage_id = ds.id WHERE o.id = $1', [opportunity_id]);
-      if (oppRes.rows.length > 0 && isOpportunityClosed(oppRes.rows[0].deal_stage_name)) {
-        return NextResponse.json({ error: 'This action is not allowed because the associated opportunity is Dropped/Lost.' }, { status: 403 });
+      if (oppRes.rows.length > 0 && isOpportunityLockedForWork(oppRes.rows[0].deal_stage_name)) {
+        return NextResponse.json({ error: `This action is not allowed because the target opportunity is ${oppRes.rows[0].deal_stage_name}.` }, { status: 403 });
       }
     }
 
@@ -311,8 +311,8 @@ export async function DELETE(request, { params }) {
 
     if (existing.opportunity_id) {
       const oppRes = await query('SELECT ds.option_name AS deal_stage_name FROM opportunities o LEFT JOIN dropdown_options ds ON o.deal_stage_id = ds.id WHERE o.id = $1', [existing.opportunity_id]);
-      if (oppRes.rows.length > 0 && isOpportunityClosed(oppRes.rows[0].deal_stage_name)) {
-        return NextResponse.json({ error: 'This action is not allowed because the associated opportunity is Dropped/Lost.' }, { status: 403 });
+      if (oppRes.rows.length > 0 && isOpportunityLockedForWork(oppRes.rows[0].deal_stage_name)) {
+        return NextResponse.json({ error: `This action is not allowed because the associated opportunity is ${oppRes.rows[0].deal_stage_name}.` }, { status: 403 });
       }
     }
 

@@ -1,6 +1,6 @@
 import { query } from '@/lib/db';
 import { NextResponse } from 'next/server';
-import { isOpportunityClosed } from '@/lib/opportunityUtils';
+import { isOpportunityClosed, isOpportunityLockedForWork } from '@/lib/opportunityUtils';
 
 // GET all work items
 export async function GET(request) {
@@ -137,8 +137,8 @@ export async function POST(request) {
     } = body;
 
     // Validation
-    if (!work_category_id || !title || !assigned_to || !start_date || !due_date || !status_id) {
-      return NextResponse.json({ error: 'Work Category, Title, Assigned To, Start Date, Due Date, and Status are required' }, { status: 400 });
+    if (!opportunity_id || !work_category_id || !title || !assigned_to || !start_date || !due_date || !status_id) {
+      return NextResponse.json({ error: 'Opportunity, Work Category, Title, Assigned To, Start Date, Due Date, and Status are required' }, { status: 400 });
     }
 
     if (opportunity_id) {
@@ -148,8 +148,8 @@ export async function POST(request) {
         LEFT JOIN dropdown_options ds ON o.deal_stage_id = ds.id 
         WHERE o.id = $1
       `, [opportunity_id]);
-      if (oppRes.rows.length > 0 && isOpportunityClosed(oppRes.rows[0].deal_stage_name)) {
-        return NextResponse.json({ error: 'This action is not allowed because the associated opportunity is Dropped/Lost.' }, { status: 403 });
+      if (oppRes.rows.length > 0 && isOpportunityLockedForWork(oppRes.rows[0].deal_stage_name)) {
+        return NextResponse.json({ error: `Cannot create work items for this opportunity because its stage is ${oppRes.rows[0].deal_stage_name}. Won, Lost, and Dropped opportunities are closed for work items.` }, { status: 403 });
       }
     }
 

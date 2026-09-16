@@ -197,12 +197,12 @@ export default function DashboardTab({ onNavigateToOpp }) {
 
       {/* URGENT OPPORTUNITY DEADLINES NOTIFICATION WIDGET */}
       {userAlerts.totalCount > 0 && (
-        <div className="paper-panel" style={{
+        <div className="paper-panel dashboard-urgent-widget" style={{
           borderLeft: `5px solid ${userAlerts.overdueCount > 0 ? '#ef4444' : '#f59e0b'}`,
           padding: '1.25rem 1.5rem',
           background: userAlerts.overdueCount > 0 
-            ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(245, 158, 11, 0.03) 100%)' 
-            : 'rgba(245, 158, 11, 0.04)',
+            ? 'var(--color-danger-bg)' 
+            : 'var(--color-warning-bg)',
           display: 'flex',
           flexDirection: 'column',
           gap: '0.85rem'
@@ -232,8 +232,8 @@ export default function DashboardTab({ onNavigateToOpp }) {
                   fontSize: '0.82rem',
                   fontWeight: 600,
                   borderColor: userAlerts.overdueCount > 0 ? '#ef4444' : '#f59e0b',
-                  color: userAlerts.overdueCount > 0 ? '#dc2626' : '#d97706',
-                  background: '#ffffff'
+                  color: userAlerts.overdueCount > 0 ? 'var(--color-danger-text, #dc2626)' : 'var(--color-warning-text, #d97706)',
+                  background: 'var(--surface-card, #ffffff)'
                 }}
               >
                 Go to Opportunities →
@@ -251,8 +251,9 @@ export default function DashboardTab({ onNavigateToOpp }) {
                   style={{
                     padding: '0.75rem 0.95rem',
                     borderRadius: '8px',
-                    backgroundColor: '#ffffff',
-                    border: `1px solid ${isOverdue ? 'rgba(239, 68, 68, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`,
+                    backgroundColor: 'var(--surface-card, #ffffff)',
+                    border: `1px solid ${isOverdue ? 'rgba(239, 68, 68, 0.35)' : 'rgba(245, 158, 11, 0.35)'}`,
+                    borderLeft: `4px solid ${isOverdue ? '#ef4444' : '#f59e0b'}`,
                     cursor: onNavigateToOpp ? 'pointer' : 'default',
                     display: 'flex',
                     flexDirection: 'column',
@@ -269,8 +270,9 @@ export default function DashboardTab({ onNavigateToOpp }) {
                       fontWeight: 700,
                       padding: '0.12rem 0.45rem',
                       borderRadius: '4px',
-                      backgroundColor: isOverdue ? 'rgba(239, 68, 68, 0.12)' : 'rgba(245, 158, 11, 0.12)',
-                      color: isOverdue ? '#dc2626' : '#d97706',
+                      backgroundColor: isOverdue ? 'var(--color-danger-bg)' : 'var(--color-warning-bg)',
+                      color: isOverdue ? 'var(--color-danger-text, #dc2626)' : 'var(--color-warning-text, #d97706)',
+                      border: `1px solid ${isOverdue ? 'rgba(239, 68, 68, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`,
                       whiteSpace: 'nowrap'
                     }}>
                       {alert.badgeText}
@@ -279,7 +281,7 @@ export default function DashboardTab({ onNavigateToOpp }) {
                   <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
                     🏢 {alert.company} • Stage: <strong>{alert.dealStageName}</strong>
                   </div>
-                  <div style={{ fontSize: '0.76rem', color: isOverdue ? '#b91c1c' : '#b45309', fontWeight: 600 }}>
+                  <div style={{ fontSize: '0.76rem', color: isOverdue ? 'var(--color-danger-text, #dc2626)' : 'var(--color-warning-text, #d97706)', fontWeight: 600 }}>
                     {alert.message}
                   </div>
                 </div>

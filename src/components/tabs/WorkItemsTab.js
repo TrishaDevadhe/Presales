@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { isUserAssociatedWithTask, isFinanceUser } from '@/lib/userAssociation';
 import RichTextEditor from '../RichTextEditor';
-import { isOpportunityClosed } from '@/lib/opportunityUtils';
+import { isOpportunityClosed, isOpportunityLockedForWork } from '@/lib/opportunityUtils';
+import OpportunityAutocomplete from '../OpportunityAutocomplete';
 
 import RecordHistoryView from '../RecordHistoryView';
 
@@ -175,7 +176,7 @@ export default function WorkItemsTab() {
     setSelectedTask(null);
     setCapacityWarning(null);
     setModalSubTab('details');
-    const initialOpp = opportunities[0];
+    const initialOpp = opportunities.find(o => !isOpportunityLockedForWork(o.deal_stage_name)) || opportunities[0];
     const defaultCategoryId = getOptions('work_category')[0]?.id || '';
     const defaultAssignee = allUsers[3] || allUsers[0] || '';
 
@@ -251,10 +252,10 @@ export default function WorkItemsTab() {
     setIsModalOpen(true);
   };
 
-  const handleInputChange = (e) => {
+  const handleInputChange = (e, selectedOppObj = null) => {
     const { name, value, type, checked } = e.target;
     if (name === 'opportunity_id') {
-      const selectedOpp = opportunities.find(o => String(o.id) === String(value));
+      const selectedOpp = selectedOppObj || opportunities.find(o => String(o.id) === String(value));
       setFormData(prev => ({
         ...prev,
         opportunity_id: value,
@@ -288,9 +289,20 @@ export default function WorkItemsTab() {
       }
     }
 
+    if (!formData.opportunity_id) {
+      setError('Opportunity is required. Please select an opportunity.');
+      return;
+    }
+
+    const linkedOpp = opportunities.find(o => String(o.id) === String(formData.opportunity_id));
+    if (linkedOpp && isOpportunityLockedForWork(linkedOpp.deal_stage_name)) {
+      setError(`Cannot save work items for "${linkedOpp.opportunity_name}" because its stage is ${linkedOpp.deal_stage_name}. Won, Lost, and Dropped opportunities cannot have work items created for them.`);
+      return;
+    }
+
     if (isEditMode) {
-      if (!formData.title || !formData.work_category_id || !formData.assigned_to) {
-        setError('Title, Work Category, and Assignee are required.');
+      if (!formData.opportunity_id || !formData.title || !formData.work_category_id || !formData.assigned_to) {
+        setError('Opportunity, Title, Work Category, and Assignee are required.');
         return;
       }
 
@@ -710,25 +722,12 @@ export default function WorkItemsTab() {
                     </div>
                     <div className="form-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.25rem' }}>
 
-                      <div className="form-group">
-                        <label className="form-label">Linked Opportunity</label>
-                        <select
-                          name="opportunity_id"
-                          className="form-control form-select"
-                          value={formData.opportunity_id}
-                          onChange={handleInputChange}
-                        >
-                          <option value="">None (Non-Opportunity work)</option>
-                          {opportunities.map(opp => {
-                            const isClosed = isOpportunityClosed(opp.deal_stage_name);
-                            return (
-                              <option key={opp.id} value={opp.id} disabled={isClosed}>
-                                {opp.company} - {opp.opportunity_name} {isClosed ? '(Dropped/Lost)' : ''}
-                              </option>
-                            );
-                          })}
-                        </select>
-                      </div>
+                      <OpportunityAutocomplete
+                        opportunities={opportunities}
+                        value={formData.opportunity_id}
+                        onChange={handleInputChange}
+                        required={true}
+                      />
 
                       <div className="form-group">
                         <label className="form-label">Work Category <span className="required">*</span></label>
@@ -917,25 +916,12 @@ export default function WorkItemsTab() {
                     </div>
                     <div className="form-grid-3">
 
-                      <div className="form-group">
-                        <label className="form-label">Linked Opportunity</label>
-                        <select
-                          name="opportunity_id"
-                          className="form-control form-select"
-                          value={formData.opportunity_id}
-                          onChange={handleInputChange}
-                        >
-                          <option value="">None (Non-Opportunity work)</option>
-                          {opportunities.map(opp => {
-                            const isClosed = isOpportunityClosed(opp.deal_stage_name);
-                            return (
-                              <option key={opp.id} value={opp.id} disabled={isClosed}>
-                                {opp.company} - {opp.opportunity_name} {isClosed ? '(Dropped/Lost)' : ''}
-                              </option>
-                            );
-                          })}
-                        </select>
-                      </div>
+                      <OpportunityAutocomplete
+                        opportunities={opportunities}
+                        value={formData.opportunity_id}
+                        onChange={handleInputChange}
+                        required={true}
+                      />
 
                       <div className="form-group">
                         <label className="form-label">Priority</label>
