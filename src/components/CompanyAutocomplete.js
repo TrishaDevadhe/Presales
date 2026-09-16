@@ -30,6 +30,7 @@ export default function CompanyAutocomplete({ label = 'Company Name', required =
       c.toLowerCase().includes(inputValue.toLowerCase())
     );
     setSuggestions(filtered);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [inputValue, opportunities]);
 
   // Close dropdown on click outside

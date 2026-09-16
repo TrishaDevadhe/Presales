@@ -49,14 +49,18 @@ export default function OpportunityDetailsView({ opportunity, isFinanceUser, onU
   }
 
   const getProgressColor = (percent) => {
-    if (percent < 25) return 'var(--color-danger, #ef4444)';
-    if (percent < 50) return 'var(--color-warning, #f59e0b)';
-    if (percent < 75) return 'var(--color-info, #3b82f6)';
-    if (percent < 100) return 'var(--accent-primary, #6366f1)';
-    return 'var(--color-success, #10b981)';
+    const p = Math.max(0, Math.min(100, percent));
+    if (p < 25) return '#ef4444'; // Red
+    if (p < 50) return '#f59e0b'; // Orange
+    if (p < 75) return '#0ea5e9'; // Light Blue
+    if (p < 90) return '#1e40af'; // Dark Blue
+    return '#10b981'; // Green
   };
 
   const finStatus = opportunity.finance_status || 'Pending';
+  
+  const stageName = (opportunity.deal_stage_name || '').toLowerCase().trim();
+  const isLostOrDropped = stageName === 'lost' || stageName === 'dropped';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
@@ -199,7 +203,7 @@ export default function OpportunityDetailsView({ opportunity, isFinanceUser, onU
         ) : (
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '0.5rem' }}>
-              <div style={{ fontSize: '2rem', fontWeight: 800, color: getProgressColor(completionPercentage), lineHeight: 1 }}>
+              <div style={{ fontSize: '2rem', fontWeight: 800, color: isLostOrDropped ? 'var(--text-muted, #9ca3af)' : getProgressColor(completionPercentage), lineHeight: 1 }}>
                 {completionPercentage}%
               </div>
               <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 500 }}>
@@ -216,7 +220,7 @@ export default function OpportunityDetailsView({ opportunity, isFinanceUser, onU
                 style={{ 
                   height: '100%', 
                   width: `${completionPercentage}%`, 
-                  backgroundColor: getProgressColor(completionPercentage),
+                  backgroundColor: isLostOrDropped ? 'var(--text-muted, #9ca3af)' : getProgressColor(completionPercentage),
                   transition: 'width 0.5s ease-in-out, background-color 0.5s ease-in-out'
                 }} 
               />

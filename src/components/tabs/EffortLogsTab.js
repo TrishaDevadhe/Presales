@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { isUserAssociatedWithTask, isUserAssociatedWithEffort } from '@/lib/userAssociation';
+import { isOpportunityClosed } from '@/lib/opportunityUtils';
 
 export default function EffortLogsTab() {
   const { currentUser, userRole, allUsers, getOptions, getOptionBadgeStyle, formatUserName, showToast, showAlert, showConfirm, globalSearchQuery } = useApp();
@@ -12,6 +13,12 @@ export default function EffortLogsTab() {
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const isTaskClosedOpp = (task) => {
+    if (!task.opportunity_id) return false;
+    const opp = opportunities.find(o => o.id === task.opportunity_id);
+    return opp ? isOpportunityClosed(opp.deal_stage_name) : false;
+  };
 
   // Active view tab state: 'work-items' (default) or 'hours-logged'
   const [activeTab, setActiveTab] = useState('work-items');
@@ -305,12 +312,7 @@ export default function EffortLogsTab() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
       
-      {/* Top action controls */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-        <button className="btn btn-primary" onClick={openGeneralLogModal}>
-          + Log Hours
-        </button>
-      </div>
+
 
       {/* Filter Bar */}
       <div className="paper-panel" style={{ padding: '0.85rem 1.25rem', display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -482,15 +484,27 @@ export default function EffortLogsTab() {
                         <td className="num-col" style={{ fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.75rem', minWidth: '150px' }}>
                             <span style={{ minWidth: '65px', display: 'inline-block' }}>{loggedHours} hrs</span>
-                            <button
-                              className="btn btn-primary btn-sm"
-                              style={{ padding: '0.25rem 0.6rem', fontSize: '0.78rem', whiteSpace: 'nowrap' }}
-                              onClick={() => openLogModalForTask(task)}
-                              disabled={isCompleted}
-                              title={isCompleted ? 'Cannot log effort on completed work items' : 'Add effort log'}
-                            >
-                              + Log Hours
-                            </button>
+                            {isTaskClosedOpp(task) ? (
+                              <div data-tooltip="This action is unavailable because the opportunity is Dropped/Lost">
+                                <button
+                                  className="btn btn-primary btn-sm"
+                                  style={{ padding: '0.25rem 0.6rem', fontSize: '0.78rem', whiteSpace: 'nowrap', opacity: 0.5, cursor: 'not-allowed' }}
+                                  disabled
+                                >
+                                  + Log Hours
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                className="btn btn-primary btn-sm"
+                                style={{ padding: '0.25rem 0.6rem', fontSize: '0.78rem', whiteSpace: 'nowrap' }}
+                                onClick={() => openLogModalForTask(task)}
+                                disabled={isCompleted}
+                                title={isCompleted ? 'Cannot log effort on completed work items' : 'Add effort log'}
+                              >
+                                + Log Hours
+                              </button>
+                            )}
                           </div>
                         </td>
                         <td>

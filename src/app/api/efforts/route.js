@@ -1,5 +1,6 @@
 import { query } from '@/lib/db';
 import { NextResponse } from 'next/server';
+import { isOpportunityClosed } from '@/lib/opportunityUtils';
 
 // GET all effort logs
 export async function GET(request) {
@@ -66,14 +67,20 @@ export async function POST(request) {
 
     // 1. Fetch work item details
     const wiRes = await query(
-      `SELECT wi.estimated_hours, wi.title, opt.option_name AS status_name
+      `SELECT wi.estimated_hours, wi.title, opt.option_name AS status_name, ds.option_name AS deal_stage_name
        FROM work_items wi
        LEFT JOIN dropdown_options opt ON wi.status_id = opt.id
+       LEFT JOIN opportunities o ON wi.opportunity_id = o.id
+       LEFT JOIN dropdown_options ds ON o.deal_stage_id = ds.id
        WHERE wi.id = $1`,
       [work_item_id]
     );
     if (wiRes.rows.length === 0) {
       return NextResponse.json({ error: 'Work Item not found' }, { status: 404 });
+    }
+
+    if (isOpportunityClosed(wiRes.rows[0].deal_stage_name)) {
+      return NextResponse.json({ error: 'This action is not allowed because the associated opportunity is Dropped/Lost.' }, { status: 403 });
     }
 
     if (wiRes.rows[0].status_name?.toLowerCase() === 'completed') {

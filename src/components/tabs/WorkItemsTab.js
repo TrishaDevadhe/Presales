@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { isUserAssociatedWithTask, isFinanceUser } from '@/lib/userAssociation';
 import RichTextEditor from '../RichTextEditor';
+import { isOpportunityClosed } from '@/lib/opportunityUtils';
 
 import RecordHistoryView from '../RecordHistoryView';
 
@@ -13,6 +14,12 @@ export default function WorkItemsTab() {
   const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const isTaskClosedOpp = (task) => {
+    if (!task.opportunity_id) return false;
+    const opp = opportunities.find(o => o.id === task.opportunity_id);
+    return opp ? isOpportunityClosed(opp.deal_stage_name) : false;
+  };
 
   // Filters state
   const [filterOpp, setFilterOpp] = useState('');
@@ -160,6 +167,7 @@ export default function WorkItemsTab() {
         setCapacityWarning(null);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.assigned_to, formData.estimated_hours, bulkTasks, tasks, isEditMode, selectedTask, resourceProfiles]);
 
   const openCreateModal = () => {
@@ -532,9 +540,17 @@ export default function WorkItemsTab() {
                       <td className="num-col" style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{task.estimated_hours} hrs</td>
                       <td className="num-col">
                         <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
-                          <button className="btn btn-ghost btn-sm" onClick={() => openEditModal(task)}>
-                            Edit
-                          </button>
+                          {isTaskClosedOpp(task) ? (
+                            <div data-tooltip="This action is unavailable because the opportunity is Dropped/Lost">
+                              <button className="btn btn-ghost btn-sm" disabled style={{ opacity: 0.5, cursor: 'not-allowed' }}>
+                                Edit
+                              </button>
+                            </div>
+                          ) : (
+                            <button className="btn btn-ghost btn-sm" onClick={() => openEditModal(task)}>
+                              Edit
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -703,9 +719,14 @@ export default function WorkItemsTab() {
                           onChange={handleInputChange}
                         >
                           <option value="">None (Non-Opportunity work)</option>
-                          {opportunities.map(opp => (
-                            <option key={opp.id} value={opp.id}>{opp.company} - {opp.opportunity_name}</option>
-                          ))}
+                          {opportunities.map(opp => {
+                            const isClosed = isOpportunityClosed(opp.deal_stage_name);
+                            return (
+                              <option key={opp.id} value={opp.id} disabled={isClosed}>
+                                {opp.company} - {opp.opportunity_name} {isClosed ? '(Dropped/Lost)' : ''}
+                              </option>
+                            );
+                          })}
                         </select>
                       </div>
 
@@ -905,9 +926,14 @@ export default function WorkItemsTab() {
                           onChange={handleInputChange}
                         >
                           <option value="">None (Non-Opportunity work)</option>
-                          {opportunities.map(opp => (
-                            <option key={opp.id} value={opp.id}>{opp.company} - {opp.opportunity_name}</option>
-                          ))}
+                          {opportunities.map(opp => {
+                            const isClosed = isOpportunityClosed(opp.deal_stage_name);
+                            return (
+                              <option key={opp.id} value={opp.id} disabled={isClosed}>
+                                {opp.company} - {opp.opportunity_name} {isClosed ? '(Dropped/Lost)' : ''}
+                              </option>
+                            );
+                          })}
                         </select>
                       </div>
 

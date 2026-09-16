@@ -38,6 +38,7 @@ export default function EditProfileModal({ isOpen, onClose }) {
         is_active: prof.is_active !== false
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, currentUser, resourceProfiles]);
 
   const [mySignInLogs, setMySignInLogs] = useState([]);

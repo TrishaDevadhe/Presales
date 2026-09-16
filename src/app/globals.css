@@ -2913,3 +2913,35 @@ html, body {
 .opportunity-status-hover-card {
   animation: tooltipFadeInUp 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+@keyframes strikethroughSlide {
+  0% {
+    background-size: 0% 2px;
+  }
+  100% {
+    background-size: 100% 2px;
+  }
+}
+
+.row-strikethrough-anim td {
+  position: relative;
+  opacity: 0.6;
+  transition: opacity 0.5s ease;
+}
+
+.row-strikethrough-anim td::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 100%;
+  height: 2px;
+  background: var(--color-danger);
+  background-image: linear-gradient(to right, var(--color-danger) 100%, transparent 0);
+  background-position: left center;
+  background-repeat: no-repeat;
+  background-size: 0% 2px;
+  animation: strikethroughSlide 0.5s ease-out forwards;
+  pointer-events: none;
+  z-index: 10;
+}

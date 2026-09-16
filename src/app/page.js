@@ -122,6 +122,7 @@ export default function Home() {
         clearInterval(warningTimerRef.current);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showTimeoutWarning]);
 
   const handleExtendSession = () => {

@@ -11,6 +11,7 @@ import RecordHistoryView from '../RecordHistoryView';
 import OpportunityDetailsView from '../OpportunityDetailsView';
 import OpportunityImportModal from '../OpportunityImportModal';
 import { getOpportunityDeadlineInfo, getUserOpportunityAlerts } from '@/lib/opportunityAlerts.js';
+import { isOpportunityClosed } from '@/lib/opportunityUtils';
 
 export default function OpportunitiesTab({ targetOppFromNotification, onClearTargetOpp, onOpportunitiesUpdated }) {
   const { currentUser, userRole, allUsers, resourceProfiles, getOptions, getOptionBadgeStyle, formatUserName, showToast, showAlert, showConfirm, globalSearchQuery } = useApp();
@@ -33,6 +34,7 @@ export default function OpportunitiesTab({ targetOppFromNotification, onClearTar
   const [modalSubTab, setModalSubTab] = useState('details'); // 'details' | 'history'
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [showUrgentOnly, setShowUrgentOnly] = useState(false);
+  const [animatingClosedOppId, setAnimatingClosedOppId] = useState(null);
 
   const userAlerts = getUserOpportunityAlerts(opportunities, currentUser, userRole);
 
@@ -108,6 +110,7 @@ export default function OpportunitiesTab({ targetOppFromNotification, onClearTar
 
   useEffect(() => {
     fetchOpportunities();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Clear hover tooltip on window scroll
@@ -120,12 +123,12 @@ export default function OpportunitiesTab({ targetOppFromNotification, onClearTar
   }, []);
 
   const getProgressColor = (percent) => {
-    if (percent === 0) return 'var(--text-muted, #94a3b8)';
-    if (percent < 25) return 'var(--color-danger, #ef4444)';
-    if (percent < 50) return 'var(--color-warning, #f59e0b)';
-    if (percent < 75) return '#2563eb';
-    if (percent < 100) return 'var(--accent-primary, #6366f1)';
-    return 'var(--color-success, #10b981)';
+    const p = Math.max(0, Math.min(100, percent));
+    if (p < 25) return '#ef4444'; // Red
+    if (p < 50) return '#f59e0b'; // Orange
+    if (p < 75) return '#0ea5e9'; // Light Blue
+    if (p < 90) return '#1e40af'; // Dark Blue
+    return '#10b981'; // Green
   };
 
   const getTooltipCoords = (data) => {
@@ -155,9 +158,12 @@ export default function OpportunitiesTab({ targetOppFromNotification, onClearTar
 
   const handleHoverTrigger = (opp, stats, e) => {
     const rect = e.currentTarget.getBoundingClientRect();
+    const stageName = (opp.deal_stage_name || '').toLowerCase().trim();
+    const isLostOrDropped = stageName === 'lost' || stageName === 'dropped';
     setHoveredOppData({
       opp,
       ...stats,
+      isLostOrDropped,
       anchorRect: rect,
       clientX: e.clientX,
       clientY: e.clientY
@@ -324,9 +330,31 @@ export default function OpportunitiesTab({ targetOppFromNotification, onClearTar
         throw new Error(data.error || 'Failed to save opportunity');
       }
 
+      const updatedOpp = await res.json();
       const oppName = formData.opportunity_name;
       setIsModalOpen(false);
-      fetchOpportunities();
+
+      const savedStageOption = getOptions('deal_stage').find(o => o.id === updatedOpp.deal_stage_id);
+      const isNowClosed = savedStageOption && isOpportunityClosed(savedStageOption.option_name);
+
+      if (isNowClosed) {
+        setAnimatingClosedOppId(updatedOpp.id);
+        
+        // Temporarily add it to state for animation if it wasn't there
+        setOpportunities(prev => {
+          const exists = prev.some(o => o.id === updatedOpp.id);
+          if (!exists) return [{...updatedOpp, deal_stage_name: savedStageOption.option_name}, ...prev];
+          return prev.map(o => o.id === updatedOpp.id ? {...updatedOpp, deal_stage_name: savedStageOption.option_name} : o);
+        });
+
+        setTimeout(() => {
+          setAnimatingClosedOppId(null);
+          fetchOpportunities();
+        }, 2500);
+      } else {
+        fetchOpportunities();
+      }
+
       showToast(`✓ Opportunity "${oppName}" registered successfully!`, 'success');
     } catch (err) {
       setError(err.message);
@@ -383,6 +411,16 @@ export default function OpportunitiesTab({ targetOppFromNotification, onClearTar
       (opp.primary_sales_owner && opp.primary_sales_owner.toLowerCase().includes(q)) ||
       (opp.finance_status && opp.finance_status.toLowerCase().includes(q))
     );
+  });
+
+  const activeOpps = displayOpportunities.filter(opp => {
+    if (opp.id === animatingClosedOppId) return true; // Keep in active list during animation
+    return !isOpportunityClosed(opp.deal_stage_name);
+  });
+
+  const closedOpps = displayOpportunities.filter(opp => {
+    if (opp.id === animatingClosedOppId) return false;
+    return isOpportunityClosed(opp.deal_stage_name);
   });
 
   const getFinanceStatusBadge = (status) => {
@@ -519,7 +557,7 @@ export default function OpportunitiesTab({ targetOppFromNotification, onClearTar
                 </tr>
               </thead>
               <tbody>
-                {displayOpportunities.map((opp) => {
+                {activeOpps.map((opp) => {
                   const oppTasks = workItems.filter(t => t.opportunity_id === opp.id);
                   const totalWorkItems = oppTasks.length;
                   const completedWorkItems = oppTasks.filter(t => t.status_name === 'Completed').length;
@@ -535,12 +573,19 @@ export default function OpportunitiesTab({ targetOppFromNotification, onClearTar
                     tasks: oppTasks
                   };
 
+                  const stageName = (opp.deal_stage_name || '').toLowerCase().trim();
+                  const isLostOrDropped = isOpportunityClosed(opp.deal_stage_name);
+                  const isAnimating = opp.id === animatingClosedOppId;
+
                   return (
                     <React.Fragment key={opp.id}>
                       <tr 
-                        className="opportunity-main-row" 
+                        className={`opportunity-main-row ${isAnimating ? 'row-strikethrough-anim' : ''}`} 
                         onClick={() => setSelectedViewOpp(opp)} 
-                        style={{ cursor: 'pointer' }}
+                        style={{ 
+                          cursor: 'pointer',
+                          backgroundColor: isLostOrDropped ? 'rgba(239, 68, 68, 0.04)' : undefined
+                        }}
                       >
                         <td>
                           <div>
@@ -673,6 +718,7 @@ export default function OpportunitiesTab({ targetOppFromNotification, onClearTar
                         onMouseEnter={(e) => handleHoverTrigger(opp, oppStats, e)}
                         onMouseMove={handleMouseMove}
                         onMouseLeave={() => setHoveredOppData(null)}
+                        style={isLostOrDropped ? { backgroundColor: 'rgba(239, 68, 68, 0.04)' } : {}}
                       >
                         <td colSpan={9}>
                           <div 
@@ -683,10 +729,10 @@ export default function OpportunitiesTab({ targetOppFromNotification, onClearTar
                               style={{
                                 height: '100%',
                                 width: totalWorkItems === 0 ? '0%' : `${completionPercentage}%`,
-                                backgroundColor: getProgressColor(completionPercentage),
+                                backgroundColor: isLostOrDropped ? 'var(--text-muted, #9ca3af)' : getProgressColor(completionPercentage),
                                 borderRadius: '0 2px 2px 0',
                                 transition: 'width 0.4s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease',
-                                boxShadow: completionPercentage > 0 ? `0 0 8px ${getProgressColor(completionPercentage)}88` : 'none'
+                                boxShadow: completionPercentage > 0 ? (isLostOrDropped ? '0 0 8px rgba(156, 163, 175, 0.5)' : `0 0 8px ${getProgressColor(completionPercentage)}88`) : 'none'
                               }}
                             />
                           </div>
@@ -700,6 +746,144 @@ export default function OpportunitiesTab({ targetOppFromNotification, onClearTar
           </div>
         )}
       </div>
+
+      {/* Dropped/Lost Opportunities Section */}
+      {closedOpps.length > 0 && (
+        <div className="paper-panel" style={{ overflow: 'hidden', marginTop: '1rem' }}>
+          <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--border-subtle)', background: 'var(--bg-secondary)' }}>
+            <h3 style={{ fontSize: '1.1rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '1.3rem' }}>📁</span> Dropped/Lost Opportunities ({closedOpps.length})
+            </h3>
+          </div>
+          <div className="table-container">
+            <table className="custom-table">
+              <thead>
+                <tr>
+                  <th>Opportunity & Client</th>
+                  <th>Type</th>
+                  <th>Deliverable Type</th>
+                  <th>Stage</th>
+                  <th>Finance Status</th>
+                  <th className="num-col">TCV</th>
+                  <th>Due Date</th>
+                  <th>Presales Owner</th>
+                  <th className="num-col">{isFinance ? 'Finance Approval' : 'Actions'}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {closedOpps.map((opp) => {
+                  const oppTasks = workItems.filter(t => t.opportunity_id === opp.id);
+                  const totalWorkItems = oppTasks.length;
+                  const completedWorkItems = oppTasks.filter(t => t.status_name === 'Completed').length;
+                  const inProgressWorkItems = oppTasks.filter(t => t.status_name === 'In Progress').length;
+                  const notStartedWorkItems = oppTasks.filter(t => t.status_name === 'Not Started').length;
+                  const completionPercentage = totalWorkItems > 0 ? Math.round((completedWorkItems / totalWorkItems) * 100) : 0;
+                  const oppStats = {
+                    totalWorkItems,
+                    completedWorkItems,
+                    inProgressWorkItems,
+                    notStartedWorkItems,
+                    completionPercentage,
+                    tasks: oppTasks
+                  };
+
+                  const isLostOrDropped = true;
+
+                  return (
+                    <React.Fragment key={opp.id}>
+                      <tr 
+                        className="opportunity-main-row" 
+                        onClick={() => setSelectedViewOpp(opp)} 
+                        style={{ 
+                          cursor: 'pointer',
+                          backgroundColor: 'rgba(239, 68, 68, 0.04)'
+                        }}
+                      >
+                        <td>
+                          <div>
+                            <strong style={{ color: 'var(--text-primary)', fontSize: '0.95rem' }}>{opp.opportunity_name}</strong>
+                          </div>
+                          <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>{opp.company}</div>
+                        </td>
+                        <td>
+                          <span className="badge" style={getOptionBadgeStyle('opportunity_type', opp.opportunity_type_name)}>
+                            {opp.opportunity_type_name}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="badge" style={getOptionBadgeStyle('deliverable_type', opp.deliverable_type_name)}>
+                            {opp.deliverable_type_name}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="badge" style={getOptionBadgeStyle('deal_stage', opp.deal_stage_name)}>
+                            {opp.deal_stage_name}
+                          </span>
+                        </td>
+                        <td>{getFinanceStatusBadge(opp.finance_status)}</td>
+                        <td className="num-col" style={{ fontWeight: 600 }}>
+                          {formatTCV(opp.tcv_amount, opp.tcv_currency)}
+                        </td>
+                        <td>{opp.target_submission_date ? opp.target_submission_date.split('T')[0] : '—'}</td>
+                        <td>
+                          {opp.presales_owner ? (
+                            <span className="badge" style={{ backgroundColor: 'var(--bg-secondary)', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)' }}>
+                              @{opp.presales_owner}
+                            </span>
+                          ) : '—'}
+                        </td>
+                        <td className="num-col">
+                          {isFinance ? (
+                            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                              <button className="btn btn-sm btn-outline" style={{ borderColor: '#10b981', color: '#10b981' }} onClick={(e) => { e.stopPropagation(); handleUpdateFinanceStatus(opp.id, 'Approved'); }}>Approve</button>
+                              <button className="btn btn-sm btn-outline" style={{ borderColor: '#ef4444', color: '#ef4444' }} onClick={(e) => { e.stopPropagation(); handleUpdateFinanceStatus(opp.id, 'Rejected'); }}>Reject</button>
+                            </div>
+                          ) : (
+                            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                              {(userRole === 'Admin' || opp.presales_owner === currentUser) && (
+                                <button className="btn btn-sm btn-outline" onClick={(e) => { e.stopPropagation(); openEditModal(opp); }}>Edit</button>
+                              )}
+                              <button className="btn btn-sm btn-outline" onClick={(e) => { e.stopPropagation(); setSelectedViewOpp(opp); }}>View</button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+
+                      {/* Partitioning status bar row for Closed Opps */}
+                      <tr 
+                        className="opportunity-partition-row"
+                        onClick={() => setSelectedViewOpp(opp)}
+                        onMouseEnter={(e) => handleHoverTrigger(opp, oppStats, e)}
+                        onMouseMove={handleMouseMove}
+                        onMouseLeave={() => setHoveredOppData(null)}
+                        style={{ backgroundColor: 'rgba(239, 68, 68, 0.04)' }}
+                      >
+                        <td colSpan={9}>
+                          <div 
+                            className="opportunity-partition-bar-container"
+                            title={`Work Item Completion: ${completionPercentage}% (${completedWorkItems} of ${totalWorkItems} completed)`}
+                          >
+                            <div 
+                              style={{
+                                height: '100%',
+                                width: totalWorkItems === 0 ? '0%' : `${completionPercentage}%`,
+                                backgroundColor: 'var(--text-muted, #9ca3af)',
+                                borderRadius: '0 2px 2px 0',
+                                transition: 'width 0.4s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease',
+                                boxShadow: completionPercentage > 0 ? '0 0 8px rgba(156, 163, 175, 0.5)' : 'none'
+                              }}
+                            />
+                          </div>
+                        </td>
+                      </tr>
+                    </React.Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Floating Opportunity Status Hover Card */}
       {hoveredOppData && (
@@ -748,7 +932,7 @@ export default function OpportunitiesTab({ targetOppFromNotification, onClearTar
               <div style={{ 
                 fontSize: '2.25rem', 
                 fontWeight: 800, 
-                color: getProgressColor(hoveredOppData.completionPercentage), 
+                color: hoveredOppData.isLostOrDropped ? 'var(--text-muted, #9ca3af)' : getProgressColor(hoveredOppData.completionPercentage), 
                 lineHeight: 1,
                 letterSpacing: '-0.03em'
               }}>
@@ -773,7 +957,7 @@ export default function OpportunitiesTab({ targetOppFromNotification, onClearTar
               <div style={{
                 height: '100%',
                 width: `${hoveredOppData.completionPercentage}%`,
-                backgroundColor: getProgressColor(hoveredOppData.completionPercentage),
+                backgroundColor: hoveredOppData.isLostOrDropped ? 'var(--text-muted, #9ca3af)' : getProgressColor(hoveredOppData.completionPercentage),
                 borderRadius: '9999px',
                 transition: 'width 0.4s ease'
               }} />

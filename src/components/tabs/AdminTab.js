@@ -101,6 +101,7 @@ export default function AdminTab() {
     if (delivOpts.length > 0 && !selectedDeliverableType) {
       setSelectedDeliverableType(delivOpts[0].id.toString());
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dropdownOptions]);
 
   // -- DROPDOWN MANAGER HANDLERS --

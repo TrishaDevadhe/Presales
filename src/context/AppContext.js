@@ -143,6 +143,7 @@ export function AppProvider({ children }) {
       setLoading(false);
     };
     init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Inactivity and session check listener
@@ -187,6 +188,7 @@ export function AppProvider({ children }) {
       clearInterval(timer);
       if (throttleTimeout) clearTimeout(throttleTimeout);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoggedIn]);
 
   const handleUserChange = (username) => {

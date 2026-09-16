@@ -1,5 +1,6 @@
 import { query } from '@/lib/db';
 import { NextResponse } from 'next/server';
+import { isOpportunityClosed } from '@/lib/opportunityUtils';
 
 // GET all work items
 export async function GET(request) {
@@ -138,6 +139,18 @@ export async function POST(request) {
     // Validation
     if (!work_category_id || !title || !assigned_to || !start_date || !due_date || !status_id) {
       return NextResponse.json({ error: 'Work Category, Title, Assigned To, Start Date, Due Date, and Status are required' }, { status: 400 });
+    }
+
+    if (opportunity_id) {
+      const oppRes = await query(`
+        SELECT ds.option_name AS deal_stage_name 
+        FROM opportunities o 
+        LEFT JOIN dropdown_options ds ON o.deal_stage_id = ds.id 
+        WHERE o.id = $1
+      `, [opportunity_id]);
+      if (oppRes.rows.length > 0 && isOpportunityClosed(oppRes.rows[0].deal_stage_name)) {
+        return NextResponse.json({ error: 'This action is not allowed because the associated opportunity is Dropped/Lost.' }, { status: 403 });
+      }
     }
 
     const hours = parseFloat(estimated_hours) || 0;

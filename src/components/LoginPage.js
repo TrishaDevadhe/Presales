@@ -37,6 +37,7 @@ export default function LoginPage() {
     if (allUsers.length > 0 && !selectedUser) {
       setSelectedUser(allUsers[0].username);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resourceProfiles]);
 
   const handleSubmit = (e) => {

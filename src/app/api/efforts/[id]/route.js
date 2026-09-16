@@ -1,17 +1,25 @@
 import { query } from '@/lib/db';
 import { NextResponse } from 'next/server';
+import { isOpportunityClosed } from '@/lib/opportunityUtils';
 
 export async function DELETE(request, { params }) {
   const id = params.id;
   try {
     const existingRes = await query(`
-      SELECT el.*, wi.title AS work_item_title 
+      SELECT el.*, wi.title AS work_item_title, ds.option_name AS deal_stage_name
       FROM effort_logs el 
       LEFT JOIN work_items wi ON el.work_item_id = wi.id 
+      LEFT JOIN opportunities o ON wi.opportunity_id = o.id
+      LEFT JOIN dropdown_options ds ON o.deal_stage_id = ds.id
       WHERE el.id = $1`, [id]);
     const existing = existingRes.rows[0];
 
+    if (existing && isOpportunityClosed(existing.deal_stage_name)) {
+      return NextResponse.json({ error: 'This action is not allowed because the associated opportunity is Dropped/Lost.' }, { status: 403 });
+    }
+
     const result = await query('DELETE FROM effort_logs WHERE id = $1 RETURNING *', [id]);
+
     if (result.rows.length === 0) {
       return NextResponse.json({ error: 'Effort Log not found' }, { status: 404 });
     }

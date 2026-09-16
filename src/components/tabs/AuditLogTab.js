@@ -222,6 +222,7 @@ export default function AuditLogTab() {
 
   useEffect(() => {
     fetchLogs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeSubTab, startDate, endDate, filterUser, filterEntityType, filterActionType, filterEventType]);
 
   // Action Icon & Tint Badge Mapping (Part C)

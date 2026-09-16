@@ -1,5 +1,6 @@
 import { query } from '@/lib/db';
 import { NextResponse } from 'next/server';
+import { isOpportunityClosed } from '@/lib/opportunityUtils';
 
 // GET a single work item
 export async function GET(request, { params }) {
@@ -110,6 +111,31 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: 'Work Category, Title, Assigned To, Start Date, Due Date, and Status are required' }, { status: 400 });
     }
 
+    const existingRes = await query(
+      `SELECT w.*, st.option_name as status_name FROM work_items w LEFT JOIN dropdown_options st ON w.status_id = st.id WHERE w.id = $1`,
+      [id]
+    );
+    const existing = existingRes.rows[0];
+    if (!existing) {
+      return NextResponse.json({ error: 'Work Item not found' }, { status: 404 });
+    }
+
+    // Check if the old opportunity is closed
+    if (existing.opportunity_id) {
+      const oppRes = await query('SELECT ds.option_name AS deal_stage_name FROM opportunities o LEFT JOIN dropdown_options ds ON o.deal_stage_id = ds.id WHERE o.id = $1', [existing.opportunity_id]);
+      if (oppRes.rows.length > 0 && isOpportunityClosed(oppRes.rows[0].deal_stage_name)) {
+        return NextResponse.json({ error: 'This action is not allowed because the associated opportunity is Dropped/Lost.' }, { status: 403 });
+      }
+    }
+
+    // Check if the new opportunity is closed (if changing opportunity)
+    if (opportunity_id && opportunity_id !== existing.opportunity_id) {
+      const oppRes = await query('SELECT ds.option_name AS deal_stage_name FROM opportunities o LEFT JOIN dropdown_options ds ON o.deal_stage_id = ds.id WHERE o.id = $1', [opportunity_id]);
+      if (oppRes.rows.length > 0 && isOpportunityClosed(oppRes.rows[0].deal_stage_name)) {
+        return NextResponse.json({ error: 'This action is not allowed because the associated opportunity is Dropped/Lost.' }, { status: 403 });
+      }
+    }
+
     const hours = parseFloat(estimated_hours) || 0;
 
     // Retrieve Status and Category names for rule checks
@@ -141,11 +167,16 @@ export async function PUT(request, { params }) {
       }
     }
 
-    const existingRes = await query(
-      `SELECT w.*, st.option_name as status_name FROM work_items w LEFT JOIN dropdown_options st ON w.status_id = st.id WHERE w.id = $1`,
-      [id]
-    );
-    const existing = existingRes.rows[0];
+    if (statusName === 'Not Started') {
+      const effortCheck = await query('SELECT SUM(hours_logged) AS total FROM effort_logs WHERE work_item_id = $1', [id]);
+      const totalLogged = parseFloat(effortCheck.rows[0]?.total || 0);
+      if (totalLogged > 0) {
+        const inProgressRes = await query("SELECT id FROM dropdown_options WHERE category = 'task_status' AND option_name = 'In Progress'");
+        if (inProgressRes.rows.length > 0) {
+          finalStatusId = inProgressRes.rows[0].id;
+        }
+      }
+    }
 
     // Update
     const result = await query(
@@ -274,6 +305,16 @@ export async function DELETE(request, { params }) {
   try {
     const existingRes = await query('SELECT * FROM work_items WHERE id = $1', [id]);
     const existing = existingRes.rows[0];
+    if (!existing) {
+      return NextResponse.json({ error: 'Work Item not found' }, { status: 404 });
+    }
+
+    if (existing.opportunity_id) {
+      const oppRes = await query('SELECT ds.option_name AS deal_stage_name FROM opportunities o LEFT JOIN dropdown_options ds ON o.deal_stage_id = ds.id WHERE o.id = $1', [existing.opportunity_id]);
+      if (oppRes.rows.length > 0 && isOpportunityClosed(oppRes.rows[0].deal_stage_name)) {
+        return NextResponse.json({ error: 'This action is not allowed because the associated opportunity is Dropped/Lost.' }, { status: 403 });
+      }
+    }
 
     const result = await query('DELETE FROM work_items WHERE id = $1 RETURNING *', [id]);
     if (result.rows.length === 0) {
