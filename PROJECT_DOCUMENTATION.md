@@ -59,13 +59,18 @@ Below are the complete feature descriptions for every page in the application:
 
 ### 3.1. Dashboard Analytics Home (`DashboardTab.js`)
 
-The **Dashboard** provides executive-level visibility into deal value, workload allocations, target submission alarms, and rework risk hotspots.
+The **Dashboard** provides a clear, role-aware personal workspace structured into two distinct visual tiers:
 
-- **Pipeline Value Metric Card**: Displays total aggregated deal value across all active opportunities.
-- **Total Opportunities & Active Work Items**: Real-time counter of active pipeline deals and pending work tasks.
-- **Deadlines Alert Panel**: Highlights deals with target submission dates within <= 7 days.
-- **Resource Overload Monitor**: Real-time capacity warnings when team utilization exceeds 100%.
-- **Rework & Revision Hotspots**: Identifies high-risk opportunities exceeding warning revision thresholds.
+1. **⚡ Section 1: Active Workload & Current Capacity (Always Live / Unfiltered)**:
+   - **Live KPI Metrics**: Real-time counters for *My Active Tasks*, *Weekly Capacity Used* (auto-resets every week with progress bar & remaining hours), and *Overdue / At-Risk Tasks*.
+   - **Actionable Workload Queues**: Direct access to *My Active Tasks* (sorted chronologically by deadline with overdue indicators), *Technical Review Queue* (pending user sign-off), and *My Active Opportunities*.
+   - **Priority Breakdown Chart**: Live distribution of currently active tasks by priority level.
+
+2. **⏱️ Section 2: Logged Effort & Accuracy Analytics (Time-Scoped Analytics)**:
+   - **Time Scope Switcher**: Seamless filtering across **Current Week** (default), **This Month**, **This Year**, and **All-Time** without affecting active task queues.
+   - **Scoped KPIs**: Total hours logged and mathematically computed **Estimate Accuracy %** (`100% - (|Actual - Est| / Est)`) with exact actual logged hours vs. estimated hours and variance badges.
+   - **Interactive Visualizations**: Time spent by Presales Activity Type (Pie Chart) and **Estimate vs. Actual Hours** comparison (Bar Chart with task-level variance, full tooltips, and actual hours).
+   - **Clean Layout**: Redundant duplicate archives and duplicate work logged summaries at the bottom have been eliminated.
 
 ![Live Dashboard Home View](./docs/images/dashboard_home.png)
 

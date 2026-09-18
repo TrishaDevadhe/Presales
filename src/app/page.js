@@ -18,6 +18,7 @@ import AuditLogTab from '@/components/tabs/AuditLogTab';
 import SettingsTab from '@/components/tabs/SettingsTab';
 import EditProfileModal from '@/components/EditProfileModal';
 import NotificationCenter from '@/components/NotificationCenter';
+import LoginOpportunityAlert from '@/components/LoginOpportunityAlert';
 
 export default function Home() {
   const { currentUser, userRole, isLoggedIn, logout, handleUserChange, loading, allUsers, resourceProfiles, globalSearchQuery, setGlobalSearchQuery } = useApp();
@@ -515,6 +516,15 @@ export default function Home() {
       <EditProfileModal
         isOpen={isEditProfileOpen}
         onClose={() => setIsEditProfileOpen(false)}
+      />
+
+      {/* Enterprise Login Opportunity Deadlines Alert Banner */}
+      <LoginOpportunityAlert
+        opportunities={globalOpportunities}
+        currentUser={currentUser}
+        userRole={userRole}
+        isLoggedIn={isLoggedIn}
+        onNavigateToOpp={handleNavigateToOpp}
       />
 
     </div>

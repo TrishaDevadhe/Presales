@@ -255,7 +255,43 @@ export async function POST(request) {
       const tcvCurrency = String(row.tcv_currency || row['Currency'] || 'USD').toUpperCase().trim() || 'USD';
       const contractTenure = parseInt(row.contract_tenure || row['Contract Tenure'] || row['Tenure (Months)'] || 12, 10) || 12;
       const winProb = parseInt(row.win_probability || row['Win Probability'] || row['Win %'] || 100, 10) || 100;
-      const financeStatus = String(row.finance_status || row['Finance Status'] || 'Pending').trim();
+      // Resolve Finance Status from uploaded file columns
+      const rawFinanceInput = String(
+        row.finance_status || row['Finance Status'] || row['finance_status'] || row['Finance'] || 
+        row['Financial Status'] || row['Approval Status'] || row['Finance Approval'] || ''
+      ).trim();
+
+      let financeStatus = '';
+      if (rawFinanceInput) {
+        const lower = rawFinanceInput.toLowerCase();
+        if (lower.includes('app') || lower === 'yes' || lower === 'y') {
+          financeStatus = 'Approved';
+        } else if (lower.includes('rej') || lower.includes('not') || lower.includes('dis') || lower === 'no' || lower === 'n') {
+          financeStatus = 'Rejected';
+        } else if (lower.includes('pend')) {
+          financeStatus = 'Pending';
+        }
+      }
+
+      if (!financeStatus) {
+        if (!generateTasks) {
+          // When importing without default tasks, these are historical/completed opportunities:
+          // - Won opportunities must always be 'Approved'
+          // - Lost or Dropped opportunities must always be 'Rejected' (not approved)
+          const stageOptionName = dropdownsRes.rows.find(d => d.id === stageId)?.option_name || rawStage || '';
+          const stageLower = stageOptionName.toLowerCase().trim();
+          if (stageLower === 'won') {
+            financeStatus = 'Approved';
+          } else if (stageLower === 'lost' || stageLower.startsWith('drop')) {
+            financeStatus = 'Rejected';
+          } else {
+            financeStatus = 'Approved';
+          }
+        } else {
+          // When template tasks are requested, this is a new opportunity:
+          financeStatus = 'Pending';
+        }
+      }
 
       // Dates
       const recDateRaw = row.received_date || row['Received Date'] || row['Start Date'] || todayStr;
@@ -346,6 +382,9 @@ export async function POST(request) {
               const notStartedRes = await query("SELECT id FROM dropdown_options WHERE category = 'task_status' AND option_name = 'Not Started' LIMIT 1");
               const notStartedId = notStartedRes.rows[0]?.id || null;
 
+              const defaultWorkCatRes = await query("SELECT id FROM dropdown_options WHERE category = 'work_category' AND option_name = 'Proposal Writing' LIMIT 1");
+              const defaultWorkCatId = defaultWorkCatRes.rows[0]?.id || (await query("SELECT id FROM dropdown_options WHERE category = 'work_category' LIMIT 1")).rows[0]?.id || null;
+
               for (const t of templates.rows) {
                 await query(
                   `INSERT INTO work_items (
@@ -354,7 +393,7 @@ export async function POST(request) {
                   ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
                   [
                     newOpp.id,
-                    t.work_category_id || null,
+                    t.work_category_id || defaultWorkCatId,
                     t.deliverable_type_id || delivTypeId || null,
                     t.task_name,
                     `Imported template task`,

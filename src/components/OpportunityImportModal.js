@@ -41,6 +41,7 @@ export default function OpportunityImportModal({ isOpen, onClose, onSuccess, dro
         'Currency',
         'Contract Tenure (Months)',
         'Win Probability (%)',
+        'Finance Status',
         'Received Date',
         'Target Submission Date',
         'Priority',
@@ -54,7 +55,7 @@ export default function OpportunityImportModal({ isOpen, onClose, onSuccess, dro
           'Acme Corp',
           'Change Request',
           'Non RFP Response',
-          'POC(Proof Of Concept)',
+          'Won',
           'Lumenore Licence',
           'Vikrant Dhuriya',
           'John Smith',
@@ -63,6 +64,7 @@ export default function OpportunityImportModal({ isOpen, onClose, onSuccess, dro
           'USD',
           12,
           85,
+          'Approved',
           '2023-03-15',
           '2023-04-30',
           'High',
@@ -83,6 +85,7 @@ export default function OpportunityImportModal({ isOpen, onClose, onSuccess, dro
           'USD',
           24,
           100,
+          'Approved',
           '2023-06-01',
           '2023-07-15',
           'Critical',
@@ -103,6 +106,7 @@ export default function OpportunityImportModal({ isOpen, onClose, onSuccess, dro
           'USD',
           12,
           90,
+          'Approved',
           '2023-09-10',
           '2023-10-20',
           'Medium',
@@ -138,6 +142,7 @@ export default function OpportunityImportModal({ isOpen, onClose, onSuccess, dro
         ['Primary Sales Owner', 'Sales owner username or full name (e.g. John Smith, john_smith)'],
         ['Presales Owner', 'Presales owner username or full name (e.g. Jane Doe, jane_doe)'],
         ['Currency', 'USD, EUR, GBP, INR, AUD, CAD, SGD'],
+        ['Finance Status', 'Approved, Rejected, Pending (Auto-resolved if omitted: Approved for Won, Rejected for Lost/Dropped)'],
         ['Date Format', 'YYYY-MM-DD (e.g. 2023-05-15) or standard Excel date cell']
       ];
       const wsRef = XLSX.utils.aoa_to_sheet(refData);
@@ -202,6 +207,7 @@ export default function OpportunityImportModal({ isOpen, onClose, onSuccess, dro
           const presalesOwner = String(r['Presales Owner'] || r['presales_owner'] || '').trim();
           const tcv = r['TCV Amount'] || r['tcv_amount'] || r['TCV'] || r['Value'] || 0;
           const currency = String(r['Currency'] || r['tcv_currency'] || 'USD').trim() || 'USD';
+          const finStatus = String(r['Finance Status'] || r['finance_status'] || r['Finance'] || r['Financial Status'] || r['Approval Status'] || r['Finance Approval'] || '').trim();
           const recDate = r['Received Date'] || r['received_date'] || '';
           const targetDate = r['Target Submission Date'] || r['target_submission_date'] || r['Due Date'] || '';
 
@@ -226,6 +232,7 @@ export default function OpportunityImportModal({ isOpen, onClose, onSuccess, dro
             presales_owner: presalesOwner,
             tcv_amount: tcv,
             tcv_currency: currency,
+            finance_status: finStatus,
             received_date: recDate,
             target_submission_date: targetDate,
             summary: String(r['Summary'] || r['summary'] || r['Description'] || '').trim()
@@ -317,6 +324,7 @@ export default function OpportunityImportModal({ isOpen, onClose, onSuccess, dro
           presales_owner: r.presales_owner,
           tcv_amount: r.tcv_amount,
           tcv_currency: r.tcv_currency,
+          finance_status: r.finance_status,
           received_date: r.received_date,
           target_submission_date: r.target_submission_date,
           summary: r.summary
@@ -619,6 +627,7 @@ export default function OpportunityImportModal({ isOpen, onClose, onSuccess, dro
                       <th>Type</th>
                       <th>Deliverable</th>
                       <th>Stage</th>
+                      <th>Finance Status</th>
                       <th>Project Type</th>
                       <th>Delivery Team</th>
                       <th>TCV</th>
@@ -648,6 +657,16 @@ export default function OpportunityImportModal({ isOpen, onClose, onSuccess, dro
                         <td>
                           <span className="badge badge-categorical">
                             {r.deal_stage || 'Won'}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="badge" style={{ 
+                            fontSize: '0.72rem',
+                            backgroundColor: String(r.finance_status || '').toLowerCase().includes('app') ? 'rgba(16, 185, 129, 0.15)' : (String(r.finance_status || '').toLowerCase().includes('rej') ? 'rgba(239, 68, 68, 0.15)' : 'rgba(245, 158, 11, 0.15)'),
+                            color: String(r.finance_status || '').toLowerCase().includes('app') ? '#10b981' : (String(r.finance_status || '').toLowerCase().includes('rej') ? '#ef4444' : '#f59e0b'),
+                            border: `1px solid ${String(r.finance_status || '').toLowerCase().includes('app') ? '#10b981' : (String(r.finance_status || '').toLowerCase().includes('rej') ? '#ef4444' : '#f59e0b')}`
+                          }}>
+                            {r.finance_status || (!generateTasks ? (String(r.deal_stage || '').toLowerCase().includes('won') ? 'Approved' : (['lost', 'drop'].some(s => String(r.deal_stage || '').toLowerCase().includes(s)) ? 'Rejected' : 'Approved')) : 'Pending')}
                           </span>
                         </td>
                         <td>{r.project_type || '—'}</td>

@@ -18,6 +18,63 @@ import {
 } from 'recharts';
 import { getUserOpportunityAlerts } from '@/lib/opportunityAlerts.js';
 
+function getWeekBounds(refDate = new Date()) {
+  const d = new Date(refDate);
+  const day = d.getDay();
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+  const monday = new Date(d);
+  monday.setDate(d.getDate() + diffToMonday);
+  monday.setHours(0, 0, 0, 0);
+
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  sunday.setHours(23, 59, 59, 999);
+
+  const toDateStr = (dateObj) => {
+    const y = dateObj.getFullYear();
+    const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const dayNum = String(dateObj.getDate()).padStart(2, '0');
+    return `${y}-${m}-${dayNum}`;
+  };
+
+  return {
+    startDate: toDateStr(monday),
+    endDate: toDateStr(sunday)
+  };
+}
+
+function getMonthBounds(refDate = new Date()) {
+  const d = new Date(refDate);
+  const start = new Date(d.getFullYear(), d.getMonth(), 1);
+  const end = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+  const toDateStr = (dateObj) => {
+    const y = dateObj.getFullYear();
+    const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const dayNum = String(dateObj.getDate()).padStart(2, '0');
+    return `${y}-${m}-${dayNum}`;
+  };
+  return {
+    startDate: toDateStr(start),
+    endDate: toDateStr(end)
+  };
+}
+
+function getYearBounds(refDate = new Date()) {
+  const d = new Date(refDate);
+  const start = new Date(d.getFullYear(), 0, 1);
+  const end = new Date(d.getFullYear(), 11, 31);
+  const toDateStr = (dateObj) => {
+    const y = dateObj.getFullYear();
+    const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const dayNum = String(dateObj.getDate()).padStart(2, '0');
+    return `${y}-${m}-${dayNum}`;
+  };
+  return {
+    startDate: toDateStr(start),
+    endDate: toDateStr(end)
+  };
+}
+
 export default function DashboardTab({ onNavigateToOpp }) {
   const { currentUser, getOptionColor, getOptionBadgeStyle, formatUserName, globalSearchQuery } = useApp();
 
@@ -27,6 +84,9 @@ export default function DashboardTab({ onNavigateToOpp }) {
   const [efforts, setEfforts] = useState([]);
   const [versions, setVersions] = useState([]);
   const [profiles, setProfiles] = useState([]);
+
+  // Time scope filter: 'week' (Default: Current Active Week) | 'month' | 'year' | 'all'
+  const [timeScope, setTimeScope] = useState('week');
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -100,6 +160,11 @@ export default function DashboardTab({ onNavigateToOpp }) {
   const activeProfile = profiles.find(p => (p.username || '').toLowerCase() === userLower) || {};
   const userDisplayName = activeProfile.name || (currentUser ? formatUserName(currentUser) : 'User');
 
+  // Compute Active Period Date Bounds
+  const weekBounds = getWeekBounds();
+  const monthBounds = getMonthBounds();
+  const yearBounds = getYearBounds();
+
   // 1. My Tasks & Active Tasks
   const myTasks = tasks.filter(t => (t.assigned_to || '').toLowerCase() === userLower);
   const myActiveTasks = myTasks.filter(t => t.status_name !== 'Completed' && t.status_name !== 'Blocked' && t.status_name !== 'Cancelled');
@@ -109,19 +174,58 @@ export default function DashboardTab({ onNavigateToOpp }) {
   const todayStr = new Date().toISOString().split('T')[0];
   const myOverdueTasks = myActiveTasks.filter(t => t.due_date && t.due_date < todayStr);
 
-  // 3. My Capacity & Utilization
+  // 3. My Efforts Partitioned by Timeframes
+  const myAllEfforts = efforts.filter(e => (e.person || '').toLowerCase() === userLower);
+  const myAllTimeLoggedHours = myAllEfforts.reduce((sum, e) => sum + parseFloat(e.hours_logged || 0), 0);
+
+  const myThisWeekEfforts = myAllEfforts.filter(e => {
+    const d = String(e.date || '').split('T')[0];
+    return d >= weekBounds.startDate && d <= weekBounds.endDate;
+  });
+  const myThisWeekLoggedHours = myThisWeekEfforts.reduce((sum, e) => sum + parseFloat(e.hours_logged || 0), 0);
+
+  const myThisMonthEfforts = myAllEfforts.filter(e => {
+    const d = String(e.date || '').split('T')[0];
+    return d >= monthBounds.startDate && d <= monthBounds.endDate;
+  });
+  const myThisMonthLoggedHours = myThisMonthEfforts.reduce((sum, e) => sum + parseFloat(e.hours_logged || 0), 0);
+
+  const myThisYearEfforts = myAllEfforts.filter(e => {
+    const d = String(e.date || '').split('T')[0];
+    return d >= yearBounds.startDate && d <= yearBounds.endDate;
+  });
+  const myThisYearLoggedHours = myThisYearEfforts.reduce((sum, e) => sum + parseFloat(e.hours_logged || 0), 0);
+
+  // Active Scoped Dataset (Default: Current Week)
+  let myScopedEfforts = myThisWeekEfforts;
+  let scopeTitle = 'This Week';
+  let scopeDateSubtext = `Week of ${weekBounds.startDate} – ${weekBounds.endDate}`;
+
+  if (timeScope === 'month') {
+    myScopedEfforts = myThisMonthEfforts;
+    scopeTitle = 'This Month';
+    scopeDateSubtext = `${monthBounds.startDate} – ${monthBounds.endDate}`;
+  } else if (timeScope === 'year') {
+    myScopedEfforts = myThisYearEfforts;
+    scopeTitle = 'This Year';
+    scopeDateSubtext = `${yearBounds.startDate} – ${yearBounds.endDate}`;
+  } else if (timeScope === 'all') {
+    myScopedEfforts = myAllEfforts;
+    scopeTitle = 'All-Time';
+    scopeDateSubtext = 'Entire Lifetime History';
+  }
+
+  const myScopedLoggedHours = myScopedEfforts.reduce((sum, e) => sum + parseFloat(e.hours_logged || 0), 0);
+
+  // 4. Weekly Capacity & Utilization (Refreshes every new week)
   const myWeeklyCapacity = parseFloat(activeProfile.weekly_capacity_hours || 40);
+  const myWeeklyUtilizationPct = myWeeklyCapacity > 0 ? Math.round((myThisWeekLoggedHours / myWeeklyCapacity) * 100) : 0;
+  const myWeeklyHoursRemaining = Math.max(0, myWeeklyCapacity - myThisWeekLoggedHours);
   const myCommittedHours = myActiveTasks.reduce((sum, t) => sum + parseFloat(t.estimated_hours || 0), 0);
-  const myFreeHours = Math.max(0, myWeeklyCapacity - myCommittedHours);
-  const myUtilizationPct = myWeeklyCapacity > 0 ? Math.round((myCommittedHours / myWeeklyCapacity) * 100) : 0;
 
-  // 4. My Efforts & Total Logged Hours
-  const myEfforts = efforts.filter(e => (e.person || '').toLowerCase() === userLower);
-  const myTotalLoggedHours = myEfforts.reduce((sum, e) => sum + parseFloat(e.hours_logged || 0), 0);
-
-  // Effort Logged by Activity Type (Chart Data 1)
+  // Effort Logged by Activity Type for Scoped Timeframe (Chart Data 1)
   const myEffortMap = {};
-  myEfforts.forEach(e => {
+  myScopedEfforts.forEach(e => {
     const act = e.activity_type_name || e.effort_type_name || 'General Presales';
     myEffortMap[act] = (myEffortMap[act] || 0) + parseFloat(e.hours_logged || 0);
   });
@@ -130,25 +234,99 @@ export default function DashboardTab({ onNavigateToOpp }) {
     value: parseFloat(myEffortMap[act].toFixed(1))
   }));
 
-  // 5. Estimate Accuracy on Completed Tasks
-  const myCompletedTasks = myTasks.filter(t => t.status_name === 'Completed');
-  const totalEstimatedOnCompleted = myCompletedTasks.reduce((sum, t) => sum + parseFloat(t.estimated_hours || 0), 0);
-  const completedTaskIds = new Set(myCompletedTasks.map(t => parseInt(t.id, 10)));
-  const myCompletedEfforts = myEfforts.filter(e => completedTaskIds.has(parseInt(e.work_item_id, 10)));
-  const totalActualOnCompleted = myCompletedEfforts.reduce((sum, e) => sum + parseFloat(e.hours_logged || 0), 0);
+  // 5. GENUINE ESTIMATE ACCURACY COMPUTATION & ACTUAL FIGURES
+  // Map total actual logged hours across all users/efforts for each task
+  const taskActualHoursMap = {};
+  efforts.forEach(e => {
+    const taskId = parseInt(e.work_item_id, 10);
+    if (taskId) {
+      taskActualHoursMap[taskId] = (taskActualHoursMap[taskId] || 0) + parseFloat(e.hours_logged || 0);
+    }
+  });
 
-  const myEstimateAccuracyPct = totalEstimatedOnCompleted > 0 
-    ? Math.round((totalActualOnCompleted / totalEstimatedOnCompleted) * 100)
-    : 100;
+  // Map scoped actual logged hours for tasks worked on within the active timeframe
+  const taskScopedHoursMap = {};
+  myScopedEfforts.forEach(e => {
+    const taskId = parseInt(e.work_item_id, 10);
+    if (taskId) {
+      taskScopedHoursMap[taskId] = (taskScopedHoursMap[taskId] || 0) + parseFloat(e.hours_logged || 0);
+    }
+  });
 
-  // Estimate Accuracy Chart Data (Chart Data 2)
-  const myAccuracyChartData = myTasks.slice(0, 8).map(t => {
-    const taskEfforts = myEfforts.filter(e => parseInt(e.work_item_id, 10) === parseInt(t.id, 10));
-    const actualLogged = taskEfforts.reduce((sum, e) => sum + parseFloat(e.hours_logged || 0), 0);
+  // Gather all tasks relevant to the user (assigned or worked on)
+  const userRelevantTaskMap = new Map();
+  tasks.forEach(t => {
+    const isAssigned = (t.assigned_to || '').toLowerCase() === userLower;
+    const hasEffortInScope = (taskScopedHoursMap[t.id] || 0) > 0;
+    const hasAnyEffort = (taskActualHoursMap[t.id] || 0) > 0;
+    
+    if (isAssigned || hasEffortInScope || (timeScope === 'all' && hasAnyEffort)) {
+      userRelevantTaskMap.set(t.id, t);
+    }
+  });
+
+  // Filter tasks based on time scope:
+  // If in a specific time filter (week/month/year), prioritize tasks with effort logged in that period
+  let evaluatedTasks = Array.from(userRelevantTaskMap.values()).filter(t => {
+    if (timeScope === 'all') {
+      return (taskActualHoursMap[t.id] || 0) > 0 && parseFloat(t.estimated_hours || 0) > 0;
+    }
+    // For week/month/year, check if effort was logged in this scope
+    return (taskScopedHoursMap[t.id] || 0) > 0 && parseFloat(t.estimated_hours || 0) > 0;
+  });
+
+  // If no effort has been logged yet in the selected week/month, fallback to user's tasks with logged effort & estimates so realistic data is shown
+  if (evaluatedTasks.length === 0) {
+    evaluatedTasks = Array.from(userRelevantTaskMap.values()).filter(t => 
+      (taskActualHoursMap[t.id] || 0) > 0 && parseFloat(t.estimated_hours || 0) > 0
+    );
+  }
+
+  // Calculate True Mathematical Accuracy & Variance
+  let totalEstimatedOnEvaluated = 0;
+  let totalActualOnEvaluated = 0;
+  let totalAbsoluteDeviation = 0;
+
+  evaluatedTasks.forEach(t => {
+    const est = parseFloat(t.estimated_hours || 0);
+    const act = taskActualHoursMap[t.id] || 0;
+    totalEstimatedOnEvaluated += est;
+    totalActualOnEvaluated += act;
+    totalAbsoluteDeviation += Math.abs(act - est);
+  });
+
+  const hasAccuracyData = evaluatedTasks.length > 0 && totalEstimatedOnEvaluated > 0;
+  const myEstimateAccuracyPct = hasAccuracyData
+    ? Math.max(0, Math.round(100 - (totalAbsoluteDeviation / totalEstimatedOnEvaluated) * 100))
+    : null;
+
+  const totalVarianceHours = totalActualOnEvaluated - totalEstimatedOnEvaluated;
+  const totalVariancePct = totalEstimatedOnEvaluated > 0 
+    ? ((totalVarianceHours / totalEstimatedOnEvaluated) * 100).toFixed(1)
+    : '0.0';
+
+  // Estimate vs Actual Chart Data (Top 8 tasks with real actual logged hours and estimates)
+  const sortedAccuracyTasks = [...evaluatedTasks].sort((a, b) => {
+    const actA = taskActualHoursMap[a.id] || 0;
+    const actB = taskActualHoursMap[b.id] || 0;
+    return actB - actA;
+  }).slice(0, 8);
+
+  const myAccuracyChartData = sortedAccuracyTasks.map(t => {
+    const est = parseFloat(t.estimated_hours || 0);
+    const act = taskActualHoursMap[t.id] || 0;
+    const diff = act - est;
+    const taskAcc = est > 0 ? Math.max(0, Math.round(100 - (Math.abs(diff) / est) * 100)) : 100;
+
     return {
-      name: t.title.length > 14 ? t.title.substring(0, 14) + '...' : t.title,
-      Estimated: parseFloat(t.estimated_hours || 0),
-      Actual: parseFloat(actualLogged.toFixed(1))
+      id: t.id,
+      name: t.title.length > 16 ? t.title.substring(0, 16) + '...' : t.title,
+      fullTitle: t.title,
+      opportunityName: t.opportunity_name || '',
+      Estimated: est,
+      Actual: parseFloat(act.toFixed(1)),
+      variance: parseFloat(diff.toFixed(1)),
+      accuracy: taskAcc
     };
   });
 
@@ -186,308 +364,269 @@ export default function DashboardTab({ onNavigateToOpp }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
 
       {/* Action controls row */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 'var(--space-3)' }}>
-        <span className="badge badge-categorical">
-          Role: {activeProfile.role_name || 'Team Member'}
-        </span>
-        <button className="btn btn-secondary btn-sm" onClick={fetchAllData}>
-          🔄 Refresh Data
-        </button>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <span className="badge badge-categorical">
+            Role: {activeProfile.role_name || 'Team Member'}
+          </span>
+          <span className="badge badge-neutral" style={{ fontSize: '0.78rem' }}>
+            Weekly Capacity: <strong>{myWeeklyCapacity} hrs/wk</strong>
+          </span>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <button className="btn btn-secondary btn-sm" onClick={fetchAllData}>
+            🔄 Refresh Data
+          </button>
+        </div>
       </div>
 
-      {/* URGENT OPPORTUNITY DEADLINES NOTIFICATION WIDGET */}
-      {userAlerts.totalCount > 0 && (
-        <div className="paper-panel dashboard-urgent-widget" style={{
-          borderLeft: `5px solid ${userAlerts.overdueCount > 0 ? '#ef4444' : '#f59e0b'}`,
-          padding: '1.25rem 1.5rem',
-          background: userAlerts.overdueCount > 0 
-            ? 'var(--color-danger-bg)' 
-            : 'var(--color-warning-bg)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '0.85rem'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-              <span style={{ fontSize: '1.4rem' }}>{userAlerts.overdueCount > 0 ? '⚠️' : '⏳'}</span>
+      {/* ========================================================================= */}
+      {/* SECTION 1: ⚡ ACTIVE OPERATIONAL STATUS & WORKLOAD (Unaffected by Filter) */}
+      {/* ========================================================================= */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        
+        {/* Section Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '2px solid var(--border-subtle, #e2e8f0)', paddingBottom: '0.6rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <div>
+            <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span>⚡</span> Active Workload & Current Capacity
+            </h3>
+            <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+              Real-time operational queue, active task commitments, and weekly capacity tracking
+            </p>
+          </div>
+        </div>
+
+        {/* 3 Live KPI Cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
+          
+          {/* KPI 1: Active Work Items */}
+          <div className="paper-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                My Active Tasks
+              </span>
+              <span style={{ fontSize: '1.2rem' }}>⚡</span>
+            </div>
+            <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>
+              {myActiveTasks.length}
+            </div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+              <strong>{myCommittedHours.toFixed(1)} hrs</strong> in ongoing queue
+            </div>
+          </div>
+
+          {/* KPI 2: Capacity Utilization (Weekly) */}
+          <div className="paper-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Weekly Capacity Used
+              </span>
+              <span style={{ fontSize: '1.2rem' }}>📊</span>
+            </div>
+            <div style={{ fontSize: '2rem', fontWeight: 800, color: myWeeklyUtilizationPct > 100 ? '#ef4444' : 'var(--text-primary)', lineHeight: 1 }}>
+              {myWeeklyUtilizationPct}%
+            </div>
+            <div style={{ width: '100%', height: '6px', background: 'var(--bg-secondary)', borderRadius: '3px', overflow: 'hidden' }}>
+              <div style={{
+                width: `${Math.min(100, myWeeklyUtilizationPct)}%`,
+                height: '100%',
+                background: myWeeklyUtilizationPct > 100 ? '#ef4444' : myWeeklyUtilizationPct > 80 ? '#f59e0b' : '#10b981',
+                borderRadius: '3px'
+              }} />
+            </div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+              <strong>{myThisWeekLoggedHours.toFixed(1)}</strong> / {myWeeklyCapacity} hrs logged this week ({myWeeklyHoursRemaining.toFixed(1)} hrs left)
+            </div>
+          </div>
+
+          {/* KPI 3: Overdue / At-Risk */}
+          <div className="paper-panel" style={{
+            padding: '1.25rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.6rem',
+            border: myOverdueTasks.length > 0 ? '1px solid rgba(239, 68, 68, 0.35)' : '1px solid var(--glass-border)',
+            background: myOverdueTasks.length > 0 ? 'rgba(239, 68, 68, 0.04)' : 'var(--bg-card)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '0.78rem', fontWeight: 700, color: myOverdueTasks.length > 0 ? '#ef4444' : 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Overdue / At-Risk Tasks
+              </span>
+              <span style={{ fontSize: '1.2rem' }}>⚠️</span>
+            </div>
+            <div style={{ fontSize: '2rem', fontWeight: 800, color: myOverdueTasks.length > 0 ? '#ef4444' : '#10b981', lineHeight: 1 }}>
+              {myOverdueTasks.length}
+            </div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+              {myOverdueTasks.length > 0 ? 'Tasks past target deadline' : 'All active tasks on schedule'}
+            </div>
+          </div>
+
+        </div>
+
+        {/* ACTIONABLE WORKLOAD QUEUES (2 COLUMNS) */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.5rem' }}>
+
+          {/* COLUMN 1: My Priority Work Queue */}
+          <div className="paper-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-                  Urgent Opportunity Deadlines ({userAlerts.totalCount})
-                </h4>
-                <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-                  {userAlerts.overdueCount > 0 && userAlerts.approachingCount > 0
-                    ? `You have ${userAlerts.overdueCount} opportunity(s) overdue and ${userAlerts.approachingCount} opportunity(s) approaching submission deadline.`
-                    : userAlerts.overdueCount > 0
-                    ? `You have ${userAlerts.overdueCount} opportunity(s) that crossed their target submission deadline.`
-                    : `You have ${userAlerts.approachingCount} opportunity(s) approaching their target submission deadline.`}
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+                  📋 My Active Tasks (Sorted by Deadline)
+                </h3>
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '0.2rem 0 0 0' }}>
+                  {myActiveTasks.length} pending work items assigned to you
                 </p>
               </div>
-            </div>
-            {onNavigateToOpp && (
-              <button
-                type="button"
-                className="btn btn-sm btn-outline"
-                onClick={() => onNavigateToOpp(null)}
-                style={{
-                  fontSize: '0.82rem',
-                  fontWeight: 600,
-                  borderColor: userAlerts.overdueCount > 0 ? '#ef4444' : '#f59e0b',
-                  color: userAlerts.overdueCount > 0 ? 'var(--color-danger-text, #dc2626)' : 'var(--color-warning-text, #d97706)',
-                  background: 'var(--surface-card, #ffffff)'
-                }}
-              >
-                Go to Opportunities →
-              </button>
-            )}
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '0.75rem' }}>
-            {userAlerts.allAlerts.slice(0, 4).map(alert => {
-              const isOverdue = alert.type === 'overdue';
-              return (
-                <div
-                  key={alert.opportunityId}
-                  onClick={() => onNavigateToOpp && onNavigateToOpp(alert.rawOpp)}
-                  style={{
-                    padding: '0.75rem 0.95rem',
-                    borderRadius: '8px',
-                    backgroundColor: 'var(--surface-card, #ffffff)',
-                    border: `1px solid ${isOverdue ? 'rgba(239, 68, 68, 0.35)' : 'rgba(245, 158, 11, 0.35)'}`,
-                    borderLeft: `4px solid ${isOverdue ? '#ef4444' : '#f59e0b'}`,
-                    cursor: onNavigateToOpp ? 'pointer' : 'default',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.35rem',
-                    transition: 'all 0.15s ease'
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
-                    <strong style={{ fontSize: '0.88rem', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {alert.opportunityName}
-                    </strong>
-                    <span style={{
-                      fontSize: '0.68rem',
-                      fontWeight: 700,
-                      padding: '0.12rem 0.45rem',
-                      borderRadius: '4px',
-                      backgroundColor: isOverdue ? 'var(--color-danger-bg)' : 'var(--color-warning-bg)',
-                      color: isOverdue ? 'var(--color-danger-text, #dc2626)' : 'var(--color-warning-text, #d97706)',
-                      border: `1px solid ${isOverdue ? 'rgba(239, 68, 68, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`,
-                      whiteSpace: 'nowrap'
-                    }}>
-                      {alert.badgeText}
-                    </span>
-                  </div>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-                    🏢 {alert.company} • Stage: <strong>{alert.dealStageName}</strong>
-                  </div>
-                  <div style={{ fontSize: '0.76rem', color: isOverdue ? 'var(--color-danger-text, #dc2626)' : 'var(--color-warning-text, #d97706)', fontWeight: 600 }}>
-                    {alert.message}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-          {userAlerts.allAlerts.length > 4 && onNavigateToOpp && (
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'right' }}>
-              <span
-                onClick={() => onNavigateToOpp(null)}
-                style={{ cursor: 'pointer', textDecoration: 'underline', color: 'var(--accent-secondary)' }}
-              >
-                +{userAlerts.allAlerts.length - 4} more urgent opportunities in pipeline →
+              <span className="badge badge-info" style={{ fontSize: '0.78rem' }}>
+                {myActiveTasks.length} Active
               </span>
             </div>
-          )}
-        </div>
-      )}
 
-      {/* 5 USER KPI METRIC CARDS */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
-        
-        {/* KPI 1: Active Work Items */}
-        <div className="paper-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              My Active Tasks
-            </span>
-            <span style={{ fontSize: '1.2rem' }}>⚡</span>
-          </div>
-          <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>
-            {myActiveTasks.length}
-          </div>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-            <strong>{myCommittedHours.toFixed(1)} hrs</strong> estimated workload
-          </div>
-        </div>
-
-        {/* KPI 2: Capacity Utilization */}
-        <div className="paper-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Weekly Capacity Used
-            </span>
-            <span style={{ fontSize: '1.2rem' }}>📊</span>
-          </div>
-          <div style={{ fontSize: '2rem', fontWeight: 800, color: myUtilizationPct > 100 ? '#ef4444' : 'var(--text-primary)', lineHeight: 1 }}>
-            {myUtilizationPct}%
-          </div>
-          <div style={{ width: '100%', height: '6px', background: 'var(--bg-secondary)', borderRadius: '3px', overflow: 'hidden' }}>
-            <div style={{
-              width: `${Math.min(100, myUtilizationPct)}%`,
-              height: '100%',
-              background: myUtilizationPct > 100 ? '#ef4444' : myUtilizationPct > 80 ? '#f59e0b' : '#10b981',
-              borderRadius: '3px'
-            }} />
-          </div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-            {myCommittedHours.toFixed(1)} / {myWeeklyCapacity} hrs ({myFreeHours.toFixed(1)} hrs free)
-          </div>
-        </div>
-
-        {/* KPI 3: Overdue / At-Risk */}
-        <div className="paper-panel" style={{
-          padding: '1.25rem',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '0.6rem',
-          border: myOverdueTasks.length > 0 ? '1px solid rgba(239, 68, 68, 0.35)' : '1px solid var(--glass-border)',
-          background: myOverdueTasks.length > 0 ? 'rgba(239, 68, 68, 0.04)' : 'var(--bg-card)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '0.78rem', fontWeight: 700, color: myOverdueTasks.length > 0 ? '#ef4444' : 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Overdue / At-Risk
-            </span>
-            <span style={{ fontSize: '1.2rem' }}>⚠️</span>
-          </div>
-          <div style={{ fontSize: '2rem', fontWeight: 800, color: myOverdueTasks.length > 0 ? '#ef4444' : '#10b981', lineHeight: 1 }}>
-            {myOverdueTasks.length}
-          </div>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-            {myOverdueTasks.length > 0 ? 'Tasks past target deadline' : 'All active tasks on schedule'}
-          </div>
-        </div>
-
-        {/* KPI 4: Total Logged Effort */}
-        <div className="paper-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Total Hours Logged
-            </span>
-            <span style={{ fontSize: '1.2rem' }}>⏱️</span>
-          </div>
-          <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>
-            {myTotalLoggedHours.toFixed(1)} <span style={{ fontSize: '1rem', fontWeight: 600 }}>hrs</span>
-          </div>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-            Across <strong>{myEfforts.length}</strong> logged effort entries
-          </div>
-        </div>
-
-        {/* KPI 5: Estimate Accuracy */}
-        <div className="paper-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              Estimate Accuracy Ratio
-            </span>
-            <span style={{ fontSize: '1.2rem' }}>🎯</span>
-          </div>
-          <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>
-            {myEstimateAccuracyPct}%
-          </div>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-            {totalActualOnCompleted.toFixed(1)} hrs actual / {totalEstimatedOnCompleted.toFixed(1)} hrs est.
-          </div>
-        </div>
-
-      </div>
-
-      {/* CHARTS SECTION (3 Meaningful Analytical Views) */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '1.5rem' }}>
-        
-        {/* Chart 1: Effort Logged by Activity Type */}
-        <div className="paper-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div>
-            <h4 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-              ⏱️ Time Spent by Activity Type
-            </h4>
-            <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '0.2rem 0 0 0' }}>
-              Personal effort distribution (RFP writing, POC, Solution Design, Client Calls)
-            </p>
-          </div>
-
-          <div style={{ width: '100%', height: '240px' }}>
-            {isMounted && myEffortChartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={myEffortChartData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={80}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {myEffortChartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(val) => [`${val} hrs`, 'Logged Effort']} />
-                  <Legend wrapperStyle={{ fontSize: '0.78rem' }} />
-                </PieChart>
-              </ResponsiveContainer>
+            {mySortedActiveTasks.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: 'var(--text-muted)', fontSize: '0.88rem' }}>
+                🎉 You have no pending active work items!
+              </div>
             ) : (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                No effort entries logged yet
+              <div className="table-container" style={{ maxHeight: '280px', overflowY: 'auto' }}>
+                <table className="custom-table" style={{ fontSize: '0.82rem' }}>
+                  <thead>
+                    <tr>
+                      <th>Task Title</th>
+                      <th>Opportunity</th>
+                      <th>Priority</th>
+                      <th className="num-col">Est. Hrs</th>
+                      <th>Due Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {mySortedActiveTasks.map(t => {
+                      const daysLeft = t.due_date ? Math.ceil((new Date(t.due_date) - new Date()) / (1000 * 60 * 60 * 24)) : null;
+                      const isOverdue = daysLeft !== null && daysLeft < 0;
+
+                      return (
+                        <tr key={t.id}>
+                          <td>
+                            <strong style={{ color: 'var(--text-primary)' }}>{t.title}</strong>
+                          </td>
+                          <td style={{ color: 'var(--text-secondary)' }}>
+                            {t.opportunity_name || '—'}
+                          </td>
+                          <td>
+                            <span className="badge badge-neutral" style={{ fontSize: '0.72rem' }}>
+                              {t.priority_name || 'Normal'}
+                            </span>
+                          </td>
+                          <td className="num-col" style={{ fontWeight: 600 }}>{t.estimated_hours}h</td>
+                          <td>
+                            {t.due_date ? (
+                              <span className={`badge ${isOverdue ? 'badge-danger' : daysLeft <= 2 ? 'badge-warning' : 'badge-neutral'}`} style={{ fontSize: '0.72rem' }}>
+                                {t.due_date} {daysLeft !== null && (isOverdue ? `(${Math.abs(daysLeft)}d overdue)` : `(${daysLeft}d left)`)}
+                              </span>
+                            ) : '—'}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
-        </div>
 
-        {/* Chart 2: Estimate vs Actual Hours Accuracy */}
-        <div className="paper-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div>
-            <h4 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-              🎯 Estimate Accuracy (Estimated vs Actual)
-            </h4>
-            <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '0.2rem 0 0 0' }}>
-              Comparison of estimated hours vs actual hours spent per task
-            </p>
-          </div>
-
-          <div style={{ width: '100%', height: '240px' }}>
-            {isMounted && myAccuracyChartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={myAccuracyChartData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-15} textAnchor="end" />
-                  <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip />
-                  <Legend wrapperStyle={{ fontSize: '0.78rem' }} />
-                  <Bar dataKey="Estimated" fill="#3B82F6" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="Actual" fill="#10B981" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                No task estimate history available
+          {/* COLUMN 2: My Review Queue & My Assigned Opportunities */}
+          <div className="paper-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            
+            {/* Review Queue */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                <div>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+                    🧐 Technical Review Queue
+                  </h3>
+                  <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '0.2rem 0 0 0' }}>
+                    Items assigned to you for technical sign-off & review
+                  </p>
+                </div>
+                <span className={`badge ${myReviewQueue.length > 0 ? 'badge-warning' : 'badge-neutral'}`} style={{ fontSize: '0.78rem' }}>
+                  {myReviewQueue.length} Pending
+                </span>
               </div>
-            )}
+
+              {myReviewQueue.length === 0 ? (
+                <div style={{ padding: '0.85rem 1rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+                  No deliverables pending your technical sign-off.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '115px', overflowY: 'auto' }}>
+                  {myReviewQueue.map(t => (
+                    <div key={t.id} style={{ padding: '0.55rem 0.75rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: '0.84rem', color: 'var(--text-primary)' }}>{t.title}</div>
+                        <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>Assigned: {formatUserName(t.assigned_to)} | Opp: {t.opportunity_name || '—'}</div>
+                      </div>
+                      <span className="badge badge-warning" style={{ fontSize: '0.7rem' }}>Sign-off Needed</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* My Opportunities Overview */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                <div>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+                    💼 My Active Opportunities
+                  </h3>
+                  <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '0.2rem 0 0 0' }}>
+                    Deals where you are Presales Lead, Sales Owner, or Supporting Architect
+                  </p>
+                </div>
+                <span className="badge badge-info" style={{ fontSize: '0.78rem' }}>
+                  {myOpportunities.length} Deals
+                </span>
+              </div>
+
+              {myOpportunities.length === 0 ? (
+                <div style={{ padding: '0.85rem 1rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+                  You are not currently linked to any active opportunities.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '115px', overflowY: 'auto' }}>
+                  {myOpportunities.map(o => (
+                    <div key={o.id} style={{ padding: '0.55rem 0.75rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: '0.84rem', color: 'var(--text-primary)' }}>{o.opportunity_name}</div>
+                        <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>{o.company} | Due: {o.target_submission_date || '—'}</div>
+                      </div>
+                      <span className="badge badge-neutral" style={{ fontSize: '0.7rem' }}>
+                        {o.deal_stage_name || 'Active'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
           </div>
+
         </div>
 
-        {/* Chart 3: My Work Items by Priority */}
+        {/* Live Work Items by Priority Chart */}
         <div className="paper-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div>
             <h4 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-              📌 Active Work Items by Priority
+              📌 Current Active Work Items by Priority
             </h4>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '0.2rem 0 0 0' }}>
-              Current task workload categorized by priority tier
+              Ongoing active task distribution categorized by priority level
             </p>
           </div>
 
-          <div style={{ width: '100%', height: '240px' }}>
+          <div style={{ width: '100%', height: '220px' }}>
             {isMounted && myPriorityChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={myPriorityChartData} margin={{ top: 10, right: 10, left: -20, bottom: 10 }}>
@@ -508,149 +647,295 @@ export default function DashboardTab({ onNavigateToOpp }) {
 
       </div>
 
-      {/* ACTIONABLE WORKLOAD QUEUES (2 COLUMNS) */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.5rem' }}>
-
-        {/* COLUMN 1: My Priority Work Queue */}
-        <div className="paper-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      {/* ========================================================================= */}
+      {/* SECTION 2: ⏱️ LOGGED EFFORT & ACCURACY ANALYTICS (Time-Scope Filtered)   */}
+      {/* ========================================================================= */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginTop: '0.5rem' }}>
+        
+        {/* TIME-SCOPE SELECTOR & LIVE ACTIVE WEEK INDICATOR */}
+        <div style={{
+          background: 'var(--surface-card, #ffffff)',
+          border: '1px solid var(--border-subtle, #e2e8f0)',
+          borderRadius: 'var(--radius-md, 12px)',
+          padding: '0.85rem 1.25rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '1rem',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+            <span style={{ fontSize: '1.35rem' }}>⏱️</span>
             <div>
-              <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-                📋 My Active Tasks (Sorted by Deadline)
-              </h3>
-              <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '0.2rem 0 0 0' }}>
-                {myActiveTasks.length} pending work items assigned to you
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <strong style={{ fontSize: '0.94rem', color: 'var(--text-primary)' }}>
+                  Effort & Accuracy Scope: {scopeTitle}
+                </strong>
+                {timeScope === 'week' ? (
+                  <span className="badge" style={{ fontSize: '0.72rem', backgroundColor: 'rgba(16, 185, 129, 0.12)', color: '#059669', border: '1px solid #10b981', fontWeight: 700 }}>
+                    ● Current Active Week
+                  </span>
+                ) : (
+                  <span className="badge badge-neutral" style={{ fontSize: '0.72rem' }}>
+                    {scopeTitle} History
+                  </span>
+                )}
+              </div>
+              <p style={{ margin: '0.15rem 0 0 0', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                {scopeDateSubtext} • Metrics and charts below update based on this time filter
               </p>
             </div>
-            <span className="badge badge-info" style={{ fontSize: '0.78rem' }}>
-              {myActiveTasks.length} Active
-            </span>
           </div>
 
-          {mySortedActiveTasks.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: 'var(--text-muted)', fontSize: '0.88rem' }}>
-              🎉 You have no pending active work items!
-            </div>
-          ) : (
-            <div className="table-container" style={{ maxHeight: '320px', overflowY: 'auto' }}>
-              <table className="custom-table" style={{ fontSize: '0.82rem' }}>
-                <thead>
-                  <tr>
-                    <th>Task Title</th>
-                    <th>Opportunity</th>
-                    <th>Priority</th>
-                    <th className="num-col">Est. Hrs</th>
-                    <th>Due Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {mySortedActiveTasks.map(t => {
-                    const daysLeft = t.due_date ? Math.ceil((new Date(t.due_date) - new Date()) / (1000 * 60 * 60 * 24)) : null;
-                    const isOverdue = daysLeft !== null && daysLeft < 0;
-
-                    return (
-                      <tr key={t.id}>
-                        <td>
-                          <strong style={{ color: 'var(--text-primary)' }}>{t.title}</strong>
-                        </td>
-                        <td style={{ color: 'var(--text-secondary)' }}>
-                          {t.opportunity_name || '—'}
-                        </td>
-                        <td>
-                          <span className="badge badge-neutral" style={{ fontSize: '0.72rem' }}>
-                            {t.priority_name || 'Normal'}
-                          </span>
-                        </td>
-                        <td className="num-col" style={{ fontWeight: 600 }}>{t.estimated_hours}h</td>
-                        <td>
-                          {t.due_date ? (
-                            <span className={`badge ${isOverdue ? 'badge-danger' : daysLeft <= 2 ? 'badge-warning' : 'badge-neutral'}`} style={{ fontSize: '0.72rem' }}>
-                              {t.due_date} {daysLeft !== null && (isOverdue ? `(${Math.abs(daysLeft)}d overdue)` : `(${daysLeft}d left)`)}
-                            </span>
-                          ) : '—'}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
+          {/* Time Scope Toggle Tabs */}
+          <div style={{
+            display: 'inline-flex',
+            background: 'var(--bg-secondary, #f1f5f9)',
+            borderRadius: '8px',
+            padding: '3px',
+            gap: '3px'
+          }}>
+            <button
+              type="button"
+              onClick={() => setTimeScope('week')}
+              style={{
+                padding: '0.38rem 0.9rem',
+                borderRadius: '6px',
+                border: 'none',
+                backgroundColor: timeScope === 'week' ? '#2563eb' : 'transparent',
+                color: timeScope === 'week' ? '#ffffff' : 'var(--text-secondary)',
+                fontWeight: timeScope === 'week' ? 700 : 500,
+                cursor: 'pointer',
+                fontSize: '0.82rem',
+                transition: 'all 0.15s ease',
+                boxShadow: timeScope === 'week' ? '0 1px 3px rgba(37,99,235,0.3)' : 'none'
+              }}
+            >
+              📅 Current Week
+            </button>
+            <button
+              type="button"
+              onClick={() => setTimeScope('month')}
+              style={{
+                padding: '0.38rem 0.9rem',
+                borderRadius: '6px',
+                border: 'none',
+                backgroundColor: timeScope === 'month' ? '#2563eb' : 'transparent',
+                color: timeScope === 'month' ? '#ffffff' : 'var(--text-secondary)',
+                fontWeight: timeScope === 'month' ? 700 : 500,
+                cursor: 'pointer',
+                fontSize: '0.82rem',
+                transition: 'all 0.15s ease',
+                boxShadow: timeScope === 'month' ? '0 1px 3px rgba(37,99,235,0.3)' : 'none'
+              }}
+            >
+              🗓️ This Month
+            </button>
+            <button
+              type="button"
+              onClick={() => setTimeScope('year')}
+              style={{
+                padding: '0.38rem 0.9rem',
+                borderRadius: '6px',
+                border: 'none',
+                backgroundColor: timeScope === 'year' ? '#2563eb' : 'transparent',
+                color: timeScope === 'year' ? '#ffffff' : 'var(--text-secondary)',
+                fontWeight: timeScope === 'year' ? 700 : 500,
+                cursor: 'pointer',
+                fontSize: '0.82rem',
+                transition: 'all 0.15s ease',
+                boxShadow: timeScope === 'year' ? '0 1px 3px rgba(37,99,235,0.3)' : 'none'
+              }}
+            >
+              📆 This Year
+            </button>
+            <button
+              type="button"
+              onClick={() => setTimeScope('all')}
+              style={{
+                padding: '0.38rem 0.9rem',
+                borderRadius: '6px',
+                border: 'none',
+                backgroundColor: timeScope === 'all' ? '#2563eb' : 'transparent',
+                color: timeScope === 'all' ? '#ffffff' : 'var(--text-secondary)',
+                fontWeight: timeScope === 'all' ? 700 : 500,
+                cursor: 'pointer',
+                fontSize: '0.82rem',
+                transition: 'all 0.15s ease',
+                boxShadow: timeScope === 'all' ? '0 1px 3px rgba(37,99,235,0.3)' : 'none'
+              }}
+            >
+              ♾️ All Time
+            </button>
+          </div>
         </div>
 
-        {/* COLUMN 2: My Review Queue & My Assigned Opportunities */}
-        <div className="paper-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        {/* 2 Filter-Scoped KPI Cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
           
-          {/* Review Queue */}
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-              <div>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-                  🧐 Technical Review Queue
-                </h3>
-                <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '0.2rem 0 0 0' }}>
-                  Items assigned to you for technical sign-off & review
-                </p>
-              </div>
-              <span className={`badge ${myReviewQueue.length > 0 ? 'badge-warning' : 'badge-neutral'}`} style={{ fontSize: '0.78rem' }}>
-                {myReviewQueue.length} Pending
+          {/* KPI: Hours Logged (Scoped to Active Timeframe) */}
+          <div className="paper-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Hours Logged ({scopeTitle})
               </span>
+              <span style={{ fontSize: '1.2rem' }}>⏱️</span>
             </div>
-
-            {myReviewQueue.length === 0 ? (
-              <div style={{ padding: '1rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
-                No deliverables pending your technical sign-off.
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '140px', overflowY: 'auto' }}>
-                {myReviewQueue.map(t => (
-                  <div key={t.id} style={{ padding: '0.65rem 0.85rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-primary)' }}>{t.title}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Assigned: {formatUserName(t.assigned_to)} | Opp: {t.opportunity_name || '—'}</div>
-                    </div>
-                    <span className="badge badge-warning" style={{ fontSize: '0.72rem' }}>Sign-off Needed</span>
-                  </div>
-                ))}
-              </div>
-            )}
+            <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>
+              {myScopedLoggedHours.toFixed(1)} <span style={{ fontSize: '1rem', fontWeight: 600 }}>hrs</span>
+            </div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+              Across <strong>{myScopedEfforts.length}</strong> logged entries • {timeScope === 'week' ? 'Refreshes every week' : scopeTitle}
+            </div>
           </div>
 
-          {/* My Opportunities Overview */}
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-              <div>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-                  💼 My Active Opportunities
-                </h3>
-                <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '0.2rem 0 0 0' }}>
-                  Deals where you are Presales Lead, Sales Owner, or Supporting Architect
-                </p>
-              </div>
-              <span className="badge badge-info" style={{ fontSize: '0.78rem' }}>
-                {myOpportunities.length} Deals
+          {/* KPI: Estimate Accuracy */}
+          <div className="paper-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Estimate Accuracy ({scopeTitle})
               </span>
+              <span style={{ fontSize: '1.2rem' }}>🎯</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.6rem' }}>
+              <span style={{
+                fontSize: '2rem',
+                fontWeight: 800,
+                color: myEstimateAccuracyPct !== null 
+                  ? (myEstimateAccuracyPct >= 85 ? '#10b981' : myEstimateAccuracyPct >= 70 ? '#f59e0b' : '#ef4444')
+                  : 'var(--text-secondary)',
+                lineHeight: 1
+              }}>
+                {myEstimateAccuracyPct !== null ? `${myEstimateAccuracyPct}%` : '—'}
+              </span>
+              {hasAccuracyData && (
+                <span className={`badge ${parseFloat(totalVariancePct) > 10 ? 'badge-warning' : parseFloat(totalVariancePct) < -10 ? 'badge-info' : 'badge-success'}`} style={{ fontSize: '0.72rem' }}>
+                  {totalVarianceHours > 0 ? `+${totalVarianceHours.toFixed(1)}h overrun` : totalVarianceHours < 0 ? `${Math.abs(totalVarianceHours).toFixed(1)}h under` : 'On Target'}
+                </span>
+              )}
+            </div>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+              {hasAccuracyData ? (
+                <>
+                  <strong>{totalActualOnEvaluated.toFixed(1)} hrs</strong> actual vs <strong>{totalEstimatedOnEvaluated.toFixed(1)} hrs</strong> est. ({evaluatedTasks.length} tasks)
+                </>
+              ) : (
+                'No logged effort against estimates in this period'
+              )}
+            </div>
+          </div>
+
+        </div>
+
+        {/* 2 Filter-Scoped Charts */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '1.5rem' }}>
+          
+          {/* Chart 1: Effort Logged by Activity Type */}
+          <div className="paper-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div>
+              <h4 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+                ⏱️ Time Spent by Activity Type ({scopeTitle})
+              </h4>
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '0.2rem 0 0 0' }}>
+                Effort distribution for {scopeTitle.toLowerCase()} (RFP writing, POC, Solution Design, Client Calls)
+              </p>
             </div>
 
-            {myOpportunities.length === 0 ? (
-              <div style={{ padding: '1rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
-                You are not currently linked to any active opportunities.
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '140px', overflowY: 'auto' }}>
-                {myOpportunities.map(o => (
-                  <div key={o.id} style={{ padding: '0.65rem 0.85rem', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <div style={{ fontWeight: 600, fontSize: '0.85rem', color: 'var(--text-primary)' }}>{o.opportunity_name}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{o.company} | Due: {o.target_submission_date || '—'}</div>
-                    </div>
-                    <span className="badge badge-neutral" style={{ fontSize: '0.72rem' }}>
-                      {o.deal_stage_name || 'Active'}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
+            <div style={{ width: '100%', height: '240px' }}>
+              {isMounted && myEffortChartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={myEffortChartData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={50}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {myEffortChartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(val) => [`${val} hrs`, 'Logged Effort']} />
+                    <Legend wrapperStyle={{ fontSize: '0.78rem' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                  No effort entries logged in {scopeTitle.toLowerCase()}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Chart 2: Estimate vs Actual Hours Accuracy */}
+          <div className="paper-panel" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div>
+              <h4 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+                🎯 Estimate vs. Actual Hours ({scopeTitle})
+              </h4>
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '0.2rem 0 0 0' }}>
+                Actual hours logged compared directly against estimated hours per task
+              </p>
+            </div>
+
+            <div style={{ width: '100%', height: '240px' }}>
+              {isMounted && myAccuracyChartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={myAccuracyChartData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="name" tick={{ fontSize: 10 }} interval={0} angle={-15} textAnchor="end" />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <Tooltip content={({ active, payload }) => {
+                      if (!active || !payload || !payload.length) return null;
+                      const item = payload[0].payload;
+                      const variance = item.Actual - item.Estimated;
+                      return (
+                        <div style={{
+                          background: 'var(--surface-card, #ffffff)',
+                          border: '1px solid var(--border-subtle, #e2e8f0)',
+                          borderRadius: '8px',
+                          padding: '0.65rem 0.85rem',
+                          fontSize: '0.78rem',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                        }}>
+                          <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.25rem' }}>{item.fullTitle}</div>
+                          {item.opportunityName && <div style={{ color: 'var(--text-secondary)', fontSize: '0.72rem', marginBottom: '0.4rem' }}>Opp: {item.opportunityName}</div>}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', color: '#2563eb' }}>
+                            <span>Estimated:</span>
+                            <strong>{item.Estimated}h</strong>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', color: '#10b981' }}>
+                            <span>Actual Logged:</span>
+                            <strong>{item.Actual}h</strong>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', marginTop: '0.35rem', paddingTop: '0.35rem', borderTop: '1px solid var(--border-subtle, #e2e8f0)' }}>
+                            <span>Variance:</span>
+                            <strong style={{ color: variance > 0 ? '#ef4444' : variance < 0 ? '#10b981' : 'var(--text-secondary)' }}>
+                              {variance > 0 ? `+${variance.toFixed(1)}h (Overrun)` : variance < 0 ? `${variance.toFixed(1)}h (Under)` : 'Exact Match'}
+                            </strong>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', color: 'var(--text-primary)' }}>
+                            <span>Task Accuracy:</span>
+                            <strong>{item.accuracy}%</strong>
+                          </div>
+                        </div>
+                      );
+                    }} />
+                    <Legend wrapperStyle={{ fontSize: '0.78rem' }} />
+                    <Bar dataKey="Estimated" name="Estimated Hours" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="Actual" name="Actual Hours" fill="#10B981" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                  No logged task estimates to display in {scopeTitle.toLowerCase()}
+                </div>
+              )}
+            </div>
           </div>
 
         </div>

@@ -3,11 +3,16 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { isOpportunityClosed } from '@/lib/opportunityUtils';
+import DocumentViewerModal from './DocumentViewerModal';
 
 export default function OpportunityDetailsView({ opportunity, isFinanceUser, onUpdateFinanceStatus, onBack }) {
   const { getOptions, formatUserName, getOptionBadgeStyle } = useApp();
   const [workItems, setWorkItems] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Document Viewer Modal state
+  const [selectedDocument, setSelectedDocument] = useState(null);
+  const [isDocViewerOpen, setIsDocViewerOpen] = useState(false);
 
   useEffect(() => {
     const fetchWorkItems = async () => {
@@ -39,6 +44,54 @@ export default function OpportunityDetailsView({ opportunity, isFinanceUser, onU
       </div>
     );
   }
+
+  // Parse attached documents
+  let attachments = [];
+  try {
+    if (Array.isArray(opportunity.attachments)) {
+      attachments = opportunity.attachments;
+    } else if (typeof opportunity.attachments === 'string' && opportunity.attachments.trim() !== '') {
+      attachments = JSON.parse(opportunity.attachments);
+    }
+  } catch (e) {
+    console.error('Error parsing attachments in OpportunityDetailsView:', e);
+    attachments = [];
+  }
+  if (!Array.isArray(attachments)) attachments = [];
+
+  const handleOpenDocument = (file) => {
+    setSelectedDocument(file);
+    setIsDocViewerOpen(true);
+  };
+
+  const handleDownloadFile = (file, e) => {
+    e.stopPropagation();
+    if (!file.data) return;
+    const link = document.createElement('a');
+    link.href = file.data;
+    link.download = file.name || 'document';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const getFileIcon = (fileName = '', mimeType = '') => {
+    const fn = fileName.toLowerCase();
+    if (fn.endsWith('.pdf') || mimeType.includes('pdf')) return '📕';
+    if (fn.endsWith('.xlsx') || fn.endsWith('.xls') || fn.endsWith('.csv')) return '📊';
+    if (fn.endsWith('.doc') || fn.endsWith('.docx') || mimeType.includes('word')) return '📄';
+    if (fn.endsWith('.ppt') || fn.endsWith('.pptx')) return '📽️';
+    if (fn.endsWith('.png') || fn.endsWith('.jpg') || fn.endsWith('.jpeg') || fn.endsWith('.webp')) return '🖼️';
+    return '📁';
+  };
+
+  const formatFileSize = (bytes) => {
+    if (!bytes) return '—';
+    const b = parseInt(bytes, 10);
+    if (b < 1024) return `${b} B`;
+    if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
+    return `${(b / (1024 * 1024)).toFixed(2)} MB`;
+  };
 
   const formatTCV = (amount, currency = 'USD') => {
     const num = parseFloat(amount);
@@ -83,7 +136,7 @@ export default function OpportunityDetailsView({ opportunity, isFinanceUser, onU
     }
     return {
       width: totalWorkItems === 0 ? '0%' : `${completionPercentage}%`,
-      color: '#f59e0b',
+      color: '#10b981',
       displayPercent: `${completionPercentage}%`
     };
   };
@@ -97,13 +150,19 @@ export default function OpportunityDetailsView({ opportunity, isFinanceUser, onU
         </button>
       </div>
 
-      {/* Finance Status Banner for Non-Finance Users */}
-      {finStatus !== 'Approved' && !isFinanceUser && (
-        <div style={{ padding: '1rem 1.25rem', backgroundColor: 'rgba(245, 158, 11, 0.12)', border: '1px solid #f59e0b', borderRadius: '8px', color: '#b45309', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <span style={{ fontSize: '1.4rem' }}>🔒</span>
+      {/* Finance Status Banner when not approved */}
+      {finStatus !== 'Approved' && (
+        <div style={{ padding: '1rem 1.25rem', backgroundColor: finStatus === 'Rejected' ? 'rgba(239, 68, 68, 0.12)' : 'rgba(245, 158, 11, 0.12)', border: `1px solid ${finStatus === 'Rejected' ? '#ef4444' : '#f59e0b'}`, borderRadius: '8px', color: finStatus === 'Rejected' ? '#991b1b' : '#b45309', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <span style={{ fontSize: '1.4rem' }}>{finStatus === 'Rejected' ? '❌' : '🔒'}</span>
           <div>
-            <strong style={{ fontSize: '0.95rem', display: 'block', color: '#92400e' }}>Finance Approval Pending</strong>
-            <span style={{ fontSize: '0.85rem' }}>This opportunity requires approval from the Finance department before team members can work on assigned items.</span>
+            <strong style={{ fontSize: '0.95rem', display: 'block', color: finStatus === 'Rejected' ? '#7f1d1d' : '#92400e' }}>
+              {finStatus === 'Rejected' ? 'Finance Status: Rejected' : 'Finance Approval Pending'}
+            </strong>
+            <span style={{ fontSize: '0.85rem' }}>
+              {finStatus === 'Rejected' 
+                ? 'This opportunity was rejected during commercial review. Work items cannot be edited.' 
+                : 'This opportunity requires finance approval before team members can work on assigned items.'}
+            </span>
           </div>
         </div>
       )}
@@ -114,39 +173,6 @@ export default function OpportunityDetailsView({ opportunity, isFinanceUser, onU
           <h3 style={{ fontSize: '1.25rem', margin: 0, color: 'var(--text-primary)' }}>
             {opportunity.opportunity_name}
           </h3>
-          {isFinanceUser && onUpdateFinanceStatus && (
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginRight: '0.25rem' }}>Finance Decision:</span>
-              <button
-                className="btn btn-sm"
-                style={{
-                  padding: '0.35rem 0.75rem',
-                  fontWeight: 600,
-                  backgroundColor: finStatus === 'Approved' ? '#10b981' : 'transparent',
-                  color: finStatus === 'Approved' ? '#ffffff' : '#10b981',
-                  border: '1.5px solid #10b981',
-                  borderRadius: '6px'
-                }}
-                onClick={() => onUpdateFinanceStatus(opportunity.id, 'Approved')}
-              >
-                ✓ Approved
-              </button>
-              <button
-                className="btn btn-sm"
-                style={{
-                  padding: '0.35rem 0.75rem',
-                  fontWeight: 600,
-                  backgroundColor: finStatus === 'Rejected' ? '#ef4444' : 'transparent',
-                  color: finStatus === 'Rejected' ? '#ffffff' : '#ef4444',
-                  border: '1.5px solid #ef4444',
-                  borderRadius: '6px'
-                }}
-                onClick={() => onUpdateFinanceStatus(opportunity.id, 'Rejected')}
-              >
-                ✕ Rejected
-              </button>
-            </div>
-          )}
         </div>
         
         <div className="form-grid-4">
@@ -216,6 +242,113 @@ export default function OpportunityDetailsView({ opportunity, isFinanceUser, onU
             </div>
           </div>
         </div>
+      </div>
+
+      {/* PROPOSALS & ATTACHED OPPORTUNITY DOCUMENTS */}
+      <div className="paper-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--glass-border)', paddingBottom: '0.75rem' }}>
+          <div>
+            <h3 style={{ fontSize: '1.15rem', margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              📁 Proposal & Opportunity Documents
+            </h3>
+            <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+              Uploaded proposals, spreadsheets, architecture diagrams, and review documents
+            </p>
+          </div>
+          <span className="badge badge-neutral" style={{ fontSize: '0.78rem' }}>
+            {attachments.length} {attachments.length === 1 ? 'Document' : 'Documents'}
+          </span>
+        </div>
+
+        {attachments.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-secondary)', backgroundColor: 'var(--bg-secondary, #f8fafc)', borderRadius: '8px', border: '1px dashed var(--border-subtle, #cbd5e1)' }}>
+            <span style={{ fontSize: '2rem', display: 'block', marginBottom: '0.4rem' }}>📄</span>
+            <strong style={{ fontSize: '0.92rem', color: 'var(--text-primary)', display: 'block' }}>No Documents Attached</strong>
+            <span style={{ fontSize: '0.82rem' }}>You can upload proposals (Excel, Docs, PDF) by editing this opportunity.</span>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '0.85rem' }}>
+            {attachments.map((file, idx) => {
+              const icon = getFileIcon(file.name, file.type);
+              const ext = (file.name || '').split('.').pop()?.toUpperCase() || 'FILE';
+              return (
+                <div
+                  key={file.id || idx}
+                  onClick={() => handleOpenDocument(file)}
+                  style={{
+                    padding: '1rem',
+                    borderRadius: '10px',
+                    border: '1px solid var(--border-subtle, #e2e8f0)',
+                    backgroundColor: 'var(--surface-card, #ffffff)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    gap: '0.75rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.18s ease',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = '#2563eb';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(37, 99, 235, 0.12)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--border-subtle, #e2e8f0)';
+                    e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)';
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                    <span style={{ fontSize: '1.8rem', lineHeight: 1 }}>{icon}</span>
+                    <div style={{ flex: 1, overflow: 'hidden' }}>
+                      <strong 
+                        style={{ 
+                          fontSize: '0.92rem', 
+                          color: 'var(--text-primary)', 
+                          display: 'block',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }}
+                        title={file.name}
+                      >
+                        {file.name}
+                      </strong>
+                      <div style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', marginTop: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <span className="badge badge-neutral" style={{ fontSize: '0.68rem', padding: '0.1rem 0.35rem' }}>{ext}</span>
+                        <span>{formatFileSize(file.size)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--border-subtle, #f1f5f9)', paddingTop: '0.65rem' }}>
+                    <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                      {file.uploaded_at ? new Date(file.uploaded_at).toLocaleDateString() : 'Attached'}
+                    </span>
+                    <div style={{ display: 'flex', gap: '0.4rem' }}>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        onClick={(e) => handleDownloadFile(file, e)}
+                        style={{ padding: '0.25rem 0.6rem', fontSize: '0.76rem' }}
+                        title="Download file"
+                      >
+                        ⬇️
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-sm"
+                        onClick={() => handleOpenDocument(file)}
+                        style={{ padding: '0.25rem 0.75rem', fontSize: '0.78rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+                      >
+                        <span>👁️</span> Open & Read
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Progress Bar Section */}
@@ -317,6 +450,14 @@ export default function OpportunityDetailsView({ opportunity, isFinanceUser, onU
           </div>
         )}
       </div>
+
+      {/* DOCUMENT VIEWER MODAL */}
+      <DocumentViewerModal
+        isOpen={isDocViewerOpen}
+        file={selectedDocument}
+        onClose={() => setIsDocViewerOpen(false)}
+      />
+
     </div>
   );
 }

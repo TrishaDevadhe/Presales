@@ -60,18 +60,20 @@ export async function initDb() {
       delivery_team VARCHAR(255),
       project_type VARCHAR(255),
       finance_status VARCHAR(50) DEFAULT 'Pending',
+      attachments TEXT DEFAULT '[]',
       revision_counter INTEGER DEFAULT 0,
       commercial_revision_counter INTEGER DEFAULT 0,
       UNIQUE (company, opportunity_name)
     );
 
-    -- Ensure deliverable_type_id, tcv_amount, tcv_currency, delivery_team, project_type, and finance_status columns exist if table was created previously
+    -- Ensure deliverable_type_id, tcv_amount, tcv_currency, delivery_team, project_type, finance_status, and attachments columns exist if table was created previously
     ALTER TABLE opportunities ADD COLUMN IF NOT EXISTS deliverable_type_id INTEGER REFERENCES dropdown_options(id) ON DELETE SET NULL;
     ALTER TABLE opportunities ADD COLUMN IF NOT EXISTS tcv_amount NUMERIC(15,2) DEFAULT 0.0;
     ALTER TABLE opportunities ADD COLUMN IF NOT EXISTS tcv_currency VARCHAR(10) DEFAULT 'USD';
     ALTER TABLE opportunities ADD COLUMN IF NOT EXISTS delivery_team VARCHAR(255);
     ALTER TABLE opportunities ADD COLUMN IF NOT EXISTS project_type VARCHAR(255);
     ALTER TABLE opportunities ADD COLUMN IF NOT EXISTS finance_status VARCHAR(50) DEFAULT 'Pending';
+    ALTER TABLE opportunities ADD COLUMN IF NOT EXISTS attachments TEXT DEFAULT '[]';
 
     CREATE TABLE IF NOT EXISTS versions (
       id SERIAL PRIMARY KEY,

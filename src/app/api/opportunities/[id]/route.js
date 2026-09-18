@@ -65,7 +65,8 @@ export async function PUT(request, { params }) {
       special_instructions,
       tcv_amount,
       tcv_currency,
-      finance_status
+      finance_status,
+      attachments
     } = body;
 
     // Validation
@@ -92,6 +93,10 @@ export async function PUT(request, { params }) {
       [id]
     );
     const existing = existingRes.rows[0];
+
+    const attachmentsJson = attachments !== undefined 
+      ? (typeof attachments === 'string' ? attachments : JSON.stringify(Array.isArray(attachments) ? attachments : []))
+      : null;
 
     const result = await query(
       `UPDATE opportunities
@@ -120,8 +125,9 @@ export async function PUT(request, { params }) {
            special_instructions = $23,
            tcv_amount = $24,
            tcv_currency = $25,
-           finance_status = COALESCE($26, finance_status)
-       WHERE id = $27
+           finance_status = COALESCE($26, finance_status),
+           attachments = COALESCE($27, attachments)
+       WHERE id = $28
        RETURNING *`,
       [
         opportunity_name,
@@ -150,6 +156,7 @@ export async function PUT(request, { params }) {
         parseFloat(tcv_amount) || 0.0,
         tcv_currency || 'USD',
         finance_status || null,
+        attachmentsJson,
         id
       ]
     );

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
-import { isUserAssociatedWithOpp, isFinanceUser } from '@/lib/userAssociation';
+import { isUserAssociatedWithOpp } from '@/lib/userAssociation';
 import RichTextEditor from '../RichTextEditor';
 import CompanyAutocomplete from '../CompanyAutocomplete';
 import StaffMultiSelect from '../StaffMultiSelect';
@@ -10,12 +10,12 @@ import StaffMultiSelect from '../StaffMultiSelect';
 import RecordHistoryView from '../RecordHistoryView';
 import OpportunityDetailsView from '../OpportunityDetailsView';
 import OpportunityImportModal from '../OpportunityImportModal';
+import DocumentViewerModal from '../DocumentViewerModal';
 import { getOpportunityDeadlineInfo, getUserOpportunityAlerts } from '@/lib/opportunityAlerts.js';
 import { isOpportunityClosed } from '@/lib/opportunityUtils';
 
 export default function OpportunitiesTab({ targetOppFromNotification, onClearTargetOpp, onOpportunitiesUpdated }) {
   const { currentUser, userRole, allUsers, resourceProfiles, getOptions, getOptionBadgeStyle, formatUserName, showToast, showAlert, showConfirm, globalSearchQuery } = useApp();
-  const isFinance = isFinanceUser(currentUser, userRole, resourceProfiles);
   const [opportunities, setOpportunities] = useState([]);
   const [workItems, setWorkItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,6 +26,11 @@ export default function OpportunitiesTab({ targetOppFromNotification, onClearTar
 
   // Hover Popover State for Opportunity Status / Completion Bar
   const [hoveredOppData, setHoveredOppData] = useState(null);
+
+  // Document Viewer Modal State for previewing files inside Opportunity modal
+  const [previewDoc, setPreviewDoc] = useState(null);
+  const [isPreviewDocOpen, setIsPreviewDocOpen] = useState(false);
+  const [dragActive, setDragActive] = useState(false);
 
   // Modals state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -81,7 +86,8 @@ export default function OpportunitiesTab({ targetOppFromNotification, onClearTar
     risks: '',
     special_instructions: '',
     tcv_amount: 0,
-    tcv_currency: 'USD'
+    tcv_currency: 'USD',
+    finance_status: 'Pending'
   });
 
   const fetchOpportunities = async () => {
@@ -149,12 +155,12 @@ export default function OpportunitiesTab({ targetOppFromNotification, onClearTar
         displayPercent: '100%'
       };
     }
-    // Progress-wise orange bar for every other opportunity
+    // Progress-wise green bar for every other ongoing opportunity
     const width = totalWorkItems === 0 ? '0%' : `${completionPercent}%`;
     return {
       width,
-      color: '#f59e0b', // Orange bar
-      boxShadow: completionPercent > 0 && totalWorkItems > 0 ? '0 0 8px rgba(245, 158, 11, 0.6)' : 'none',
+      color: '#10b981', // Green bar
+      boxShadow: completionPercent > 0 && totalWorkItems > 0 ? '0 0 8px rgba(16, 185, 129, 0.6)' : 'none',
       displayPercent: `${completionPercent}%`
     };
   };
@@ -243,7 +249,9 @@ export default function OpportunitiesTab({ targetOppFromNotification, onClearTar
       risks: '',
       special_instructions: '',
       tcv_amount: 0,
-      tcv_currency: 'USD'
+      tcv_currency: 'USD',
+      finance_status: 'Pending',
+      attachments: []
     });
     setIsModalOpen(true);
   };
@@ -263,6 +271,20 @@ export default function OpportunitiesTab({ targetOppFromNotification, onClearTar
       setProjectTypeSelect('');
       setCustomProjectType('');
     }
+
+    let parsedAttachments = [];
+    try {
+      if (Array.isArray(opp.attachments)) {
+        parsedAttachments = opp.attachments;
+      } else if (typeof opp.attachments === 'string' && opp.attachments.trim() !== '') {
+        parsedAttachments = JSON.parse(opp.attachments);
+      }
+    } catch (e) {
+      console.error('Error parsing attachments in openEditModal:', e);
+      parsedAttachments = [];
+    }
+    if (!Array.isArray(parsedAttachments)) parsedAttachments = [];
+
     setFormData({
       opportunity_name: opp.opportunity_name,
       company: opp.company,
@@ -287,7 +309,9 @@ export default function OpportunitiesTab({ targetOppFromNotification, onClearTar
       risks: opp.risks || '',
       special_instructions: opp.special_instructions || '',
       tcv_amount: opp.tcv_amount !== undefined && opp.tcv_amount !== null ? opp.tcv_amount : (opp.estimated_deal_value || 0),
-      tcv_currency: opp.tcv_currency || 'USD'
+      tcv_currency: opp.tcv_currency || 'USD',
+      finance_status: opp.finance_status || 'Pending',
+      attachments: parsedAttachments
     });
     setIsModalOpen(true);
   };
@@ -303,6 +327,85 @@ export default function OpportunitiesTab({ targetOppFromNotification, onClearTar
     const symbols = { USD: '$', EUR: '€', GBP: '£', INR: '₹', AUD: 'A$', CAD: 'C$', SGD: 'S$', JPY: '¥', AED: 'AED ' };
     const symbol = symbols[currency] || `${currency} `;
     return `${symbol}${num.toLocaleString()}`;
+  };
+
+  const formatFileSize = (bytes) => {
+    if (!bytes) return '—';
+    const b = parseInt(bytes, 10);
+    if (b < 1024) return `${b} B`;
+    if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`;
+    return `${(b / (1024 * 1024)).toFixed(2)} MB`;
+  };
+
+  const getFileIcon = (fileName = '', mimeType = '') => {
+    const fn = (fileName || '').toLowerCase();
+    if (fn.endsWith('.pdf') || mimeType.includes('pdf')) return '📕';
+    if (fn.endsWith('.xlsx') || fn.endsWith('.xls') || fn.endsWith('.csv')) return '📊';
+    if (fn.endsWith('.doc') || fn.endsWith('.docx') || mimeType.includes('word')) return '📄';
+    if (fn.endsWith('.ppt') || fn.endsWith('.pptx')) return '📽️';
+    if (fn.endsWith('.png') || fn.endsWith('.jpg') || fn.endsWith('.jpeg') || fn.endsWith('.webp')) return '🖼️';
+    return '📁';
+  };
+
+  // Upload handler for Excel, Doc, PDF, and other proposal files
+  const handleFileUpload = (filesList) => {
+    const files = Array.from(filesList || []);
+    if (files.length === 0) return;
+
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (uploadEvent) => {
+        const base64Data = uploadEvent.target.result;
+        const newAttachment = {
+          id: 'att_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+          name: file.name,
+          size: file.size,
+          type: file.type || 'application/octet-stream',
+          data: base64Data,
+          uploaded_at: new Date().toISOString()
+        };
+        setFormData(prev => ({
+          ...prev,
+          attachments: [...(Array.isArray(prev.attachments) ? prev.attachments : []), newAttachment]
+        }));
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleRemoveAttachment = (attachmentId, e) => {
+    e.stopPropagation();
+    setFormData(prev => ({
+      ...prev,
+      attachments: (Array.isArray(prev.attachments) ? prev.attachments : []).filter(a => a.id !== attachmentId)
+    }));
+  };
+
+  const handlePreviewAttachment = (file, e) => {
+    e.stopPropagation();
+    setPreviewDoc(file);
+    setIsPreviewDocOpen(true);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer && e.dataTransfer.files) {
+      handleFileUpload(e.dataTransfer.files);
+    }
   };
 
   const handleInputChange = (e) => {
@@ -413,15 +516,9 @@ export default function OpportunitiesTab({ targetOppFromNotification, onClearTar
   };
 
   // Filter opportunities:
-  // For Finance users: show ALL active opportunities (deal stage is not 'Won', 'Lost', 'Dropped')
   // For Admin users: show all opportunities
   // For other users: show associated opportunities
-  const userFilteredOpps = isFinance
-    ? opportunities.filter(opp => {
-        const stage = (opp.deal_stage_name || '').toLowerCase().trim();
-        return stage !== 'won' && stage !== 'lost' && stage !== 'dropped';
-      })
-    : userRole === 'Admin'
+  const userFilteredOpps = userRole === 'Admin'
     ? opportunities
     : opportunities.filter(opp => isUserAssociatedWithOpp(opp, currentUser));
 
@@ -460,7 +557,6 @@ export default function OpportunitiesTab({ targetOppFromNotification, onClearTar
     return (
       <OpportunityDetailsView 
         opportunity={selectedViewOpp} 
-        isFinanceUser={isFinance}
         onUpdateFinanceStatus={handleUpdateFinanceStatus}
         onBack={() => {
           setSelectedViewOpp(null);
@@ -561,14 +657,12 @@ export default function OpportunitiesTab({ targetOppFromNotification, onClearTar
           <div style={{ textAlign: 'center', padding: '3.5rem 1.5rem', color: 'var(--text-secondary)' }}>
             <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>💼</div>
             <h4 style={{ fontSize: '1.1rem', color: 'var(--text-primary)', marginBottom: '0.4rem' }}>
-              {isFinance ? 'No Active Opportunities Found' : 'No Associated Opportunities Found'}
+              No Associated Opportunities Found
             </h4>
             <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
-              {isFinance
-                ? 'There are currently no active opportunities requiring finance review.'
-                : userRole === 'Admin'
+              {userRole === 'Admin'
                 ? 'No opportunities found. Click "+ Add Opportunity" to create one.'
-                : `You are currently not listed as a sales owner or presales member on any active opportunity.`}
+                : 'You are currently not listed as a sales owner or presales member on any active opportunity.'}
             </p>
           </div>
         ) : (
@@ -584,7 +678,7 @@ export default function OpportunitiesTab({ targetOppFromNotification, onClearTar
                   <th className="num-col">TCV</th>
                   <th>Due Date</th>
                   <th>Presales Owner</th>
-                  <th className="num-col">{isFinance ? 'Finance Approval' : 'Actions'}</th>
+                  <th className="num-col">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -690,58 +784,11 @@ export default function OpportunitiesTab({ targetOppFromNotification, onClearTar
                           <strong style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{formatUserName(opp.presales_owner) || 'Unassigned'}</strong>
                         </td>
                         <td className="num-col">
-                          {isFinance ? (
-                            <div style={{ display: 'inline-flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
-                              <button
-                                className="btn btn-sm"
-                                style={{
-                                  padding: '0.3rem 0.65rem',
-                                  fontSize: '0.8rem',
-                                  fontWeight: 600,
-                                  backgroundColor: opp.finance_status === 'Approved' ? '#10b981' : 'transparent',
-                                  color: opp.finance_status === 'Approved' ? '#ffffff' : '#10b981',
-                                  border: '1.5px solid #10b981',
-                                  borderRadius: '6px',
-                                  cursor: 'pointer',
-                                  transition: 'all 0.2s ease'
-                                }}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleUpdateFinanceStatus(opp.id, 'Approved');
-                                }}
-                                title="Approve opportunity"
-                              >
-                                ✓ Approved
-                              </button>
-                              <button
-                                className="btn btn-sm"
-                                style={{
-                                  padding: '0.3rem 0.65rem',
-                                  fontSize: '0.8rem',
-                                  fontWeight: 600,
-                                  backgroundColor: opp.finance_status === 'Rejected' ? '#ef4444' : 'transparent',
-                                  color: opp.finance_status === 'Rejected' ? '#ffffff' : '#ef4444',
-                                  border: '1.5px solid #ef4444',
-                                  borderRadius: '6px',
-                                  cursor: 'pointer',
-                                  transition: 'all 0.2s ease'
-                                }}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleUpdateFinanceStatus(opp.id, 'Rejected');
-                                }}
-                                title="Reject opportunity"
-                              >
-                                ✕ Rejected
-                              </button>
-                            </div>
-                          ) : (
-                            <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
-                              <button className="btn btn-ghost btn-sm" onClick={(e) => { e.stopPropagation(); openEditModal(opp); }}>
-                                Edit
-                              </button>
-                            </div>
-                          )}
+                          <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
+                            <button className="btn btn-ghost btn-sm" onClick={(e) => { e.stopPropagation(); openEditModal(opp); }}>
+                              Edit
+                            </button>
+                          </div>
                         </td>
                       </tr>
 
@@ -1382,6 +1429,96 @@ export default function OpportunitiesTab({ targetOppFromNotification, onClearTar
                       />
                     </div>
 
+                    {/* Finance Approval Status Selector */}
+                    <div className="form-group" style={{ gridColumn: 'span 3', background: 'var(--bg-secondary, #f8fafc)', padding: '0.85rem 1.1rem', borderRadius: '8px', border: '1px solid var(--border-subtle, #e2e8f0)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem', marginTop: '0.35rem' }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span style={{ fontSize: '1.15rem' }}>💳</span>
+                          <strong style={{ fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                            Finance Approved
+                          </strong>
+                          <span className="badge" style={{
+                            fontSize: '0.74rem',
+                            fontWeight: 700,
+                            backgroundColor: formData.finance_status === 'Approved' ? 'rgba(16, 185, 129, 0.15)' : (formData.finance_status === 'Rejected' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(245, 158, 11, 0.15)'),
+                            color: formData.finance_status === 'Approved' ? '#10b981' : (formData.finance_status === 'Rejected' ? '#ef4444' : '#d97706'),
+                            border: `1px solid ${formData.finance_status === 'Approved' ? '#10b981' : (formData.finance_status === 'Rejected' ? '#ef4444' : '#f59e0b')}`
+                          }}>
+                            {formData.finance_status === 'Approved' ? '✓ Approved' : (formData.finance_status === 'Rejected' ? '✕ Rejected' : '⏳ Pending')}
+                          </span>
+                        </div>
+                        <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                          Mark commercial & finance approval status for this opportunity. Default is Pending.
+                        </p>
+                      </div>
+
+                      <div style={{ display: 'inline-flex', background: '#ffffff', border: '1px solid var(--border-subtle, #cbd5e1)', borderRadius: '8px', padding: '3px', gap: '3px' }}>
+                        <button
+                          type="button"
+                          onClick={() => setFormData(prev => ({ ...prev, finance_status: 'Approved' }))}
+                          style={{
+                            padding: '0.45rem 1rem',
+                            borderRadius: '6px',
+                            border: 'none',
+                            backgroundColor: formData.finance_status === 'Approved' ? '#10b981' : 'transparent',
+                            color: formData.finance_status === 'Approved' ? '#ffffff' : 'var(--text-secondary, #64748b)',
+                            fontWeight: formData.finance_status === 'Approved' ? 700 : 600,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.35rem',
+                            fontSize: '0.84rem',
+                            boxShadow: formData.finance_status === 'Approved' ? '0 1px 3px rgba(0,0,0,0.12)' : 'none',
+                            transition: 'all 0.18s ease'
+                          }}
+                        >
+                          <span>✓</span> Yes (Approved)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setFormData(prev => ({ ...prev, finance_status: 'Rejected' }))}
+                          style={{
+                            padding: '0.45rem 1rem',
+                            borderRadius: '6px',
+                            border: 'none',
+                            backgroundColor: formData.finance_status === 'Rejected' ? '#ef4444' : 'transparent',
+                            color: formData.finance_status === 'Rejected' ? '#ffffff' : 'var(--text-secondary, #64748b)',
+                            fontWeight: formData.finance_status === 'Rejected' ? 700 : 600,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.35rem',
+                            fontSize: '0.84rem',
+                            boxShadow: formData.finance_status === 'Rejected' ? '0 1px 3px rgba(0,0,0,0.12)' : 'none',
+                            transition: 'all 0.18s ease'
+                          }}
+                        >
+                          <span>✕</span> No (Rejected)
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setFormData(prev => ({ ...prev, finance_status: 'Pending' }))}
+                          style={{
+                            padding: '0.45rem 1rem',
+                            borderRadius: '6px',
+                            border: 'none',
+                            backgroundColor: formData.finance_status === 'Pending' ? '#f59e0b' : 'transparent',
+                            color: formData.finance_status === 'Pending' ? '#ffffff' : 'var(--text-secondary, #64748b)',
+                            fontWeight: formData.finance_status === 'Pending' ? 700 : 600,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.35rem',
+                            fontSize: '0.84rem',
+                            boxShadow: formData.finance_status === 'Pending' ? '0 1px 3px rgba(0,0,0,0.12)' : 'none',
+                            transition: 'all 0.18s ease'
+                          }}
+                        >
+                          <span>⏳</span> Pending
+                        </button>
+                      </div>
+                    </div>
+
                   </div>
                 </div>
 
@@ -1435,6 +1572,174 @@ export default function OpportunitiesTab({ targetOppFromNotification, onClearTar
                   </div>
                 </div>
 
+                {/* Section 4: Opportunity Files & Proposal Attachments */}
+                <div className="form-section">
+                  <div className="form-section-header">
+                    <span className="form-section-title">
+                      <span>📁</span> 4. Proposal & Opportunity Files (Excel, Word, PDF)
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {/* Drag and Drop Zone */}
+                    <div
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                      style={{
+                        border: `2px dashed ${dragActive ? '#2563eb' : 'var(--border-subtle, #cbd5e1)'}`,
+                        backgroundColor: dragActive ? 'rgba(37, 99, 235, 0.05)' : 'var(--bg-secondary, #f8fafc)',
+                        borderRadius: '10px',
+                        padding: '1.75rem 1.25rem',
+                        textAlign: 'center',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.65rem',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onClick={() => document.getElementById('opp-file-upload-input')?.click()}
+                    >
+                      <input
+                        id="opp-file-upload-input"
+                        type="file"
+                        multiple
+                        accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.rtf,.ppt,.pptx,image/*"
+                        style={{ display: 'none' }}
+                        onChange={(e) => handleFileUpload(e.target.files)}
+                      />
+                      <div style={{
+                        width: '48px',
+                        height: '48px',
+                        borderRadius: '50%',
+                        backgroundColor: '#eff6ff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '1.5rem',
+                        color: '#2563eb'
+                      }}>
+                        📁
+                      </div>
+                      <div>
+                        <strong style={{ fontSize: '0.94rem', color: 'var(--text-primary)', display: 'block' }}>
+                          Click to browse or drag & drop files here
+                        </strong>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                          Upload Proposals, SOWs, Architecture docs, Cost sheets (PDF, Excel, Word, PPT, Images)
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        style={{ marginTop: '0.25rem', fontSize: '0.8rem', fontWeight: 600 }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          document.getElementById('opp-file-upload-input')?.click();
+                        }}
+                      >
+                        📂 Choose Files from Device
+                      </button>
+                    </div>
+
+                    {/* Attached Files List */}
+                    {Array.isArray(formData.attachments) && formData.attachments.length > 0 && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        <div style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <span>Attached Documents ({formData.attachments.length})</span>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--text-secondary)' }}>Files will be saved with this opportunity</span>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.65rem' }}>
+                          {formData.attachments.map((file, idx) => {
+                            const icon = getFileIcon(file.name, file.type);
+                            const ext = (file.name || '').split('.').pop()?.toUpperCase() || 'FILE';
+                            return (
+                              <div
+                                key={file.id || idx}
+                                style={{
+                                  padding: '0.75rem 0.95rem',
+                                  borderRadius: '8px',
+                                  border: '1px solid var(--border-subtle, #e2e8f0)',
+                                  backgroundColor: 'var(--surface-card, #ffffff)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  gap: '0.75rem',
+                                  boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
+                                }}
+                              >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', overflow: 'hidden', flex: 1 }}>
+                                  <span style={{ fontSize: '1.4rem' }}>{icon}</span>
+                                  <div style={{ overflow: 'hidden' }}>
+                                    <strong
+                                      style={{
+                                        fontSize: '0.86rem',
+                                        color: 'var(--text-primary)',
+                                        display: 'block',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap'
+                                      }}
+                                      title={file.name}
+                                    >
+                                      {file.name}
+                                    </strong>
+                                    <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                                      {ext} • {formatFileSize(file.size)}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => handlePreviewAttachment(file, e)}
+                                    style={{
+                                      padding: '0.3rem 0.6rem',
+                                      backgroundColor: '#eff6ff',
+                                      color: '#2563eb',
+                                      border: '1px solid #bfdbfe',
+                                      borderRadius: '6px',
+                                      cursor: 'pointer',
+                                      fontSize: '0.76rem',
+                                      fontWeight: 600,
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '0.2rem'
+                                    }}
+                                    title="Open and preview document"
+                                  >
+                                    👁️ Read
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => handleRemoveAttachment(file.id, e)}
+                                    style={{
+                                      padding: '0.3rem 0.5rem',
+                                      backgroundColor: '#fef2f2',
+                                      color: '#ef4444',
+                                      border: '1px solid #fecaca',
+                                      borderRadius: '6px',
+                                      cursor: 'pointer',
+                                      fontSize: '0.76rem'
+                                    }}
+                                    title="Remove file"
+                                  >
+                                    🗑️
+                                  </button>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 {/* Action Buttons */}
                 <div className="form-actions">
                   <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>
@@ -1449,6 +1754,13 @@ export default function OpportunitiesTab({ targetOppFromNotification, onClearTar
           </div>
         </div>
       )}
+
+      {/* DOCUMENT VIEWER MODAL */}
+      <DocumentViewerModal
+        isOpen={isPreviewDocOpen}
+        file={previewDoc}
+        onClose={() => setIsPreviewDocOpen(false)}
+      />
 
       {/* BATCH IMPORT OPPORTUNITIES MODAL */}
       <OpportunityImportModal

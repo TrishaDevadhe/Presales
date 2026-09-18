@@ -6,8 +6,16 @@ import { isUserAssociatedWithOpp, getUserRoleInOpp } from './userAssociation.js'
  */
 export function isOpportunityInEndStage(opp) {
   if (!opp) return false;
-  const stage = String(opp.deal_stage_name || opp.deal_stage || '').trim().toLowerCase();
-  return stage === 'won' || stage === 'lost' || stage.startsWith('dropped');
+  const stage = String(opp.deal_stage_name || opp.deal_stage || opp.stage || opp.status || '').trim().toLowerCase();
+  return (
+    stage === 'won' ||
+    stage === 'lost' ||
+    stage.startsWith('drop') ||
+    stage.startsWith('submit') ||
+    stage.includes('submitted') ||
+    stage === 'completed' ||
+    stage === 'closed'
+  );
 }
 
 /**

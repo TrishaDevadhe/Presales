@@ -59,7 +59,8 @@ export async function POST(request) {
       special_instructions,
       tcv_amount,
       tcv_currency,
-      finance_status
+      finance_status,
+      attachments
     } = body;
 
     // Validation
@@ -81,6 +82,10 @@ export async function POST(request) {
       return NextResponse.json({ error: 'An opportunity with this name already exists for this company' }, { status: 400 });
     }
 
+    const attachmentsJson = typeof attachments === 'string' 
+      ? attachments 
+      : JSON.stringify(Array.isArray(attachments) ? attachments : []);
+
     // Insert Opportunity
     const oppResult = await query(
       `INSERT INTO opportunities (
@@ -89,8 +94,8 @@ export async function POST(request) {
         source_id, deal_stage_id, priority_id, estimated_deal_value, contract_tenure,
         win_probability, complexity_id, received_date, target_submission_date, internal_review_date,
         presales_owner, supporting_presales_members, summary, risks, special_instructions,
-        tcv_amount, tcv_currency, finance_status
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)
+        tcv_amount, tcv_currency, finance_status, attachments
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27)
       RETURNING *`,
       [
         opportunity_name,
@@ -118,7 +123,8 @@ export async function POST(request) {
         special_instructions || '',
         parseFloat(tcv_amount) || 0.0,
         tcv_currency || 'USD',
-        finance_status || 'Pending'
+        finance_status || 'Pending',
+        attachmentsJson
       ]
     );
 
