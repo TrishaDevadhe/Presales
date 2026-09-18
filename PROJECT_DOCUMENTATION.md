@@ -72,6 +72,13 @@ The **Dashboard** provides a clear, role-aware personal workspace structured int
    - **Interactive Visualizations**: Time spent by Presales Activity Type (Pie Chart) and **Estimate vs. Actual Hours** comparison (Bar Chart with task-level variance, full tooltips, and actual hours).
    - **Clean Layout**: Redundant duplicate archives and duplicate work logged summaries at the bottom have been eliminated.
 
+3. **👑 Section 3: Team Opportunity Allocations & Stage Breakdown (Admin Exclusive)**:
+   - **Team-Wide Matrix List**: Appears exclusively for users with Admin privileges (`@admin`) in a structured list/table format.
+   - **Year Filter (Financial / Calendar Year Scope)**: Dedicated annual filter to view results for **All Years (Lifetime)** or specific years (e.g. `Year 2026`, `Year 2025`, `Year 2024`, `Year 2023`), strictly scoping results by year.
+   - **User Stage Breakdown**: Shows each team member in a dedicated list row with their total linked opportunities and granular counts per deal stage (e.g. `Discovery: 2`, `Won: 4`, `Proposal / RFP: 1`, `Dropped: 1`) for that year.
+   - **Visual Distribution**: Segmented multi-color progress bars showing proportional deal stages per user.
+   - **Interactive Details**: Search filter by name/role/stage, filter chips for active vs available members, and expandable inline details listing all linked deals with one-click navigation.
+
 ![Live Dashboard Home View](./docs/images/dashboard_home.png)
 
 ---

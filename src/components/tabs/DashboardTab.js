@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
-import { User, AlertTriangle, Clock } from 'lucide-react';
+import { User, AlertTriangle, Clock, Users, ChevronDown, ChevronUp, Search, Briefcase, ExternalLink, Shield, CheckCircle2 } from 'lucide-react';
 import {
   ResponsiveContainer,
   BarChart,
@@ -76,7 +76,7 @@ function getYearBounds(refDate = new Date()) {
 }
 
 export default function DashboardTab({ onNavigateToOpp }) {
-  const { currentUser, getOptionColor, getOptionBadgeStyle, formatUserName, globalSearchQuery } = useApp();
+  const { currentUser, userRole, getOptionColor, getOptionBadgeStyle, formatUserName, globalSearchQuery } = useApp();
 
   // Raw fetched datasets
   const [opportunities, setOpportunities] = useState([]);
@@ -87,6 +87,19 @@ export default function DashboardTab({ onNavigateToOpp }) {
 
   // Time scope filter: 'week' (Default: Current Active Week) | 'month' | 'year' | 'all'
   const [timeScope, setTimeScope] = useState('week');
+
+  // Admin exclusive section filters & expanded states
+  const [adminUserSearch, setAdminUserSearch] = useState('');
+  const [adminStageFilter, setAdminStageFilter] = useState('all'); // 'all' | 'with_deals' | 'no_deals'
+  const [adminYearFilter, setAdminYearFilter] = useState('all'); // 'all' | '2026' | '2025' | '2024' ...
+  const [expandedUsers, setExpandedUsers] = useState({});
+
+  const toggleExpandUser = (username) => {
+    setExpandedUsers(prev => ({
+      ...prev,
+      [username]: !prev[username]
+    }));
+  };
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -357,6 +370,91 @@ export default function DashboardTab({ onNavigateToOpp }) {
   );
 
   const userAlerts = getUserOpportunityAlerts(opportunities, currentUser);
+
+  // ----------------------------------------------------
+  // 9. ADMIN ONLY: TEAM OPPORTUNITY ALLOCATIONS & STAGES
+  // ----------------------------------------------------
+  const isAdmin = userLower === 'admin' || (userRole || '').toLowerCase() === 'admin' || (activeProfile.role_name || '').toLowerCase() === 'admin';
+
+  // Extract unique available years from opportunities dataset
+  const availableOppYears = Array.from(
+    new Set(
+      opportunities.map(o => {
+        const d = o.target_submission_date || o.received_date || o.created_at;
+        if (!d) return null;
+        const yr = new Date(d).getFullYear();
+        return !isNaN(yr) ? yr : null;
+      }).filter(Boolean)
+    )
+  ).sort((a, b) => b - a);
+
+  // Filter opportunities by selected year (if specific year selected)
+  const oppsInYearScope = adminYearFilter === 'all'
+    ? opportunities
+    : opportunities.filter(o => {
+        const d = o.target_submission_date || o.received_date || o.created_at;
+        if (!d) return false;
+        const yr = new Date(d).getFullYear();
+        return !isNaN(yr) && yr.toString() === adminYearFilter.toString();
+      });
+
+  const teamOpportunityAllocations = profiles.map(profile => {
+    const u = (profile.username || '').toLowerCase();
+    
+    // Find all opportunities in the selected year scope where this user is linked (Presales Lead, Sales Owner, Supporting Team, or Delivery Team)
+    const linkedOpps = oppsInYearScope.filter(o => {
+      const pOwner = (o.presales_owner || '').toLowerCase();
+      const sOwner = (o.primary_sales_owner || '').toLowerCase();
+      const supporting = (o.supporting_presales_members || '').toLowerCase();
+      const delivery = (o.delivery_team || '').toLowerCase();
+
+      return pOwner === u || sOwner === u || supporting.includes(u) || delivery.includes(u);
+    });
+
+    // Compute stage counts & details
+    const stageMap = {};
+    linkedOpps.forEach(o => {
+      const stageName = (o.deal_stage_name || 'Unassigned Stage').trim();
+      if (!stageMap[stageName]) {
+        stageMap[stageName] = {
+          name: stageName,
+          count: 0,
+          color: o.deal_stage_color || '#3b82f6',
+          opportunities: []
+        };
+      }
+      stageMap[stageName].count += 1;
+      stageMap[stageName].opportunities.push(o);
+    });
+
+    const stagesList = Object.values(stageMap).sort((a, b) => b.count - a.count);
+
+    return {
+      profile,
+      username: profile.username,
+      displayName: profile.name || formatUserName(profile.username),
+      role: profile.role_name || 'Team Member',
+      roleColor: profile.role_color || '#3b82f6',
+      department: profile.department_name || 'Presales Solutions',
+      totalOpportunities: linkedOpps.length,
+      opportunities: linkedOpps,
+      stages: stagesList
+    };
+  }).sort((a, b) => b.totalOpportunities - a.totalOpportunities);
+
+  const filteredTeamAllocations = teamOpportunityAllocations.filter(item => {
+    if (adminStageFilter === 'with_deals' && item.totalOpportunities === 0) return false;
+    if (adminStageFilter === 'no_deals' && item.totalOpportunities > 0) return false;
+    if (adminUserSearch.trim()) {
+      const q = adminUserSearch.toLowerCase().trim();
+      const matchName = item.displayName.toLowerCase().includes(q);
+      const matchUser = item.username.toLowerCase().includes(q);
+      const matchRole = item.role.toLowerCase().includes(q);
+      const matchStage = item.stages.some(s => s.name.toLowerCase().includes(q));
+      return matchName || matchUser || matchRole || matchStage;
+    }
+    return true;
+  });
 
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4'];
 
@@ -941,6 +1039,413 @@ export default function DashboardTab({ onNavigateToOpp }) {
         </div>
 
       </div>
+
+      {/* ========================================================================= */}
+      {/* SECTION 3: 👑 TEAM OPPORTUNITY ALLOCATIONS & STAGE BREAKDOWN (Admin Only) */}
+      {/* ========================================================================= */}
+      {isAdmin && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginTop: '0.75rem' }}>
+          
+          {/* Section 3 Header */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '2px solid var(--border-subtle, #e2e8f0)', paddingBottom: '0.6rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <div>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span>👑</span> Team Opportunity Allocations & Stage Breakdown
+              </h3>
+              <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                Active pipeline opportunities linked to each team member with granular deal stage counts
+              </p>
+            </div>
+          </div>
+
+          {/* Admin Toolbar & Filters */}
+          <div style={{
+            background: 'var(--surface-card, #ffffff)',
+            border: '1px solid var(--border-subtle, #e2e8f0)',
+            borderRadius: 'var(--radius-md, 12px)',
+            padding: '0.85rem 1.25rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '1rem',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+          }}>
+            {/* Search Input */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: '1 1 220px', maxWidth: '320px' }}>
+              <Search size={16} color="var(--text-secondary)" />
+              <input
+                type="text"
+                className="input-field"
+                placeholder="Search team member, role, or stage..."
+                value={adminUserSearch}
+                onChange={(e) => setAdminUserSearch(e.target.value)}
+                style={{ fontSize: '0.82rem', padding: '0.4rem 0.75rem', width: '100%' }}
+              />
+            </div>
+
+            {/* Year Filter Dropdown Selector */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>
+                📅 Year:
+              </span>
+              <select
+                className="input-field"
+                value={adminYearFilter}
+                onChange={(e) => setAdminYearFilter(e.target.value)}
+                style={{
+                  fontSize: '0.8rem',
+                  padding: '0.38rem 0.75rem',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  color: adminYearFilter === 'all' ? 'var(--text-primary)' : '#2563eb',
+                  backgroundColor: 'var(--bg-secondary, #f1f5f9)',
+                  border: '1px solid var(--border-subtle, #e2e8f0)'
+                }}
+              >
+                <option value="all">All Years (Lifetime)</option>
+                {availableOppYears.map(yr => (
+                  <option key={yr} value={yr.toString()}>Year {yr}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Stage filter pills */}
+            <div style={{
+              display: 'inline-flex',
+              background: 'var(--bg-secondary, #f1f5f9)',
+              borderRadius: '8px',
+              padding: '3px',
+              gap: '3px'
+            }}>
+              <button
+                type="button"
+                onClick={() => setAdminStageFilter('all')}
+                style={{
+                  padding: '0.35rem 0.75rem',
+                  borderRadius: '6px',
+                  border: 'none',
+                  backgroundColor: adminStageFilter === 'all' ? '#2563eb' : 'transparent',
+                  color: adminStageFilter === 'all' ? '#ffffff' : 'var(--text-secondary)',
+                  fontWeight: adminStageFilter === 'all' ? 700 : 500,
+                  cursor: 'pointer',
+                  fontSize: '0.78rem'
+                }}
+              >
+                All Members ({teamOpportunityAllocations.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setAdminStageFilter('with_deals')}
+                style={{
+                  padding: '0.35rem 0.75rem',
+                  borderRadius: '6px',
+                  border: 'none',
+                  backgroundColor: adminStageFilter === 'with_deals' ? '#2563eb' : 'transparent',
+                  color: adminStageFilter === 'with_deals' ? '#ffffff' : 'var(--text-secondary)',
+                  fontWeight: adminStageFilter === 'with_deals' ? 700 : 500,
+                  cursor: 'pointer',
+                  fontSize: '0.78rem'
+                }}
+              >
+                With Active Deals ({teamOpportunityAllocations.filter(u => u.totalOpportunities > 0).length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setAdminStageFilter('no_deals')}
+                style={{
+                  padding: '0.35rem 0.75rem',
+                  borderRadius: '6px',
+                  border: 'none',
+                  backgroundColor: adminStageFilter === 'no_deals' ? '#2563eb' : 'transparent',
+                  color: adminStageFilter === 'no_deals' ? '#ffffff' : 'var(--text-secondary)',
+                  fontWeight: adminStageFilter === 'no_deals' ? 700 : 500,
+                  cursor: 'pointer',
+                  fontSize: '0.78rem'
+                }}
+              >
+                Available / No Deals ({teamOpportunityAllocations.filter(u => u.totalOpportunities === 0).length})
+              </button>
+            </div>
+          </div>
+
+          {/* Team Members List View */}
+          <div className="paper-panel" style={{ padding: '0', overflow: 'hidden', border: '1px solid var(--border-subtle, #e2e8f0)' }}>
+            {filteredTeamAllocations.length === 0 ? (
+              <div style={{ padding: '3rem 1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                No team members match your search criteria.
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                {/* List Header Bar */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'minmax(220px, 1.4fr) minmax(110px, 0.8fr) minmax(280px, 2.2fr) minmax(130px, 1fr) 100px',
+                  padding: '0.75rem 1.25rem',
+                  backgroundColor: 'var(--bg-secondary, #f8fafc)',
+                  borderBottom: '1px solid var(--border-subtle, #e2e8f0)',
+                  fontSize: '0.74rem',
+                  fontWeight: 700,
+                  color: 'var(--text-secondary)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.04em',
+                  alignItems: 'center',
+                  gap: '1rem'
+                }}>
+                  <div>Team Member</div>
+                  <div>Linked Deals</div>
+                  <div>Stage Breakdown & Counts</div>
+                  <div>Proportion</div>
+                  <div style={{ textAlign: 'right' }}>Actions</div>
+                </div>
+
+                {/* List Items */}
+                {filteredTeamAllocations.map((member, idx) => {
+                  const isExpanded = !!expandedUsers[member.username];
+                  const isLast = idx === filteredTeamAllocations.length - 1;
+
+                  return (
+                    <div
+                      key={member.username}
+                      style={{
+                        borderBottom: isLast && !isExpanded ? 'none' : '1px solid var(--border-subtle, #f1f5f9)',
+                        transition: 'background 0.15s ease'
+                      }}
+                    >
+                      {/* Main Row Content */}
+                      <div
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'minmax(220px, 1.4fr) minmax(110px, 0.8fr) minmax(280px, 2.2fr) minmax(130px, 1fr) 100px',
+                          padding: '0.9rem 1.25rem',
+                          alignItems: 'center',
+                          gap: '1rem',
+                          backgroundColor: isExpanded ? 'rgba(59, 130, 246, 0.03)' : 'transparent'
+                        }}
+                      >
+                        {/* Column 1: Member Info */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                          <div
+                            style={{
+                              width: '36px',
+                              height: '36px',
+                              borderRadius: '50%',
+                              backgroundColor: member.roleColor ? `${member.roleColor}22` : 'rgba(59, 130, 246, 0.15)',
+                              color: member.roleColor || '#3b82f6',
+                              border: `1.5px solid ${member.roleColor || '#3b82f6'}`,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontWeight: 800,
+                              fontSize: '0.88rem',
+                              flexShrink: 0
+                            }}
+                          >
+                            {member.displayName.charAt(0).toUpperCase()}
+                          </div>
+                          <div style={{ overflow: 'hidden' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                              <strong style={{ fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                                {member.displayName}
+                              </strong>
+                              <span className="badge badge-neutral" style={{ fontSize: '0.68rem', padding: '0.1rem 0.35rem' }}>
+                                @{member.username}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: '0.1rem' }}>
+                              {member.role} • {member.department}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Column 2: Total Opportunities */}
+                        <div>
+                          <span
+                            className="badge"
+                            style={{
+                              fontSize: '0.76rem',
+                              fontWeight: 700,
+                              backgroundColor: member.totalOpportunities > 0 ? 'rgba(37, 99, 235, 0.1)' : 'var(--bg-secondary)',
+                              color: member.totalOpportunities > 0 ? '#1d4ed8' : 'var(--text-muted)',
+                              border: member.totalOpportunities > 0 ? '1px solid rgba(37, 99, 235, 0.25)' : '1px solid var(--border-subtle)',
+                              padding: '0.2rem 0.55rem'
+                            }}
+                          >
+                            {member.totalOpportunities} {member.totalOpportunities === 1 ? 'Deal' : 'Deals'}
+                          </span>
+                        </div>
+
+                        {/* Column 3: Stage Breakdown Pills */}
+                        <div>
+                          {member.totalOpportunities === 0 ? (
+                            <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>
+                              No active deals linked
+                            </span>
+                          ) : (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                              {member.stages.map(st => (
+                                <span
+                                  key={st.name}
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '0.3rem',
+                                    padding: '0.2rem 0.5rem',
+                                    borderRadius: '6px',
+                                    fontSize: '0.74rem',
+                                    fontWeight: 600,
+                                    backgroundColor: st.color ? `${st.color}15` : 'rgba(59, 130, 246, 0.1)',
+                                    color: st.color || '#2563eb',
+                                    border: `1px solid ${st.color ? `${st.color}35` : 'rgba(59, 130, 246, 0.25)'}`
+                                  }}
+                                >
+                                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: st.color || '#2563eb' }} />
+                                  <span>{st.name}</span>
+                                  <strong style={{
+                                    backgroundColor: st.color ? st.color : '#2563eb',
+                                    color: '#ffffff',
+                                    borderRadius: '10px',
+                                    padding: '0.02rem 0.35rem',
+                                    fontSize: '0.68rem',
+                                    marginLeft: '0.1rem'
+                                  }}>
+                                    {st.count}
+                                  </strong>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Column 4: Distribution Bar */}
+                        <div>
+                          {member.totalOpportunities > 0 ? (
+                            <div style={{ width: '100%', height: '7px', background: 'var(--bg-secondary)', borderRadius: '4px', display: 'flex', overflow: 'hidden' }}>
+                              {member.stages.map(st => (
+                                <div
+                                  key={st.name}
+                                  title={`${st.name}: ${st.count} (${Math.round((st.count / member.totalOpportunities) * 100)}%)`}
+                                  style={{
+                                    width: `${(st.count / member.totalOpportunities) * 100}%`,
+                                    height: '100%',
+                                    backgroundColor: st.color || '#3b82f6'
+                                  }}
+                                />
+                              ))}
+                            </div>
+                          ) : (
+                            <span style={{ color: 'var(--text-muted)', fontSize: '0.74rem' }}>—</span>
+                          )}
+                        </div>
+
+                        {/* Column 5: Action */}
+                        <div style={{ textAlign: 'right' }}>
+                          {member.totalOpportunities > 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => toggleExpandUser(member.username)}
+                              style={{
+                                background: isExpanded ? 'rgba(37, 99, 235, 0.1)' : 'var(--bg-secondary)',
+                                border: '1px solid var(--border-subtle, #e2e8f0)',
+                                color: isExpanded ? '#2563eb' : 'var(--text-secondary)',
+                                padding: '0.3rem 0.6rem',
+                                borderRadius: '6px',
+                                fontSize: '0.75rem',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.3rem'
+                              }}
+                            >
+                              <span>{isExpanded ? 'Hide' : 'View'}</span>
+                              {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                            </button>
+                          ) : (
+                            <span style={{ color: 'var(--text-muted)', fontSize: '0.74rem' }}>—</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Expandable Sub-List of Deals */}
+                      {isExpanded && member.totalOpportunities > 0 && (
+                        <div
+                          style={{
+                            padding: '0.75rem 1.25rem 1rem 3.75rem',
+                            backgroundColor: 'rgba(248, 250, 252, 0.85)',
+                            borderTop: '1px solid var(--border-subtle, #f1f5f9)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '0.5rem'
+                          }}
+                        >
+                          <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                            Linked Opportunities ({member.opportunities.length}):
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '0.5rem' }}>
+                            {member.opportunities.map(opp => (
+                              <div
+                                key={opp.id}
+                                onClick={() => onNavigateToOpp && onNavigateToOpp(opp)}
+                                style={{
+                                  padding: '0.55rem 0.75rem',
+                                  borderRadius: '6px',
+                                  backgroundColor: 'var(--surface-card, #ffffff)',
+                                  border: '1px solid var(--border-subtle, #e2e8f0)',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  gap: '0.5rem',
+                                  transition: 'all 0.15s ease'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.borderColor = '#3b82f6';
+                                  e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.04)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.borderColor = 'var(--border-subtle, #e2e8f0)';
+                                  e.currentTarget.style.backgroundColor = 'var(--surface-card, #ffffff)';
+                                }}
+                              >
+                                <div style={{ overflow: 'hidden', flex: 1 }}>
+                                  <div style={{ fontWeight: 600, fontSize: '0.82rem', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {opp.opportunity_name}
+                                  </div>
+                                  <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                                    🏢 {opp.company} • Due: {opp.target_submission_date || '—'}
+                                  </div>
+                                </div>
+                                <span
+                                  style={{
+                                    fontSize: '0.68rem',
+                                    fontWeight: 700,
+                                    padding: '0.15rem 0.45rem',
+                                    borderRadius: '4px',
+                                    backgroundColor: opp.deal_stage_color ? `${opp.deal_stage_color}18` : 'rgba(59, 130, 246, 0.1)',
+                                    color: opp.deal_stage_color || '#2563eb',
+                                    border: `1px solid ${opp.deal_stage_color ? `${opp.deal_stage_color}40` : 'rgba(59, 130, 246, 0.3)'}`,
+                                    whiteSpace: 'nowrap'
+                                  }}
+                                >
+                                  {opp.deal_stage_name || 'Unassigned'}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+        </div>
+      )}
 
     </div>
   );
