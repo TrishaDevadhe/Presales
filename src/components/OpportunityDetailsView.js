@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
+import { isOpportunityClosed } from '@/lib/opportunityUtils';
 
 export default function OpportunityDetailsView({ opportunity, isFinanceUser, onUpdateFinanceStatus, onBack }) {
   const { getOptions, formatUserName, getOptionBadgeStyle } = useApp();
@@ -15,10 +16,11 @@ export default function OpportunityDetailsView({ opportunity, isFinanceUser, onU
         const res = await fetch('/api/workitems');
         const data = await res.json();
         // Filter tasks for this opportunity only
-        const filteredTasks = data.filter(t => t.opportunity_id === opportunity.id);
+        const filteredTasks = Array.isArray(data) ? data.filter(t => t.opportunity_id === opportunity?.id) : [];
         setWorkItems(filteredTasks);
       } catch (err) {
         console.error("Failed to fetch work items", err);
+        setWorkItems([]);
       } finally {
         setLoading(false);
       }
@@ -29,6 +31,15 @@ export default function OpportunityDetailsView({ opportunity, isFinanceUser, onU
     }
   }, [opportunity?.id]);
 
+  if (!opportunity) {
+    return (
+      <div style={{ padding: '2rem', textAlign: 'center' }}>
+        <button className="btn btn-ghost" onClick={onBack}>← Back to Opportunities</button>
+        <p style={{ marginTop: '1rem', color: 'var(--text-secondary)' }}>Opportunity details could not be loaded.</p>
+      </div>
+    );
+  }
+
   const formatTCV = (amount, currency = 'USD') => {
     const num = parseFloat(amount);
     if (isNaN(num) || num === 0) return '—';
@@ -37,7 +48,7 @@ export default function OpportunityDetailsView({ opportunity, isFinanceUser, onU
     return `${symbol}${num.toLocaleString()}`;
   };
 
-  const completedOpt = getOptions('task_status').find(o => o.option_name === 'Completed');
+  const completedOpt = (getOptions('task_status') || []).find(o => o.option_name === 'Completed');
   const completedId = completedOpt?.id;
 
   const totalWorkItems = workItems.length;
@@ -189,7 +200,7 @@ export default function OpportunityDetailsView({ opportunity, isFinanceUser, onU
           <div>
             <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Due Date</div>
             <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-              {opportunity.target_submission_date ? opportunity.target_submission_date.split('T')[0] : 'N/A'}
+              {opportunity.target_submission_date ? String(opportunity.target_submission_date).split('T')[0] : 'N/A'}
             </div>
           </div>
           <div>
@@ -294,7 +305,7 @@ export default function OpportunityDetailsView({ opportunity, isFinanceUser, onU
                       </span>
                     </td>
                     <td>
-                      {task.due_date ? task.due_date.split('T')[0] : 'N/A'}
+                      {task.due_date ? String(task.due_date).split('T')[0] : 'N/A'}
                     </td>
                     <td className="num-col">
                       {task.estimated_hours ? `${task.estimated_hours} hrs` : '—'}
