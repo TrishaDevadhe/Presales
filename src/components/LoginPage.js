@@ -17,7 +17,7 @@ export default function LoginPage() {
   const getCombinedUsers = () => {
     const mockUsers = usersList.map(u => ({ username: u.username, name: u.name, role: u.role }));
     const profileUsers = resourceProfiles.map(p => ({ username: p.username, name: p.name, role: p.role_name || 'Team Member' }));
-    
+
     const allUsers = [...mockUsers];
     profileUsers.forEach(pu => {
       const idx = allUsers.findIndex(u => u.username === pu.username);
@@ -46,7 +46,7 @@ export default function LoginPage() {
       setError('Please select a user identity to proceed.');
       return;
     }
-    
+
     setIsAuthenticating(true);
     setError('');
 
@@ -76,12 +76,12 @@ export default function LoginPage() {
       // Flexible password matching (accepts both with and without leading hyphen '-'):
       const inputPass = password.trim();
       const isValid = inputPass === expectedPassword ||
-                      (expectedPassword.startsWith('-') && inputPass === expectedPassword.substring(1)) ||
-                      (inputPass.startsWith('-') && inputPass.substring(1) === expectedPassword) ||
-                      (cleanUser === 'admin' && (inputPass === 'admin123' || inputPass === '-admin123')) ||
-                      (cleanUser === 'vikrant_dhuriya' && (inputPass === 'vikrant123' || inputPass === '-vikrant123')) ||
-                      (cleanUser === 'divyam_malliwal' && (inputPass === 'divyam123' || inputPass === '-divyam123')) ||
-                      (cleanUser === 'finance_team' && (inputPass === 'finance123' || inputPass === '-finance123'));
+        (expectedPassword.startsWith('-') && inputPass === expectedPassword.substring(1)) ||
+        (inputPass.startsWith('-') && inputPass.substring(1) === expectedPassword) ||
+        (cleanUser === 'admin' && (inputPass === 'admin123' || inputPass === '-admin123')) ||
+        (cleanUser === 'vikrant_dhuriya' && (inputPass === 'vikrant123' || inputPass === '-vikrant123')) ||
+        (cleanUser === 'divyam_malliwal' && (inputPass === 'divyam123' || inputPass === '-divyam123')) ||
+        (cleanUser === 'finance_team' && (inputPass === 'finance123' || inputPass === '-finance123'));
 
       if (!isValid) {
         fetch('/api/auditlogs', {
@@ -134,7 +134,7 @@ export default function LoginPage() {
       <div className="login-refraction-blob-2"></div>
 
       <div className="login-card-container" style={{ maxWidth: '480px' }}>
-        
+
         {/* Brand Header */}
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
           <div style={{
@@ -235,9 +235,6 @@ export default function LoginPage() {
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
-              <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.35rem', display: 'block', lineHeight: 1.3 }}>
-                Auth is simulated. You may leave it blank or enter anything.
-              </span>
             </div>
 
             {error && (
