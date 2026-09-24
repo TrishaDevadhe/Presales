@@ -3,6 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { flushSync } from 'react-dom';
 import { useApp } from '@/context/AppContext';
 import LoaderSpinner from '@/components/LoaderSpinner';
 import LoginPage from '@/components/LoginPage';
@@ -139,8 +140,138 @@ export default function Home() {
     }
   }, [theme]);
 
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === 'glass-light' ? 'dark' : 'glass-light'));
+  const toggleTheme = (e) => {
+    const nextTheme = theme === 'glass-light' ? 'dark' : 'glass-light';
+
+    // Get click / interaction point coordinates
+    let x = typeof window !== 'undefined' ? window.innerWidth / 2 : 0;
+    let y = typeof window !== 'undefined' ? window.innerHeight / 2 : 0;
+
+    if (e) {
+      if (typeof e.clientX === 'number' && (e.clientX !== 0 || e.clientY !== 0)) {
+        x = e.clientX;
+        y = e.clientY;
+      } else if (e.currentTarget && typeof e.currentTarget.getBoundingClientRect === 'function') {
+        const rect = e.currentTarget.getBoundingClientRect();
+        x = rect.left + rect.width / 2;
+        y = rect.top + rect.height / 2;
+      }
+    }
+
+    // Calculate distance to farthest screen corner for radial expansion
+    const endRadius = typeof window !== 'undefined' ? Math.hypot(
+      Math.max(x, window.innerWidth - x),
+      Math.max(y, window.innerHeight - y)
+    ) : 1000;
+
+    // Clean up any active fallback overlay elements from previous rapid clicks
+    if (typeof document !== 'undefined') {
+      const existingOverlays = document.querySelectorAll('.theme-pulse-overlay');
+      existingOverlays.forEach(el => el.remove());
+      document.documentElement.classList.add('theme-transitioning');
+    }
+
+    // Respect prefers-reduced-motion
+    const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (prefersReducedMotion) {
+      setTheme(nextTheme);
+      if (typeof document !== 'undefined') {
+        document.documentElement.classList.remove('theme-transitioning');
+      }
+      return;
+    }
+
+    // Modern View Transitions API (120fps GPU compositor radial pulse expansion)
+    if (typeof document !== 'undefined' && typeof document.startViewTransition === 'function') {
+      requestAnimationFrame(() => {
+        const transition = document.startViewTransition(() => {
+          flushSync(() => {
+            setTheme(nextTheme);
+            if (nextTheme === 'dark') {
+              document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+              document.documentElement.removeAttribute('data-theme');
+            }
+          });
+        });
+
+        transition.ready.then(() => {
+          const anim = document.documentElement.animate(
+            {
+              clipPath: [
+                `circle(0px at ${x}px ${y}px)`,
+                `circle(${endRadius}px at ${x}px ${y}px)`
+              ]
+            },
+            {
+              duration: 480,
+              easing: 'cubic-bezier(0.2, 0, 0, 1)',
+              pseudoElement: '::view-transition-new(root)'
+            }
+          );
+          anim.onfinish = () => {
+            document.documentElement.classList.remove('theme-transitioning');
+          };
+        }).catch(() => {
+          document.documentElement.classList.remove('theme-transitioning');
+        });
+
+        transition.finished.finally(() => {
+          document.documentElement.classList.remove('theme-transitioning');
+        });
+      });
+      return;
+    }
+
+    // Cross-browser overlay radial pulse expansion fallback (aligned to VSync)
+    setTheme(nextTheme);
+
+    if (typeof document !== 'undefined') {
+      requestAnimationFrame(() => {
+        const overlay = document.createElement('div');
+        overlay.className = 'theme-pulse-overlay';
+        const targetBg = nextTheme === 'dark' ? '#0F172A' : '#FFFFFF';
+        
+        overlay.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100vw;
+          height: 100vh;
+          pointer-events: none;
+          z-index: 999999;
+          background-color: ${targetBg};
+          clip-path: circle(0px at ${x}px ${y}px);
+          will-change: clip-path;
+          transform: translateZ(0);
+        `;
+        document.body.appendChild(overlay);
+
+        const anim = overlay.animate(
+          [
+            { clipPath: `circle(0px at ${x}px ${y}px)` },
+            { clipPath: `circle(${endRadius}px at ${x}px ${y}px)` }
+          ],
+          {
+            duration: 480,
+            easing: 'cubic-bezier(0.2, 0, 0, 1)',
+            fill: 'forwards'
+          }
+        );
+
+        if (nextTheme === 'dark') {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        } else {
+          document.documentElement.removeAttribute('data-theme');
+        }
+
+        anim.onfinish = () => {
+          overlay.remove();
+          document.documentElement.classList.remove('theme-transitioning');
+        };
+      });
+    }
   };
 
   const renderActiveTab = () => {

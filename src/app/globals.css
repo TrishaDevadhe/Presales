@@ -2978,3 +2978,65 @@ html, body {
   background-color: rgba(255, 255, 255, 0.02) !important;
 }
 
+/* ==========================================================================
+   Blinkit-inspired Ultra-Smooth 120fps Light/Dark Mode Pulse Transition
+   ========================================================================== */
+
+/* Temporarily suppress individual element CSS transitions during circle reveal to prevent frame drops */
+html.theme-transitioning,
+html.theme-transitioning *,
+html.theme-transitioning *::before,
+html.theme-transitioning *::after {
+  transition: none !important;
+}
+
+::view-transition-image-pair(root) {
+  isolation: isolate;
+  will-change: transform, clip-path;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+  display: block;
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  will-change: clip-path, transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  contain: strict;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 999999;
+}
+
+.theme-pulse-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 999999;
+  will-change: clip-path, transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
+  }
+}
+
+
+
