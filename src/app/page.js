@@ -55,7 +55,7 @@ export default function Home() {
     }
   };
 
-  const activeProfile = (resourceProfiles || []).find(
+  const activeProfile = (Array.isArray(resourceProfiles) ? resourceProfiles : []).find(
     (p) => p.username && p.username.toLowerCase() === (currentUser || '').toLowerCase()
   );
   const userDisplayName = activeProfile?.name || (currentUser ? formatUserName(currentUser) : 'User');

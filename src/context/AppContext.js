@@ -46,14 +46,20 @@ export function AppProvider({ children }) {
   const fetchDropdowns = async () => {
     try {
       const res = await fetch('/api/dropdowns?activeOnly=false');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      const formatted = (data || []).map(opt => ({
-        ...opt,
-        option_name: capitalizeOptionName(opt.option_name)
-      }));
-      setDropdownOptions(formatted);
+      if (Array.isArray(data)) {
+        const formatted = data.map(opt => ({
+          ...opt,
+          option_name: capitalizeOptionName(opt.option_name)
+        }));
+        setDropdownOptions(formatted);
+      } else {
+        setDropdownOptions([]);
+      }
     } catch (error) {
       console.error('Error fetching dropdowns:', error);
+      setDropdownOptions([]);
     }
   };
 
@@ -61,10 +67,16 @@ export function AppProvider({ children }) {
   const fetchResourceProfiles = async () => {
     try {
       const res = await fetch('/api/resourceprofiles');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      setResourceProfiles(data);
+      if (Array.isArray(data)) {
+        setResourceProfiles(data);
+      } else {
+        setResourceProfiles([]);
+      }
     } catch (error) {
       console.error('Error fetching profiles:', error);
+      setResourceProfiles([]);
     }
   };
 
@@ -197,7 +209,8 @@ export function AppProvider({ children }) {
       setCurrentUser(found.username);
       setUserRole(found.role);
     } else {
-      const prof = resourceProfiles.find(p => p.username === username);
+      const profiles = Array.isArray(resourceProfiles) ? resourceProfiles : [];
+      const prof = profiles.find(p => p.username === username);
       if (prof) {
         setCurrentUser(prof.username);
         setUserRole(prof.role_name || 'Team Member');
@@ -214,7 +227,8 @@ export function AppProvider({ children }) {
     if (found) {
       role = found.role;
     } else {
-      const prof = resourceProfiles.find(p => p.username === username);
+      const profiles = Array.isArray(resourceProfiles) ? resourceProfiles : [];
+      const prof = profiles.find(p => p.username === username);
       if (prof) {
         role = prof.role_name || 'Team Member';
       }
@@ -229,7 +243,11 @@ export function AppProvider({ children }) {
   const formatUserName = (username) => {
     if (!username || typeof username !== 'string') return username || '';
     const str = username.trim();
-    const prof = (resourceProfiles || []).find(p => p.username && p.username.toLowerCase() === str.toLowerCase());
+    if (str.toLowerCase() === 'admin' || str === 'admin') {
+      return 'Adhesh(admin)';
+    }
+    const profiles = Array.isArray(resourceProfiles) ? resourceProfiles : [];
+    const prof = profiles.find(p => p.username && p.username.toLowerCase() === str.toLowerCase());
     if (prof && prof.name) return prof.name;
     const mock = (users || []).find(u => u.username && u.username.toLowerCase() === str.toLowerCase());
     if (mock && mock.name) return mock.name;
@@ -270,7 +288,8 @@ export function AppProvider({ children }) {
 
   // Filter dropdowns helper
   const getOptions = (category) => {
-    return dropdownOptions
+    const options = Array.isArray(dropdownOptions) ? dropdownOptions : [];
+    return options
       .filter(o => {
         if (o.category !== category || o.active !== true) return false;
         if (category === 'deliverable_type' && o.option_name.toLowerCase().includes('pdf')) return false;
@@ -286,7 +305,8 @@ export function AppProvider({ children }) {
 
   // Include inactive for edits
   const getAllOptions = (category) => {
-    return dropdownOptions
+    const options = Array.isArray(dropdownOptions) ? dropdownOptions : [];
+    return options
       .filter(o => {
         if (o.category !== category) return false;
         if (category === 'deliverable_type' && o.option_name.toLowerCase().includes('pdf')) return false;
@@ -322,8 +342,9 @@ export function AppProvider({ children }) {
   };
 
   const getOptionColor = (category, valueOrName) => {
-    if (!valueOrName || !dropdownOptions.length) return null;
-    const match = dropdownOptions.find(o => 
+    const options = Array.isArray(dropdownOptions) ? dropdownOptions : [];
+    if (!valueOrName || !options.length) return null;
+    const match = options.find(o => 
       o.category === category && (
         o.option_name.toLowerCase() === valueOrName.toString().toLowerCase() ||
         o.id.toString() === valueOrName.toString()
@@ -454,9 +475,9 @@ export function AppProvider({ children }) {
         login,
         logout,
         usersList: users,
-        allUsers: resourceProfiles.length > 0 ? resourceProfiles.map(p => p.username) : users.map(u => u.username),
-        dropdownOptions,
-        resourceProfiles,
+        allUsers: (Array.isArray(resourceProfiles) && resourceProfiles.length > 0) ? resourceProfiles.map(p => p.username) : users.map(u => u.username),
+        dropdownOptions: Array.isArray(dropdownOptions) ? dropdownOptions : [],
+        resourceProfiles: Array.isArray(resourceProfiles) ? resourceProfiles : [],
         loading,
         handleUserChange,
         refreshDropdowns: fetchDropdowns,

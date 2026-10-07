@@ -21,8 +21,8 @@ export default function EditProfileModal({ isOpen, onClose }) {
   const [originalUser, setOriginalUser] = useState('');
 
   useEffect(() => {
-    if (isOpen && currentUser && resourceProfiles) {
-      const prof = resourceProfiles.find(p => p.username.toLowerCase() === currentUser.toLowerCase()) || {};
+    if (isOpen && currentUser && Array.isArray(resourceProfiles)) {
+      const prof = resourceProfiles.find(p => p.username && p.username.toLowerCase() === currentUser.toLowerCase()) || {};
       setOriginalUser(currentUser);
       const defaultName = prof.name || prof.username || currentUser;
       const defaultPwd = prof.password || '';

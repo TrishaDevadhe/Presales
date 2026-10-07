@@ -5,23 +5,40 @@ import { initDb } from './initDb.js';
 // Prevents UTC midnight JavaScript Date object conversion that shifts dates to previous day in client timezones
 types.setTypeParser(1082, (val) => val);
 
-let pool;
-let initPromise = null;
-let isInitializing = false;
+function getConnectionString() {
+  return process.env.DATABASE_URL || 'postgres://postgres:postgres@127.0.0.1:5432/presales_db';
+}
 
-if (!global._postgresPool) {
-  const connectionString = process.env.DATABASE_URL || 'postgres://postgres:postgres@127.0.0.1:5432/presales_db';
+function getPool() {
+  const connectionString = getConnectionString();
   const isSupabase = connectionString.includes('supabase.co') || connectionString.includes('supabase.net');
   
-  global._postgresPool = new Pool({
-    connectionString,
-    ssl: isSupabase ? { rejectUnauthorized: false } : false,
-    max: 20, // Support concurrent parallel queries
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 10000
-  });
+  if (!global._postgresPool || global._postgresPoolConnStr !== connectionString) {
+    if (global._postgresPool) {
+      try { global._postgresPool.end().catch(() => {}); } catch (e) {}
+    }
+    global._postgresPoolConnStr = connectionString;
+    global._dbInitialized = false;
+    global._postgresPool = new Pool({
+      connectionString,
+      ssl: isSupabase ? { rejectUnauthorized: false } : false,
+      max: 20, // Support concurrent parallel queries
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 10000
+    });
+  }
+  return global._postgresPool;
 }
-pool = global._postgresPool;
+
+const pool = new Proxy({}, {
+  get(target, prop) {
+    const activePool = getPool();
+    const value = activePool[prop];
+    return typeof value === 'function' ? value.bind(activePool) : value;
+  }
+});
+let initPromise = null;
+let isInitializing = false;
 
 async function ensureDbInitialized() {
   // If process already verified database setup, return immediately

@@ -15,9 +15,8 @@ export default function LoginPage() {
 
   // Combine and deduplicate users from mock list and database profiles
   const getCombinedUsers = () => {
-    const mockUsers = usersList.map(u => ({ username: u.username, name: u.name, role: u.role }));
-    const profileUsers = resourceProfiles.map(p => ({ username: p.username, name: p.name, role: p.role_name || 'Team Member' }));
-
+    const mockUsers = (Array.isArray(usersList) ? usersList : []).map(u => ({ username: u.username, name: u.name, role: u.role }));
+    const profileUsers = (Array.isArray(resourceProfiles) ? resourceProfiles : []).map(p => ({ username: p.username, name: p.name, role: p.role_name || 'Team Member' }));
     const allUsers = [...mockUsers];
     profileUsers.forEach(pu => {
       const idx = allUsers.findIndex(u => u.username === pu.username);
@@ -53,7 +52,8 @@ export default function LoginPage() {
     // Simulate network authentication delay
     setTimeout(() => {
       const cleanUser = selectedUser.toLowerCase().trim();
-      const userProfile = resourceProfiles.find(
+      const profiles = Array.isArray(resourceProfiles) ? resourceProfiles : [];
+      const userProfile = profiles.find(
         (p) => p.username && p.username.toLowerCase().trim() === cleanUser
       );
 

@@ -114,7 +114,8 @@ export default function WorkItemsTab() {
       const username = formData.assigned_to;
       const hours = parseFloat(formData.estimated_hours) || 0;
 
-      const profile = resourceProfiles.find(p => p.username === username);
+      const profiles = Array.isArray(resourceProfiles) ? resourceProfiles : [];
+      const profile = profiles.find(p => p.username === username);
       if (!profile) {
         setCapacityWarning(null);
         return;
@@ -149,8 +150,9 @@ export default function WorkItemsTab() {
         }
       });
 
+      const profiles = Array.isArray(resourceProfiles) ? resourceProfiles : [];
       Object.entries(addedHoursMap).forEach(([username, hours]) => {
-        const profile = resourceProfiles.find(p => p.username === username);
+        const profile = profiles.find(p => p.username === username);
         if (!profile) return;
         const capacity = parseFloat(profile.weekly_capacity_hours) || 40;
         const activeTasksHours = tasks
