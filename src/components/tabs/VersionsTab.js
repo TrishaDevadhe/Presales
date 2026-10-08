@@ -55,6 +55,9 @@ export default function VersionsTab() {
       setTasks(Array.isArray(tasksData) ? tasksData : []);
     } catch (e) {
       console.error('Error fetching revision log data:', e);
+      setVersions([]);
+      setOpportunities([]);
+      setTasks([]);
       setError('Failed to load revision logs and work items');
     } finally {
       setLoading(false);

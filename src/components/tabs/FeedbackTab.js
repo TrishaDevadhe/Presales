@@ -42,11 +42,14 @@ export default function FeedbackTab() {
       const oppsData = await oppsRes.json();
       const versionsData = await versionsRes.json();
 
-      setFeedbacks(feedbacksData);
-      setOpportunities(oppsData);
-      setVersions(versionsData);
+      setFeedbacks(Array.isArray(feedbacksData) ? feedbacksData : []);
+      setOpportunities(Array.isArray(oppsData) ? oppsData : []);
+      setVersions(Array.isArray(versionsData) ? versionsData : []);
     } catch (e) {
       console.error('Error fetching feedback data:', e);
+      setFeedbacks([]);
+      setOpportunities([]);
+      setVersions([]);
       setError('Failed to load feedback logs');
     } finally {
       setLoading(false);
@@ -165,13 +168,12 @@ export default function FeedbackTab() {
     );
   };
 
-  const displayFeedbacks = userRole === 'Admin'
-    ? feedbacks
-    : feedbacks.filter(fb => {
-        const ownerMatch = (fb.owner || '').toLowerCase().trim() === (currentUser || '').toLowerCase().trim();
-        const opp = opportunities.find(o => String(o.id) === String(fb.opportunity_id));
-        return ownerMatch || (opp && isUserAssociatedWithOpp(opp, currentUser));
-      });
+  const displayFeedbacks = (Array.isArray(feedbacks) ? feedbacks : []).filter(fb => {
+    if (userRole === 'Admin') return true;
+    const ownerMatch = (fb.owner || '').toLowerCase().trim() === (currentUser || '').toLowerCase().trim();
+    const opp = (Array.isArray(opportunities) ? opportunities : []).find(o => String(o.id) === String(fb.opportunity_id));
+    return ownerMatch || (opp && isUserAssociatedWithOpp(opp, currentUser));
+  });
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>

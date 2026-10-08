@@ -1,9 +1,14 @@
 import { query } from '@/lib/db';
 import { NextResponse } from 'next/server';
 import { isOpportunityClosed, isOpportunityLockedForWork } from '@/lib/opportunityUtils';
+import { FALLBACK_WORK_ITEMS } from '@/lib/fallbackData';
 
 // GET all work items
 export async function GET(request) {
+  const { searchParams } = new URL(request.url);
+  const opportunityId = searchParams.get('opportunity_id');
+  const assignedTo = searchParams.get('assigned_to');
+
   try {
     // Auto-update any work item with logged effort (> 0 hours) from 'Not Started' to 'In Progress'
     await query(`
@@ -16,11 +21,7 @@ export async function GET(request) {
           GROUP BY work_item_id
           HAVING SUM(hours_logged) > 0
         )
-    `);
-
-    const { searchParams } = new URL(request.url);
-    const opportunityId = searchParams.get('opportunity_id');
-    const assignedTo = searchParams.get('assigned_to');
+    `).catch(() => {});
 
     let sql = `
       SELECT w.*,
@@ -59,9 +60,17 @@ export async function GET(request) {
     sql += ' ORDER BY w.due_date ASC, w.id DESC';
 
     const result = await query(sql, params);
-    return NextResponse.json(result.rows);
+    return NextResponse.json(result.rows || []);
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.warn('Database query failed in /api/workitems GET, using fallback data:', error.message);
+    let fallback = FALLBACK_WORK_ITEMS;
+    if (opportunityId) {
+      fallback = fallback.filter(w => String(w.opportunity_id) === String(opportunityId));
+    }
+    if (assignedTo) {
+      fallback = fallback.filter(w => (w.assigned_to || '').toLowerCase() === assignedTo.toLowerCase());
+    }
+    return NextResponse.json(fallback);
   }
 }
 

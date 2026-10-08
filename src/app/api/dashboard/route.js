@@ -1,5 +1,6 @@
 import { query } from '@/lib/db';
 import { NextResponse } from 'next/server';
+import { FALLBACK_DASHBOARD_DATA } from '@/lib/fallbackData';
 
 export const dynamic = 'force-dynamic';
 
@@ -143,6 +144,7 @@ export async function GET() {
       revision_threshold: revThreshold
     });
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.warn('Database query failed in /api/dashboard GET, using fallback data:', error.message);
+    return NextResponse.json(FALLBACK_DASHBOARD_DATA);
   }
 }

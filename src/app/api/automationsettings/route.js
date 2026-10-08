@@ -1,5 +1,6 @@
 import { query } from '@/lib/db';
 import { NextResponse } from 'next/server';
+import { FALLBACK_AUTOMATION_SETTINGS } from '@/lib/fallbackData';
 
 export const dynamic = 'force-dynamic';
 
@@ -7,18 +8,12 @@ export async function GET() {
   try {
     const result = await query('SELECT * FROM automation_settings LIMIT 1');
     if (result.rows.length === 0) {
-      // Return default values if somehow missing
-      return NextResponse.json({
-        enable_missing_effort_reminder: true,
-        effort_variance_threshold: 20.0,
-        revision_threshold: 3,
-        overload_threshold: 100.0,
-        reminder_frequency: 'Weekly'
-      });
+      return NextResponse.json(FALLBACK_AUTOMATION_SETTINGS);
     }
     return NextResponse.json(result.rows[0]);
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.warn('Database query failed in /api/automationsettings GET, using fallback data:', error.message);
+    return NextResponse.json(FALLBACK_AUTOMATION_SETTINGS);
   }
 }
 

@@ -1,12 +1,13 @@
 import { query } from '@/lib/db';
 import { NextResponse } from 'next/server';
+import { FALLBACK_VERSIONS } from '@/lib/fallbackData';
 
 // GET all versions
 export async function GET(request) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const opportunityId = searchParams.get('opportunity_id');
+  const { searchParams } = new URL(request.url);
+  const opportunityId = searchParams.get('opportunity_id');
 
+  try {
     let sql = `
       SELECT v.*,
              o.opportunity_name, o.company,
@@ -31,9 +32,14 @@ export async function GET(request) {
     sql += ' ORDER BY v.opportunity_id DESC, v.version_number DESC';
 
     const result = await query(sql, params);
-    return NextResponse.json(result.rows);
+    return NextResponse.json(result.rows || []);
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.warn('Database query failed in /api/versions GET, using fallback data:', error.message);
+    let fallback = FALLBACK_VERSIONS;
+    if (opportunityId) {
+      fallback = fallback.filter(v => String(v.opportunity_id) === String(opportunityId));
+    }
+    return NextResponse.json(fallback);
   }
 }
 

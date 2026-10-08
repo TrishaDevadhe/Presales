@@ -108,6 +108,8 @@ export default function OpportunitiesTab({ targetOppFromNotification, onClearTar
       }
     } catch (e) {
       console.error('Error fetching opportunities or work items:', e);
+      setOpportunities([]);
+      setWorkItems([]);
       setError('Failed to load opportunities');
     } finally {
       setLoading(false);

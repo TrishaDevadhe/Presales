@@ -81,12 +81,15 @@ export default function EffortLogsTab() {
       const oppsData = await oppsRes.json();
       const settingsData = await settingsRes.json();
 
-      setEffortLogs(logsData);
-      setTasks(tasksData);
-      setOpportunities(oppsData);
-      setSettings(settingsData);
+      setEffortLogs(Array.isArray(logsData) ? logsData : []);
+      setTasks(Array.isArray(tasksData) ? tasksData : []);
+      setOpportunities(Array.isArray(oppsData) ? oppsData : []);
+      setSettings(settingsData && !settingsData.error ? settingsData : null);
     } catch (e) {
       console.error('Error fetching effort data:', e);
+      setEffortLogs([]);
+      setTasks([]);
+      setOpportunities([]);
       setError('Failed to load effort logs');
     } finally {
       setLoading(false);
@@ -256,14 +259,18 @@ export default function EffortLogsTab() {
   };
 
   // Filter tasks based on selected opportunity for modal form (exclude terminated/cancelled)
+  const safeTasks = Array.isArray(tasks) ? tasks : [];
+  const safeEffortLogs = Array.isArray(effortLogs) ? effortLogs : [];
+  const safeOpps = Array.isArray(opportunities) ? opportunities : [];
+
   const availableTasks = (selectedOppId
-    ? tasks.filter(t => t.opportunity_id === parseInt(selectedOppId, 10))
-    : tasks).filter(t => t.status_name !== 'Cancelled' && t.status_name !== 'Terminated');
+    ? safeTasks.filter(t => t.opportunity_id === parseInt(selectedOppId, 10))
+    : safeTasks).filter(t => t.status_name !== 'Cancelled' && t.status_name !== 'Terminated');
 
   // Filter work items list for "Work Items" tab
-  const filteredWorkItems = tasks.filter(task => {
+  const filteredWorkItems = safeTasks.filter(task => {
     if (task.status_name === 'Cancelled' || task.status_name === 'Terminated') return false;
-    if (userRole !== 'Admin' && !isUserAssociatedWithTask(task, currentUser, opportunities)) {
+    if (userRole !== 'Admin' && !isUserAssociatedWithTask(task, currentUser, safeOpps)) {
       return false;
     }
     if (filterOpportunity && String(task.opportunity_id) !== String(filterOpportunity)) {
@@ -286,8 +293,8 @@ export default function EffortLogsTab() {
   });
 
   // Filter effort logs list for "Hours Logged" tab
-  const filteredEffortLogs = effortLogs.filter(log => {
-    if (userRole !== 'Admin' && !isUserAssociatedWithEffort(log, currentUser, tasks, opportunities)) {
+  const filteredEffortLogs = safeEffortLogs.filter(log => {
+    if (userRole !== 'Admin' && !isUserAssociatedWithEffort(log, currentUser, safeTasks, safeOpps)) {
       return false;
     }
     if (filterOpportunity && String(log.opportunity_id) !== String(filterOpportunity)) {

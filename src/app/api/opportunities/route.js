@@ -1,5 +1,6 @@
 import { query } from '@/lib/db';
 import { NextResponse } from 'next/server';
+import { FALLBACK_OPPORTUNITIES } from '@/lib/fallbackData';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,9 +24,10 @@ export async function GET() {
       LEFT JOIN dropdown_options cx ON o.complexity_id = cx.id
       ORDER BY o.target_submission_date ASC, o.id DESC
     `);
-    return NextResponse.json(result.rows);
+    return NextResponse.json(result.rows || []);
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.warn('Database query failed in /api/opportunities GET, using fallback data:', error.message);
+    return NextResponse.json(FALLBACK_OPPORTUNITIES);
   }
 }
 

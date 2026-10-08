@@ -89,10 +89,12 @@ export default function WorkItemsTab() {
       ]);
       const tasksData = await tasksRes.json();
       const oppsData = await oppsRes.json();
-      setTasks(tasksData);
-      setOpportunities(oppsData);
+      setTasks(Array.isArray(tasksData) ? tasksData : []);
+      setOpportunities(Array.isArray(oppsData) ? oppsData : []);
     } catch (e) {
       console.error('Error fetching work items data:', e);
+      setTasks([]);
+      setOpportunities([]);
       setError('Failed to load data');
     } finally {
       setLoading(false);
@@ -125,7 +127,7 @@ export default function WorkItemsTab() {
       const completedOpt = getOptions('task_status').find(o => o.option_name === 'Completed');
       const completedId = completedOpt?.id;
 
-      const activeTasksHours = tasks
+      const activeTasksHours = (Array.isArray(tasks) ? tasks : [])
         .filter(t => t.assigned_to === username && t.status_id !== completedId && t.id !== selectedTask?.id)
         .reduce((sum, t) => sum + (parseFloat(t.estimated_hours) || 0), 0);
 
@@ -155,7 +157,7 @@ export default function WorkItemsTab() {
         const profile = profiles.find(p => p.username === username);
         if (!profile) return;
         const capacity = parseFloat(profile.weekly_capacity_hours) || 40;
-        const activeTasksHours = tasks
+        const activeTasksHours = (Array.isArray(tasks) ? tasks : [])
           .filter(t => t.assigned_to === username && t.status_id !== completedId)
           .reduce((sum, t) => sum + (parseFloat(t.estimated_hours) || 0), 0);
         const totalHours = activeTasksHours + hours;
@@ -419,7 +421,7 @@ export default function WorkItemsTab() {
     }
   };
 
-  const allFilteredTasks = tasks.filter(t => {
+  const allFilteredTasks = (Array.isArray(tasks) ? tasks : []).filter(t => {
     if (userRole !== 'Admin' && !isUserAssociatedWithTask(t, currentUser, opportunities)) return false;
     if (filterOpp && t.opportunity_id !== parseInt(filterOpp, 10)) return false;
     if (filterUser && t.assigned_to !== filterUser) return false;
@@ -434,8 +436,8 @@ export default function WorkItemsTab() {
     return true;
   });
 
-  const activeTasks = allFilteredTasks.filter(t => t.status_name !== 'Cancelled' && t.status_name !== 'Terminated' && t.status_name !== 'Blocked');
-  const archivedTasks = allFilteredTasks.filter(t => t.status_name === 'Cancelled' || t.status_name === 'Terminated' || t.status_name === 'Blocked');
+  const activeTasks = (Array.isArray(allFilteredTasks) ? allFilteredTasks : []).filter(t => t.status_name !== 'Cancelled' && t.status_name !== 'Terminated' && t.status_name !== 'Blocked');
+  const archivedTasks = (Array.isArray(allFilteredTasks) ? allFilteredTasks : []).filter(t => t.status_name === 'Cancelled' || t.status_name === 'Terminated' || t.status_name === 'Blocked');
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>

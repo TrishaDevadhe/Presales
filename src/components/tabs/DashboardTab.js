@@ -134,6 +134,11 @@ export default function DashboardTab({ onNavigateToOpp }) {
       setProfiles(Array.isArray(profilesJson) ? profilesJson : []);
     } catch (e) {
       console.error('Error fetching personal dashboard data:', e);
+      setOpportunities([]);
+      setTasks([]);
+      setEfforts([]);
+      setVersions([]);
+      setProfiles([]);
       setError(e.message || 'Failed to connect to system database');
     } finally {
       setLoading(false);

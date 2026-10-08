@@ -36,9 +36,12 @@ export default function Home() {
       const data = await res.json();
       if (Array.isArray(data)) {
         setGlobalOpportunities(data);
+      } else {
+        setGlobalOpportunities([]);
       }
     } catch (err) {
       console.error('Error fetching opportunities for notifications:', err);
+      setGlobalOpportunities([]);
     }
   };
 

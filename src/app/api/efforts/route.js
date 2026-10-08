@@ -1,14 +1,15 @@
 import { query } from '@/lib/db';
 import { NextResponse } from 'next/server';
 import { isOpportunityClosed } from '@/lib/opportunityUtils';
+import { FALLBACK_EFFORTS } from '@/lib/fallbackData';
 
 // GET all effort logs
 export async function GET(request) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const workItemId = searchParams.get('work_item_id');
-    const person = searchParams.get('person');
+  const { searchParams } = new URL(request.url);
+  const workItemId = searchParams.get('work_item_id');
+  const person = searchParams.get('person');
 
+  try {
     let sql = `
       SELECT el.*,
              wi.title AS work_item_title, wi.estimated_hours AS work_item_estimated_hours,
@@ -43,9 +44,17 @@ export async function GET(request) {
     sql += ' ORDER BY el.date DESC, el.id DESC';
 
     const result = await query(sql, params);
-    return NextResponse.json(result.rows);
+    return NextResponse.json(result.rows || []);
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.warn('Database query failed in /api/efforts GET, using fallback data:', error.message);
+    let fallback = FALLBACK_EFFORTS;
+    if (workItemId) {
+      fallback = fallback.filter(el => String(el.work_item_id) === String(workItemId));
+    }
+    if (person) {
+      fallback = fallback.filter(el => (el.person || '').toLowerCase() === person.toLowerCase());
+    }
+    return NextResponse.json(fallback);
   }
 }
 

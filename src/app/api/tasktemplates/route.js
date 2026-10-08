@@ -1,13 +1,14 @@
 import { query } from '@/lib/db';
 import { NextResponse } from 'next/server';
+import { FALLBACK_TASK_TEMPLATES } from '@/lib/fallbackData';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const deliverableTypeId = searchParams.get('deliverable_type_id');
+  const { searchParams } = new URL(request.url);
+  const deliverableTypeId = searchParams.get('deliverable_type_id');
 
+  try {
     let sql = `
       SELECT t.*, 
              d.option_name AS deliverable_type_name, 
@@ -28,9 +29,14 @@ export async function GET(request) {
     sql += ' ORDER BY d.option_name ASC, t.sequence ASC';
 
     const result = await query(sql, params);
-    return NextResponse.json(result.rows);
+    return NextResponse.json(result.rows || []);
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.warn('Database query failed in /api/tasktemplates GET, using fallback data:', error.message);
+    let fallback = FALLBACK_TASK_TEMPLATES;
+    if (deliverableTypeId) {
+      fallback = fallback.filter(t => String(t.deliverable_type_id) === String(deliverableTypeId));
+    }
+    return NextResponse.json(fallback);
   }
 }
 
