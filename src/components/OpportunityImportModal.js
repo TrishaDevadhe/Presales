@@ -368,6 +368,7 @@ export default function OpportunityImportModal({ isOpen, onClose, onSuccess, dro
           width: '95%', 
           maxHeight: '92vh', 
           overflowY: 'auto',
+          overflowX: 'hidden',
           display: 'flex',
           flexDirection: 'column',
           gap: '1.25rem'
@@ -576,33 +577,33 @@ export default function OpportunityImportModal({ isOpen, onClose, onSuccess, dro
             {/* Import Settings Checkboxes */}
             <div style={{
               display: 'flex',
-              flexWrap: 'wrap',
-              gap: '1.5rem',
-              padding: '0.85rem 1rem',
-              background: '#ffffff',
+              flexDirection: 'column',
+              gap: '0.65rem',
+              padding: '1rem 1.15rem',
+              background: 'var(--bg-secondary)',
               border: '1px solid var(--border-subtle)',
-              borderRadius: '8px'
+              borderRadius: '10px'
             }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.86rem', cursor: 'pointer', color: 'var(--text-primary)' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.86rem', cursor: 'pointer', color: 'var(--text-primary)', padding: '0.45rem 0.6rem', borderRadius: '6px', transition: 'background 0.15s' }}>
                 <input
                   type="checkbox"
                   checked={skipDuplicates}
                   onChange={(e) => setSkipDuplicates(e.target.checked)}
                   disabled={isImporting}
-                  style={{ width: '16px', height: '16px', accentColor: 'var(--accent-primary)' }}
+                  style={{ width: '16px', height: '16px', accentColor: 'var(--accent-secondary)', flexShrink: 0, cursor: 'pointer' }}
                 />
-                <span><strong>Skip duplicates</strong> (safely ignores records where Company + Opportunity Name already exists)</span>
+                <span style={{ lineHeight: 1.4 }}><strong>Skip duplicates</strong> — safely ignores records where Company + Opportunity Name already exists</span>
               </label>
 
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.86rem', cursor: 'pointer', color: 'var(--text-primary)' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.86rem', cursor: 'pointer', color: 'var(--text-primary)', padding: '0.45rem 0.6rem', borderRadius: '6px', transition: 'background 0.15s' }}>
                 <input
                   type="checkbox"
                   checked={generateTasks}
                   onChange={(e) => setGenerateTasks(e.target.checked)}
                   disabled={isImporting}
-                  style={{ width: '16px', height: '16px', accentColor: 'var(--accent-primary)' }}
+                  style={{ width: '16px', height: '16px', accentColor: 'var(--accent-secondary)', flexShrink: 0, cursor: 'pointer' }}
                 />
-                <span><strong>Generate standard template tasks</strong> (leave unchecked for historical past deals)</span>
+                <span style={{ lineHeight: 1.4 }}><strong>Generate standard template tasks</strong> — leave unchecked for historical past deals</span>
               </label>
             </div>
 

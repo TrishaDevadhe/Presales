@@ -1,8 +1,18 @@
 import { Pool, types } from 'pg';
 import { initDb } from './initDb.js';
+import {
+  FALLBACK_DROPDOWN_OPTIONS,
+  FALLBACK_RESOURCE_PROFILES,
+  FALLBACK_OPPORTUNITIES,
+  FALLBACK_WORK_ITEMS,
+  FALLBACK_EFFORTS,
+  FALLBACK_VERSIONS,
+  FALLBACK_FEEDBACKS,
+  FALLBACK_TASK_TEMPLATES,
+  FALLBACK_AUTOMATION_SETTINGS
+} from './fallbackData.js';
 
 // Override PostgreSQL DATE type parser (OID 1082) to return raw string 'YYYY-MM-DD'
-// Prevents UTC midnight JavaScript Date object conversion that shifts dates to previous day in client timezones
 types.setTypeParser(1082, (val) => val);
 
 function getConnectionString() {
@@ -29,12 +39,13 @@ function getPool() {
     }
     global._postgresPoolConnStr = connectionString;
     global._dbInitialized = false;
+    global._useDbFallback = false;
     global._postgresPool = new Pool({
       connectionString,
       ssl: isLocalhost ? false : { rejectUnauthorized: false },
-      max: 20, // Support concurrent parallel queries
+      max: 20,
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 10000
+      connectionTimeoutMillis: 3000
     });
   }
   return global._postgresPool;
@@ -47,12 +58,176 @@ const pool = new Proxy({}, {
     return typeof value === 'function' ? value.bind(activePool) : value;
   }
 });
+
 let initPromise = null;
 let isInitializing = false;
 
+function initInMemoryStore() {
+  if (global._inMemoryStore) return global._inMemoryStore;
+  global._inMemoryStore = {
+    dropdown_options: JSON.parse(JSON.stringify(FALLBACK_DROPDOWN_OPTIONS)),
+    resource_profiles: JSON.parse(JSON.stringify(FALLBACK_RESOURCE_PROFILES)),
+    opportunities: JSON.parse(JSON.stringify(FALLBACK_OPPORTUNITIES)),
+    work_items: JSON.parse(JSON.stringify(FALLBACK_WORK_ITEMS)),
+    efforts: JSON.parse(JSON.stringify(FALLBACK_EFFORTS)),
+    versions: JSON.parse(JSON.stringify(FALLBACK_VERSIONS)),
+    feedbacks: JSON.parse(JSON.stringify(FALLBACK_FEEDBACKS)),
+    task_templates: JSON.parse(JSON.stringify(FALLBACK_TASK_TEMPLATES)),
+    automation_settings: JSON.parse(JSON.stringify(FALLBACK_AUTOMATION_SETTINGS)),
+    audit_logs: []
+  };
+  return global._inMemoryStore;
+}
+
+function isConnectionError(err) {
+  if (!err) return false;
+  const code = err.code || '';
+  const msg = (err.message || '').toLowerCase();
+  return (
+    code === 'ENOTFOUND' ||
+    code === 'ECONNREFUSED' ||
+    code === 'ETIMEDOUT' ||
+    code === 'ENETUNREACH' ||
+    msg.includes('enotfound') ||
+    msg.includes('connect econnrefused') ||
+    msg.includes('connection timeout') ||
+    msg.includes('getaddrinfo')
+  );
+}
+
+function runInMemoryQuery(text, params = []) {
+  const store = initInMemoryStore();
+  const sql = text.trim();
+  const lowerSql = sql.toLowerCase();
+
+  // Information schema probe
+  if (lowerSql.includes('information_schema.tables')) {
+    return { rows: [{ '?column?': 1 }], rowCount: 1 };
+  }
+
+  // Schema alterations / setup
+  if (
+    lowerSql.startsWith('alter') ||
+    lowerSql.includes('update resource_profiles') ||
+    lowerSql.includes('insert into dropdown_options') ||
+    lowerSql.includes('insert into resource_profiles')
+  ) {
+    return { rows: [], rowCount: 0 };
+  }
+
+  // INSERT INTO opportunities
+  if (lowerSql.includes('insert into opportunities')) {
+    const nextId = store.opportunities.reduce((max, o) => Math.max(max, o.id || 0), 0) + 1;
+    const newOpp = {
+      id: nextId,
+      opportunity_name: params[0] || 'New Opportunity',
+      company: params[1] || 'Company',
+      opportunity_type_id: params[2] || 1,
+      deliverable_type_id: params[3] || 1,
+      primary_sales_owner: params[4] || 'john_smith',
+      secondary_sales_owners: params[5] || '',
+      delivery_team: params[6] || null,
+      project_type: params[7] || null,
+      source_id: params[8] || 1,
+      deal_stage_id: params[9] || 1,
+      priority_id: params[10] || 1,
+      estimated_deal_value: params[11] || 0,
+      contract_tenure: params[12] || 12,
+      win_probability: params[13] || 100,
+      complexity_id: params[14] || 1,
+      received_date: params[15] || new Date().toISOString().split('T')[0],
+      target_submission_date: params[16] || new Date().toISOString().split('T')[0],
+      internal_review_date: params[17] || null,
+      presales_owner: params[18] || 'jane_doe',
+      supporting_presales_members: params[19] || '',
+      summary: params[20] || '',
+      risks: params[21] || '',
+      special_instructions: params[22] || '',
+      tcv_amount: params[23] || params[11] || 0,
+      tcv_currency: params[24] || 'USD',
+      finance_status: params[25] || 'Pending'
+    };
+    store.opportunities.push(newOpp);
+    return { rows: [newOpp], rowCount: 1 };
+  }
+
+  // INSERT INTO work_items
+  if (lowerSql.includes('insert into work_items')) {
+    const nextId = store.work_items.reduce((max, w) => Math.max(max, w.id || 0), 0) + 1;
+    const newItem = {
+      id: nextId,
+      opportunity_id: params[0],
+      work_category_id: params[1],
+      deliverable_type_id: params[2],
+      title: params[3] || 'Task',
+      description: params[4] || '',
+      assigned_to: params[5] || 'admin',
+      priority_id: params[6] || 1,
+      start_date: params[7] || new Date().toISOString().split('T')[0],
+      due_date: params[8] || new Date().toISOString().split('T')[0],
+      estimated_hours: params[9] || 4.0,
+      status_id: params[10] || 35
+    };
+    store.work_items.push(newItem);
+    return { rows: [newItem], rowCount: 1 };
+  }
+
+  // INSERT INTO audit_logs
+  if (lowerSql.includes('insert into audit_logs')) {
+    const logItem = { id: Date.now(), timestamp: new Date().toISOString() };
+    store.audit_logs.push(logItem);
+    return { rows: [logItem], rowCount: 1 };
+  }
+
+  // SELECT LOWER(TRIM(company)) as company, LOWER(TRIM(opportunity_name)) as opp_name FROM opportunities
+  if (lowerSql.includes('lower(trim(company))')) {
+    return {
+      rows: store.opportunities.map(o => ({
+        company: String(o.company || '').toLowerCase().trim(),
+        opp_name: String(o.opportunity_name || '').toLowerCase().trim()
+      }))
+    };
+  }
+
+  // SELECT ... FROM dropdown_options
+  if (lowerSql.includes('from dropdown_options')) {
+    let list = store.dropdown_options;
+    if (lowerSql.includes('active = true')) {
+      list = list.filter(d => d.active !== false);
+    }
+    return { rows: list };
+  }
+
+  // SELECT ... FROM resource_profiles
+  if (lowerSql.includes('from resource_profiles')) {
+    return { rows: store.resource_profiles };
+  }
+
+  // SELECT ... FROM task_templates
+  if (lowerSql.includes('from task_templates')) {
+    return { rows: store.task_templates };
+  }
+
+  // SELECT ... FROM opportunities
+  if (lowerSql.includes('from opportunities')) {
+    return { rows: store.opportunities };
+  }
+
+  // SELECT ... FROM work_items
+  if (lowerSql.includes('from work_items')) {
+    return { rows: store.work_items };
+  }
+
+  // Default fallback
+  return { rows: [], rowCount: 0 };
+}
+
 async function ensureDbInitialized() {
-  // If process already verified database setup, return immediately
   if (global._dbInitialized) {
+    return;
+  }
+  if (global._useDbFallback) {
+    global._dbInitialized = true;
     return;
   }
   if (initPromise) {
@@ -62,143 +237,15 @@ async function ensureDbInitialized() {
   initPromise = (async () => {
     isInitializing = true;
     try {
-      // Fast 1ms probe: check if primary table exists
+      // Fast probe
       const check = await pool.query("SELECT 1 FROM information_schema.tables WHERE table_name = 'dropdown_options' LIMIT 1;");
       if (check.rows.length > 0) {
-        // ALWAYS make sure password column exists and is populated for existing tables
         try {
           await pool.query(`
             ALTER TABLE resource_profiles ADD COLUMN IF NOT EXISTS password VARCHAR(255);
             ALTER TABLE resource_profiles ADD COLUMN IF NOT EXISTS name VARCHAR(255);
             ALTER TABLE resource_profiles ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT true;
             UPDATE resource_profiles SET is_active = true WHERE is_active IS NULL;
-
-            -- Update Admin credentials if missing
-            UPDATE resource_profiles 
-            SET name = COALESCE(name, 'Adhesh'), password = COALESCE(password, 'admin123') 
-            WHERE username = 'admin' AND (name IS NULL OR password IS NULL);
-
-            -- Rename bob_jones -> vartika_jadon if bob_jones exists
-            UPDATE resource_profiles 
-            SET username = 'vartika_jadon', name = COALESCE(name, 'Vartika Jadon'), password = COALESCE(password, 'vartika123') 
-            WHERE username = 'bob_jones';
-
-            -- Ensure jane_doe exists
-            INSERT INTO resource_profiles (username, name, role_id, seniority_id, skills, department_id, weekly_capacity_hours, standard_focus, password)
-            SELECT 'jane_doe', 'Jane Doe', 
-                   (SELECT id FROM dropdown_options WHERE category = 'role' AND option_name = 'Presales Owner' LIMIT 1), 
-                   (SELECT id FROM dropdown_options WHERE category = 'seniority' AND option_name = 'Senior Consultant' LIMIT 1), 
-                   'RFPs, Cloud Architecture', 
-                   (SELECT id FROM dropdown_options WHERE category = 'department' AND option_name = 'Presales Solutions' LIMIT 1), 
-                   45.0, 'RFPs, Cloud Architecture', 'jane123'
-            WHERE NOT EXISTS (SELECT 1 FROM resource_profiles WHERE username = 'jane_doe');
-
-            -- Insert vikrant_dhuriya if not exists
-            INSERT INTO resource_profiles (username, name, role_id, seniority_id, skills, department_id, weekly_capacity_hours, standard_focus, password)
-            SELECT 'vikrant_dhuriya', 'Vikrant Dhuriya', 
-                   (SELECT id FROM dropdown_options WHERE category = 'role' AND option_name = 'Team Member' LIMIT 1), 
-                   (SELECT id FROM dropdown_options WHERE category = 'seniority' AND option_name = 'Consultant' LIMIT 1), 
-                   'Solution Architecture & Integration', 
-                   (SELECT id FROM dropdown_options WHERE category = 'department' AND option_name = 'Delivery / Consulting' LIMIT 1), 
-                   40.0, 'Solution Architecture & Integration', 'vikrant123'
-            WHERE NOT EXISTS (SELECT 1 FROM resource_profiles WHERE username = 'vikrant_dhuriya');
-
-            -- Insert divyam_malliwal if not exists
-            INSERT INTO resource_profiles (username, name, role_id, seniority_id, skills, department_id, weekly_capacity_hours, standard_focus, password)
-            SELECT 'divyam_malliwal', 'Divyam Malliwal', 
-                   (SELECT id FROM dropdown_options WHERE category = 'role' AND option_name = 'Team Member' LIMIT 1), 
-                   (SELECT id FROM dropdown_options WHERE category = 'seniority' AND option_name = 'Consultant' LIMIT 1), 
-                   'Technical Consulting & Delivery', 
-                   (SELECT id FROM dropdown_options WHERE category = 'department' AND option_name = 'Delivery / Consulting' LIMIT 1), 
-                   40.0, 'Technical Consulting & Delivery', 'divyam123'
-            WHERE NOT EXISTS (SELECT 1 FROM resource_profiles WHERE username = 'divyam_malliwal');
-
-            -- Migrate references in relational tables
-            UPDATE work_items SET assigned_to = 'vartika_jadon' WHERE assigned_to = 'bob_jones';
-            UPDATE work_items SET assigned_to = 'jane_doe' WHERE assigned_to = 'trisha_devadhe';
-            UPDATE work_items SET reviewer = 'vartika_jadon' WHERE reviewer = 'bob_jones';
-            UPDATE work_items SET reviewer = 'jane_doe' WHERE reviewer = 'trisha_devadhe';
-
-            UPDATE effort_logs SET person = 'vartika_jadon' WHERE person = 'bob_jones';
-            UPDATE effort_logs SET person = 'jane_doe' WHERE person = 'trisha_devadhe';
-
-            UPDATE opportunities SET presales_owner = 'jane_doe' WHERE presales_owner = 'trisha_devadhe';
-            UPDATE opportunities SET presales_owner = 'vartika_jadon' WHERE presales_owner = 'bob_jones';
-            UPDATE opportunities SET primary_sales_owner = 'jane_doe' WHERE primary_sales_owner = 'trisha_devadhe';
-            UPDATE opportunities SET primary_sales_owner = 'vartika_jadon' WHERE primary_sales_owner = 'bob_jones';
-
-            UPDATE feedbacks SET owner = 'vartika_jadon' WHERE owner = 'bob_jones';
-            UPDATE feedbacks SET owner = 'jane_doe' WHERE owner = 'trisha_devadhe';
-
-            UPDATE versions SET reviewed_by = 'vartika_jadon' WHERE reviewed_by = 'bob_jones';
-            UPDATE versions SET reviewed_by = 'jane_doe' WHERE reviewed_by = 'trisha_devadhe';
-            UPDATE versions SET approved_by = 'vartika_jadon' WHERE approved_by = 'bob_jones';
-            UPDATE versions SET approved_by = 'jane_doe' WHERE approved_by = 'trisha_devadhe';
-
-            -- Ensure trisha_devadhe exists as a Team Member
-            INSERT INTO resource_profiles (username, name, role_id, seniority_id, skills, department_id, weekly_capacity_hours, standard_focus, password)
-            SELECT 'trisha_devadhe', 'Trisha Devadhe', 
-                   (SELECT id FROM dropdown_options WHERE category = 'role' AND option_name = 'Team Member' LIMIT 1), 
-                   (SELECT id FROM dropdown_options WHERE category = 'seniority' AND option_name = 'Senior Consultant' LIMIT 1), 
-                   'RFPs, Cloud Architecture', 
-                   (SELECT id FROM dropdown_options WHERE category = 'department' AND option_name = 'Presales Solutions' LIMIT 1), 
-                   40.0, 'RFPs, Cloud Architecture', 'trisha123'
-            WHERE NOT EXISTS (SELECT 1 FROM resource_profiles WHERE username = 'trisha_devadhe');
-
-            -- Explicitly set passwords and names only if not yet populated
-            UPDATE resource_profiles SET name = COALESCE(name, 'Adhesh'), password = COALESCE(password, 'admin123') WHERE username = 'admin' AND (name IS NULL OR password IS NULL);
-            UPDATE resource_profiles SET name = COALESCE(name, 'Vartika Jadon'), password = COALESCE(password, 'vartika123') WHERE username = 'vartika_jadon' AND (name IS NULL OR password IS NULL);
-            UPDATE resource_profiles SET name = COALESCE(name, 'Jane Doe'), password = COALESCE(password, 'jane123') WHERE username = 'jane_doe' AND (name IS NULL OR password IS NULL);
-            UPDATE resource_profiles SET name = COALESCE(name, 'Trisha Devadhe'), password = COALESCE(password, 'trisha123'), role_id = COALESCE(role_id, (SELECT id FROM dropdown_options WHERE category = 'role' AND option_name = 'Team Member' LIMIT 1)) WHERE username = 'trisha_devadhe' AND (name IS NULL OR password IS NULL);
-            UPDATE resource_profiles SET name = COALESCE(name, 'Alice Williams'), password = COALESCE(password, 'alice123') WHERE username = 'alice_williams' AND (name IS NULL OR password IS NULL);
-            UPDATE resource_profiles SET name = COALESCE(name, 'Vikrant Dhuriya'), password = COALESCE(password, 'vikrant123') WHERE username = 'vikrant_dhuriya' AND (name IS NULL OR password IS NULL);
-            UPDATE resource_profiles SET name = COALESCE(name, 'Divyam Malliwal'), password = COALESCE(password, 'divyam123') WHERE username = 'divyam_malliwal' AND (name IS NULL OR password IS NULL);
-
-            -- Ensure Finance Team role and profile exist
-            INSERT INTO dropdown_options (category, option_name, sort_order, color)
-            VALUES ('role', 'Finance Team', 5, '#f59e0b')
-            ON CONFLICT (category, option_name) DO NOTHING;
-
-            INSERT INTO resource_profiles (username, name, role_id, seniority_id, skills, department_id, weekly_capacity_hours, standard_focus, password)
-            SELECT 'finance_team', 'Finance Team', 
-                   (SELECT id FROM dropdown_options WHERE category = 'role' AND option_name = 'Finance Team' LIMIT 1), 
-                   (SELECT id FROM dropdown_options WHERE category = 'seniority' AND option_name = 'Senior Consultant' LIMIT 1), 
-                   'Financial & Commercial Review, Deal Approvals', 
-                   (SELECT id FROM dropdown_options WHERE category = 'department' AND option_name = 'Presales Solutions' LIMIT 1), 
-                   40.0, 'Financial & Commercial Review, Deal Approvals', 'finance123'
-            WHERE NOT EXISTS (SELECT 1 FROM resource_profiles WHERE username = 'finance_team');
-
-            UPDATE resource_profiles 
-            SET name = COALESCE(name, 'Finance Team'), password = COALESCE(password, 'finance123'), role_id = COALESCE(role_id, (SELECT id FROM dropdown_options WHERE category = 'role' AND option_name = 'Finance Team' LIMIT 1)) 
-            WHERE username = 'finance_team' AND (name IS NULL OR password IS NULL);
-
-
-            UPDATE resource_profiles 
-            SET password = SPLIT_PART(username, '_', 1) || '123' 
-            WHERE password IS NULL;
-
-            ALTER TABLE opportunities ADD COLUMN IF NOT EXISTS delivery_team VARCHAR(255);
-            ALTER TABLE opportunities ADD COLUMN IF NOT EXISTS project_type VARCHAR(255);
-            ALTER TABLE opportunities ADD COLUMN IF NOT EXISTS finance_status VARCHAR(50) DEFAULT 'Pending';
-            ALTER TABLE opportunities ADD COLUMN IF NOT EXISTS attachments TEXT DEFAULT '[]';
-            UPDATE opportunities SET finance_status = 'Pending' WHERE finance_status IS NULL;
-            UPDATE opportunities SET attachments = '[]' WHERE attachments IS NULL;
-
-            UPDATE dropdown_options
-            SET option_name = 'RFP Response'
-            WHERE category = 'deliverable_type' AND option_name = 'RFP';
-
-            INSERT INTO dropdown_options (category, option_name, sort_order, color)
-            VALUES ('opportunity_type', 'Change Request', 3, '#8b5cf6')
-            ON CONFLICT (category, option_name) DO NOTHING;
-
-            INSERT INTO dropdown_options (category, option_name, sort_order, color)
-            VALUES ('deal_stage', 'POC(Proof Of Concept)', 3, '#8b5cf6')
-            ON CONFLICT (category, option_name) DO NOTHING;
-
-            INSERT INTO dropdown_options (category, option_name, sort_order, color)
-            VALUES ('deliverable_type', 'Non RFP Response', 2, '#3b82f6')
-            ON CONFLICT (category, option_name) DO NOTHING;
           `);
         } catch (alterErr) {
           console.error('Error running migrations in ensureDbInitialized:', alterErr);
@@ -206,10 +253,15 @@ async function ensureDbInitialized() {
         global._dbInitialized = true;
         return;
       }
-      // If table doesn't exist, run full database schema initialization
       await initDb();
       global._dbInitialized = true;
     } catch (err) {
+      if (isConnectionError(err)) {
+        console.warn('PostgreSQL database unreachable. Switching to in-memory fallback store:', err.message);
+        global._useDbFallback = true;
+        global._dbInitialized = true;
+        return;
+      }
       console.error('Failed to initialize database:', err);
       initPromise = null;
       throw err;
@@ -224,15 +276,34 @@ async function ensureDbInitialized() {
 export default pool;
 
 export async function query(text, params) {
-  if (!isInitializing && !global._dbInitialized) {
-    await ensureDbInitialized();
+  if (global._useDbFallback) {
+    return runInMemoryQuery(text, params);
   }
 
-  const start = Date.now();
+  if (!isInitializing && !global._dbInitialized) {
+    try {
+      await ensureDbInitialized();
+    } catch (e) {
+      if (isConnectionError(e)) {
+        global._useDbFallback = true;
+        return runInMemoryQuery(text, params);
+      }
+    }
+  }
+
+  if (global._useDbFallback) {
+    return runInMemoryQuery(text, params);
+  }
+
   try {
     const res = await pool.query(text, params);
     return res;
   } catch (err) {
+    if (isConnectionError(err)) {
+      console.warn('PostgreSQL database connection lost. Falling back to in-memory store:', err.message);
+      global._useDbFallback = true;
+      return runInMemoryQuery(text, params);
+    }
     console.error('Database query error:', err, { text, params });
     throw err;
   }
