@@ -1104,9 +1104,9 @@ export default function DashboardTab({ onNavigateToOpp }) {
                   borderRadius: '6px',
                   cursor: 'pointer',
                   fontWeight: 600,
-                  color: adminYearFilter === 'all' ? 'var(--text-primary)' : '#2563eb',
-                  backgroundColor: 'var(--bg-secondary, #f1f5f9)',
-                  border: '1px solid var(--border-subtle, #e2e8f0)'
+                  color: adminYearFilter === 'all' ? 'var(--text-primary)' : 'var(--accent-secondary, #2563eb)',
+                  backgroundColor: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-subtle)'
                 }}
               >
                 <option value="all">All Years (Lifetime)</option>
@@ -1378,8 +1378,8 @@ export default function DashboardTab({ onNavigateToOpp }) {
                         <div
                           style={{
                             padding: '0.75rem 1.25rem 1rem 3.75rem',
-                            backgroundColor: 'rgba(248, 250, 252, 0.85)',
-                            borderTop: '1px solid var(--border-subtle, #f1f5f9)',
+                            backgroundColor: 'var(--bg-secondary)',
+                            borderTop: '1px solid var(--border-subtle)',
                             display: 'flex',
                             flexDirection: 'column',
                             gap: '0.5rem'
@@ -1397,8 +1397,8 @@ export default function DashboardTab({ onNavigateToOpp }) {
                                 style={{
                                   padding: '0.55rem 0.75rem',
                                   borderRadius: '6px',
-                                  backgroundColor: 'var(--surface-card, #ffffff)',
-                                  border: '1px solid var(--border-subtle, #e2e8f0)',
+                                  backgroundColor: 'var(--paper-panel)',
+                                  border: '1px solid var(--border-subtle)',
                                   cursor: 'pointer',
                                   display: 'flex',
                                   alignItems: 'center',
@@ -1408,11 +1408,11 @@ export default function DashboardTab({ onNavigateToOpp }) {
                                 }}
                                 onMouseEnter={(e) => {
                                   e.currentTarget.style.borderColor = '#3b82f6';
-                                  e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.04)';
+                                  e.currentTarget.style.backgroundColor = 'var(--glass-highlight, rgba(59, 130, 246, 0.08))';
                                 }}
                                 onMouseLeave={(e) => {
-                                  e.currentTarget.style.borderColor = 'var(--border-subtle, #e2e8f0)';
-                                  e.currentTarget.style.backgroundColor = 'var(--surface-card, #ffffff)';
+                                  e.currentTarget.style.borderColor = 'var(--border-subtle)';
+                                  e.currentTarget.style.backgroundColor = 'var(--paper-panel)';
                                 }}
                               >
                                 <div style={{ overflow: 'hidden', flex: 1 }}>

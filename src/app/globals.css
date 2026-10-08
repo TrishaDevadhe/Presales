@@ -963,13 +963,15 @@ p, body, input, select, textarea, button {
 /* Obsidian (dark) theme button overrides */
 [data-theme="dark"] .btn-pill-cobalt,
 [data-theme="dark"] .btn-primary {
-  background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+  background: linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%);
   color: #FFFFFF;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 4px 14px rgba(30, 58, 138, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.2);
 }
 [data-theme="dark"] .btn-pill-cobalt:hover,
 [data-theme="dark"] .btn-primary:hover {
-  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+  background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 100%);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45);
   transform: translateY(-1px);
 }
 [data-theme="dark"] .btn-pill-cobalt:active,
@@ -978,15 +980,15 @@ p, body, input, select, textarea, button {
 }
 
 [data-theme="dark"] .btn-secondary {
-  background: var(--glass-bg);
+  background: var(--bg-secondary);
   color: var(--text-primary);
-  border: 1px solid var(--glass-border);
+  border: 1px solid var(--border-subtle);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }
 [data-theme="dark"] .btn-secondary:hover {
-  border-color: rgba(99, 102, 241, 0.4);
-  background: var(--glass-highlight);
+  border-color: rgba(255, 255, 255, 0.2);
+  background: var(--bg-tertiary);
   color: var(--text-primary);
 }
 
@@ -1448,16 +1450,20 @@ p, body, input, select, textarea, button {
 /* Form Controls — Part 4 Directive */
 .select-control {
   height: 40px;
-  padding: 0 12px;
+  padding: 0 2.5rem 0 0.85rem;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
-  background: var(--paper-panel);
+  background-color: var(--paper-panel);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%232563EB'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2.5' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1.1rem;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
   color: var(--text-primary);
   font-family: var(--font-sans);
   font-size: 0.875rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: space-between;
   outline: none;
   cursor: pointer;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
@@ -1718,42 +1724,79 @@ textarea.form-control,
 }
 
 /* Dropdown Select Options - Uniform Appearance Across Browsers */
+select option,
 select.form-control option,
-select.form-select option {
+select.form-select option,
+select.select-control option,
+select.input-field option {
   background-color: #FFFFFF;
   color: #0F172A;
   padding: 0.5rem;
 }
 
-/* Dark Mode Form Control Overrides */
+/* Dark Mode Form Control & Select Overrides */
 [data-theme="dark"] .form-control,
-[data-theme="dark"] .form-select {
-  background-color: rgba(30, 41, 59, 0.7);
-  border-color: rgba(255, 255, 255, 0.12);
+[data-theme="dark"] .form-select,
+[data-theme="dark"] .select-control,
+[data-theme="dark"] select.input-field,
+[data-theme="dark"] select {
+  background-color: var(--bg-secondary, #121215);
+  border-color: var(--border-subtle, rgba(255, 255, 255, 0.12));
   color: #F9FAFB;
 }
 
-[data-theme="dark"] select.form-control option,
-[data-theme="dark"] select.form-select option {
-  background-color: #1E293B;
+[data-theme="dark"] select option,
+[data-theme="dark"] .form-control option,
+[data-theme="dark"] .form-select option,
+[data-theme="dark"] .select-control option,
+[data-theme="dark"] select.input-field option,
+[data-theme="dark"] option {
+  background-color: #121215;
   color: #F8FAFC;
 }
 
-[data-theme="dark"] .form-select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2360A5FA'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2.5' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+[data-theme="dark"] .form-select,
+[data-theme="dark"] .select-control,
+[data-theme="dark"] select.input-field,
+[data-theme="dark"] select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2360A5FA'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2.5' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 0.75rem center !important;
+  background-size: 1.1rem !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  padding-right: 2.5rem !important;
+}
+
+/* Prevent date inputs from having dropdown arrows */
+input[type="date"],
+input[type="date"].form-control,
+input[type="date"].input-field,
+[data-theme="dark"] input[type="date"],
+[data-theme="dark"] input[type="date"].form-control,
+[data-theme="dark"] input[type="date"].input-field {
+  background-image: none !important;
+  padding-right: 0.75rem !important;
 }
 
 [data-theme="dark"] .form-control:hover,
-[data-theme="dark"] .form-select:hover {
-  background-color: rgba(30, 41, 59, 0.9);
+[data-theme="dark"] .form-select:hover,
+[data-theme="dark"] .select-control:hover,
+[data-theme="dark"] select.input-field:hover,
+[data-theme="dark"] select:hover {
+  background-color: var(--bg-tertiary, #1c1c21);
   border-color: rgba(96, 165, 250, 0.5);
 }
 
 [data-theme="dark"] .form-control:focus,
-[data-theme="dark"] .form-select:focus {
-  background-color: rgba(15, 23, 42, 0.95);
+[data-theme="dark"] .form-select:focus,
+[data-theme="dark"] .select-control:focus,
+[data-theme="dark"] select.input-field:focus,
+[data-theme="dark"] select:focus {
+  background-color: var(--bg-tertiary, #1c1c21);
   border-color: #3B82F6;
-  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.25), 0 4px 20px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25), 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
 /* Form Section Cards */
