@@ -6,12 +6,22 @@ import { initDb } from './initDb.js';
 types.setTypeParser(1082, (val) => val);
 
 function getConnectionString() {
-  return process.env.DATABASE_URL || 'postgres://postgres:postgres@127.0.0.1:5432/presales_db';
+  if (process.env.DATABASE_URL) return process.env.DATABASE_URL;
+  if (process.env.POSTGRES_URL) return process.env.POSTGRES_URL;
+  if (process.env.PGHOST) {
+    const user = encodeURIComponent(process.env.PGUSER || 'postgres');
+    const password = encodeURIComponent(process.env.PGPASSWORD || '');
+    const host = process.env.PGHOST;
+    const port = process.env.PGPORT || 5432;
+    const database = process.env.PGDATABASE || 'postgres';
+    return `postgres://${user}:${password}@${host}:${port}/${database}`;
+  }
+  return 'postgres://postgres:postgres@127.0.0.1:5432/presales_db';
 }
 
 function getPool() {
   const connectionString = getConnectionString();
-  const isSupabase = connectionString.includes('supabase.co') || connectionString.includes('supabase.net');
+  const isLocalhost = connectionString.includes('127.0.0.1') || connectionString.includes('localhost');
   
   if (!global._postgresPool || global._postgresPoolConnStr !== connectionString) {
     if (global._postgresPool) {
@@ -21,7 +31,7 @@ function getPool() {
     global._dbInitialized = false;
     global._postgresPool = new Pool({
       connectionString,
-      ssl: isSupabase ? { rejectUnauthorized: false } : false,
+      ssl: isLocalhost ? false : { rejectUnauthorized: false },
       max: 20, // Support concurrent parallel queries
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 10000

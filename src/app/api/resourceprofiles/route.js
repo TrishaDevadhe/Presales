@@ -1,5 +1,6 @@
 import { query } from '@/lib/db';
 import { NextResponse } from 'next/server';
+import { FALLBACK_RESOURCE_PROFILES } from '@/lib/fallbackData';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,7 +27,8 @@ export async function GET() {
     `);
     return NextResponse.json(result.rows);
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.warn('Database query failed in /api/resourceprofiles GET, using fallback data:', error.message);
+    return NextResponse.json(FALLBACK_RESOURCE_PROFILES);
   }
 }
 

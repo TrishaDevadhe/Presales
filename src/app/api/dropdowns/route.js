@@ -1,13 +1,14 @@
 import { query } from '@/lib/db';
 import { NextResponse } from 'next/server';
+import { FALLBACK_DROPDOWN_OPTIONS } from '@/lib/fallbackData';
 
 // GET all dropdown options
 export async function GET(request) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const category = searchParams.get('category');
-    const activeOnly = searchParams.get('activeOnly') !== 'false';
+  const { searchParams } = new URL(request.url);
+  const category = searchParams.get('category');
+  const activeOnly = searchParams.get('activeOnly') !== 'false';
 
+  try {
     // Auto-clean any unwanted PDF or deleted deal stage options from DB
     await query(`
       DELETE FROM dropdown_options 
@@ -42,7 +43,15 @@ export async function GET(request) {
 
     return NextResponse.json(filteredRows);
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.warn('Database query failed in /api/dropdowns GET, using fallback data:', error.message);
+    let fallback = FALLBACK_DROPDOWN_OPTIONS;
+    if (category) {
+      fallback = fallback.filter(o => o.category === category);
+    }
+    if (activeOnly) {
+      fallback = fallback.filter(o => o.active !== false);
+    }
+    return NextResponse.json(fallback);
   }
 }
 

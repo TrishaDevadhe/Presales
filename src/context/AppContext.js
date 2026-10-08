@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { FALLBACK_DROPDOWN_OPTIONS, FALLBACK_RESOURCE_PROFILES } from '@/lib/fallbackData';
 
 const AppContext = createContext();
 
@@ -8,8 +9,8 @@ export function AppProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [userRole, setUserRole] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [dropdownOptions, setDropdownOptions] = useState([]);
-  const [resourceProfiles, setResourceProfiles] = useState([]);
+  const [dropdownOptions, setDropdownOptions] = useState(FALLBACK_DROPDOWN_OPTIONS);
+  const [resourceProfiles, setResourceProfiles] = useState(FALLBACK_RESOURCE_PROFILES);
   const [loading, setLoading] = useState(true);
   const [globalSearchQuery, setGlobalSearchQuery] = useState('');
 
@@ -55,11 +56,11 @@ export function AppProvider({ children }) {
         }));
         setDropdownOptions(formatted);
       } else {
-        setDropdownOptions([]);
+        setDropdownOptions(FALLBACK_DROPDOWN_OPTIONS);
       }
     } catch (error) {
-      console.error('Error fetching dropdowns:', error);
-      setDropdownOptions([]);
+      console.warn('Error fetching dropdowns, retaining fallback data:', error);
+      setDropdownOptions(prev => (prev && prev.length > 0 ? prev : FALLBACK_DROPDOWN_OPTIONS));
     }
   };
 
@@ -69,14 +70,14 @@ export function AppProvider({ children }) {
       const res = await fetch('/api/resourceprofiles');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      if (Array.isArray(data)) {
+      if (Array.isArray(data) && data.length > 0) {
         setResourceProfiles(data);
       } else {
-        setResourceProfiles([]);
+        setResourceProfiles(FALLBACK_RESOURCE_PROFILES);
       }
     } catch (error) {
-      console.error('Error fetching profiles:', error);
-      setResourceProfiles([]);
+      console.warn('Error fetching profiles, retaining fallback data:', error);
+      setResourceProfiles(prev => (prev && prev.length > 0 ? prev : FALLBACK_RESOURCE_PROFILES));
     }
   };
 

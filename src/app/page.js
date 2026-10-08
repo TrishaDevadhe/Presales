@@ -22,7 +22,7 @@ import NotificationCenter from '@/components/NotificationCenter';
 import LoginOpportunityAlert from '@/components/LoginOpportunityAlert';
 
 export default function Home() {
-  const { currentUser, userRole, isLoggedIn, logout, handleUserChange, loading, allUsers, resourceProfiles, globalSearchQuery, setGlobalSearchQuery } = useApp();
+  const { currentUser, userRole, isLoggedIn, logout, handleUserChange, loading, allUsers, resourceProfiles, globalSearchQuery, setGlobalSearchQuery, formatUserName } = useApp();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [theme, setTheme] = useState('glass-light');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -58,7 +58,7 @@ export default function Home() {
   const activeProfile = (Array.isArray(resourceProfiles) ? resourceProfiles : []).find(
     (p) => p.username && p.username.toLowerCase() === (currentUser || '').toLowerCase()
   );
-  const userDisplayName = activeProfile?.name || (currentUser ? formatUserName(currentUser) : 'User');
+  const userDisplayName = activeProfile?.name || (currentUser ? (typeof formatUserName === 'function' ? formatUserName(currentUser) : currentUser) : 'User');
 
   // Inactivity session timeout: 30 minutes warning, 60 seconds countdown
   const [showTimeoutWarning, setShowTimeoutWarning] = useState(false);
