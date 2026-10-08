@@ -79,7 +79,7 @@
   --bg-secondary: #121215;
   --bg-tertiary: #1c1c21;
   --surface-card: rgba(18, 18, 22, 0.78);
-  --paper-panel: #27272a;            /* Elevated dark surface — distinct from bg-secondary */
+  --paper-panel: #3f3f46;            /* Mid-grey card surface — clearly visible on dark bg */
   --border-subtle: rgba(255, 255, 255, 0.12);
 
   --glass-bg: rgba(14, 14, 18, 0.8);
