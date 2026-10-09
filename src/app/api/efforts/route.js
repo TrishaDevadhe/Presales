@@ -74,6 +74,8 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Hours Logged must be greater than 0 and less than or equal to 24' }, { status: 400 });
     }
 
+    const parsedWorkItemId = parseInt(work_item_id, 10);
+
     // 1. Fetch work item details
     const wiRes = await query(
       `SELECT wi.estimated_hours, wi.title, opt.option_name AS status_name, ds.option_name AS deal_stage_name
@@ -82,7 +84,7 @@ export async function POST(request) {
        LEFT JOIN opportunities o ON wi.opportunity_id = o.id
        LEFT JOIN dropdown_options ds ON o.deal_stage_id = ds.id
        WHERE wi.id = $1`,
-      [work_item_id]
+      [parsedWorkItemId]
     );
     if (wiRes.rows.length === 0) {
       return NextResponse.json({ error: 'Work Item not found' }, { status: 404 });
@@ -99,7 +101,7 @@ export async function POST(request) {
     const estHours = parseFloat(wiRes.rows[0].estimated_hours || 0);
 
     // 2. Fetch cumulative hours logged for this work item (including new log)
-    const cumRes = await query('SELECT SUM(hours_logged) AS total FROM effort_logs WHERE work_item_id = $1', [work_item_id]);
+    const cumRes = await query('SELECT SUM(hours_logged) AS total FROM effort_logs WHERE work_item_id = $1', [parsedWorkItemId]);
     const prevLogged = parseFloat(cumRes.rows[0]?.total || 0);
     const newCumulative = prevLogged + hours;
 
@@ -115,7 +117,7 @@ export async function POST(request) {
       `INSERT INTO effort_logs (work_item_id, person, date, hours_logged, effort_type_id, activity_type_id, notes)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
-      [work_item_id, person, date, hours, effort_type_id || null, activity_type_id || null, notes || '']
+      [parsedWorkItemId, person, date, hours, effort_type_id || null, activity_type_id || null, notes || '']
     );
 
     const effortLog = result.rows[0];
@@ -130,7 +132,7 @@ export async function POST(request) {
     if (body.mark_completed === true) {
       const completedRes = await query("SELECT id, option_name FROM dropdown_options WHERE category = 'task_status' AND option_name = 'Completed'");
       if (completedRes.rows.length > 0) {
-        await query('UPDATE work_items SET status_id = $1 WHERE id = $2', [completedRes.rows[0].id, work_item_id]);
+        await query('UPDATE work_items SET status_id = $1 WHERE id = $2', [completedRes.rows[0].id, parsedWorkItemId]);
         statusChanged = true;
         newStatusName = completedRes.rows[0].option_name;
       }
@@ -139,7 +141,7 @@ export async function POST(request) {
       if (inProgressRes.rows.length > 0) {
         const updateRes = await query(
           "UPDATE work_items SET status_id = $1 WHERE id = $2 AND status_id IN (SELECT id FROM dropdown_options WHERE category = 'task_status' AND option_name = 'Not Started') RETURNING id",
-          [inProgressRes.rows[0].id, work_item_id]
+          [inProgressRes.rows[0].id, parsedWorkItemId]
         );
         if (updateRes.rows.length > 0) {
           statusChanged = true;
@@ -176,7 +178,7 @@ export async function POST(request) {
           real_user_id: realUser,
           acting_as_user_id: actingAsUser,
           entity_type: 'Work Item',
-          entity_id: work_item_id,
+          entity_id: parsedWorkItemId,
           entity_title: wiRes.rows[0].title,
           action_type: 'Status Changed',
           field_changed: 'Status',

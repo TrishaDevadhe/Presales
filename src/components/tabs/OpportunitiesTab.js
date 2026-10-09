@@ -487,12 +487,13 @@ export default function OpportunitiesTab({ targetOppFromNotification, onClearTar
           fetchOpportunities();
         }, 2500);
       } else {
-        fetchOpportunities();
+        await fetchOpportunities();
       }
 
-      showToast(`✓ Opportunity "${oppName}" registered successfully!`, 'success');
+      showToast(`✓ Opportunity "${oppName}" ${isEditMode ? 'updated' : 'registered'} successfully!`, 'success');
     } catch (err) {
       setError(err.message);
+      showToast(`Failed to save opportunity: ${err.message}`, 'error');
     }
   };
 

@@ -118,7 +118,7 @@ export default function EffortLogsTab() {
     const inputHours = parseFloat(formData.hours_logged) || 0;
 
     const existingHours = effortLogs
-      .filter(l => l.work_item_id === task.id)
+      .filter(l => Number(l.work_item_id) === Number(task.id))
       .reduce((sum, l) => sum + (parseFloat(l.hours_logged) || 0), 0);
 
     const totalProposed = existingHours + inputHours;
@@ -248,7 +248,7 @@ export default function EffortLogsTab() {
       }
 
       setIsModalOpen(false);
-      fetchData();
+      await fetchData();
       showToast('Effort logged successfully', 'success');
       if (data.variance_metadata?.variance_exceeded) {
         showAlert(data.variance_metadata.warning, 'Effort Variance Warning', 'warning');
@@ -447,7 +447,7 @@ export default function EffortLogsTab() {
                   {filteredWorkItems.map((task) => {
                     const isCompleted = task.status_name?.toLowerCase() === 'completed';
                     const loggedHours = effortLogs
-                      .filter(l => l.work_item_id === task.id)
+                      .filter(l => Number(l.work_item_id) === Number(task.id))
                       .reduce((sum, l) => sum + (parseFloat(l.hours_logged) || 0), 0);
                     const estHours = parseFloat(task.estimated_hours) || 0;
                     const pct = estHours > 0 ? Math.round((loggedHours / estHours) * 100) : 0;

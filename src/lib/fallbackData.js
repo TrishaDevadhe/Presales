@@ -465,28 +465,7 @@ export const FALLBACK_WORK_ITEMS = [
   }
 ];
 
-export const FALLBACK_EFFORTS = [
-  {
-    id: 1,
-    work_item_id: 1,
-    person: 'jane_doe',
-    date: '2026-10-05',
-    hours_logged: 8.0,
-    effort_type_id: null,
-    activity_type_id: null,
-    notes: 'Completed initial draft of compliance matrix and system topology diagrams.'
-  },
-  {
-    id: 2,
-    work_item_id: 2,
-    person: 'trisha_devadhe',
-    date: '2026-10-06',
-    hours_logged: 6.5,
-    effort_type_id: null,
-    activity_type_id: null,
-    notes: 'Modeled cluster sizing and IOPS requirements for peak transaction processing.'
-  }
-];
+export const FALLBACK_EFFORTS = [];
 
 export const FALLBACK_VERSIONS = [
   {
